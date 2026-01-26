@@ -1,0 +1,29 @@
+00:00 +0: loading /home/abdullah/Downloads/all-flutter/flutter-projects/line/test/widget_test.dart                                                                                                     00:01 +0: loading /home/abdullah/Downloads/all-flutter/flutter-projects/line/test/widget_test.dart                                                                                                     00:02 +0: loading /home/abdullah/Downloads/all-flutter/flutter-projects/line/test/widget_test.dart                                                                                                     00:02 +0: ScheduleView smoke test                                                                                                                                                                      00:03 +0: ScheduleView smoke test                                                                                                                                                                      00:04 +0: ScheduleView smoke test                                                                                                                                                                      00:04 +0: ScheduleView smoke test                                                                                                                                                                      
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Task Title *": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/abdullah/Downloads/all-flutter/flutter-projects/line/test/widget_test.dart:20:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/abdullah/Downloads/all-flutter/flutter-projects/line/test/widget_test.dart line 20
+The test description was:
+  ScheduleView smoke test
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:04 +0 -1: ScheduleView smoke test [E]                                                                                                                                                               
+  Test failed. See exception logs above.
+  The test description was: ScheduleView smoke test
+  
+
+To run this test again: /home/abdullah/Downloads/all-flutter/running-rerq/flutter/bin/cache/dart-sdk/bin/dart test /home/abdullah/Downloads/all-flutter/flutter-projects/line/test/widget_test.dart -p vm --plain-name 'ScheduleView smoke test'
+00:04 +0 -1: Some tests failed.                                                                                                                                                                        
