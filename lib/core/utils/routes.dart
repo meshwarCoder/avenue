@@ -3,11 +3,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/roots.dart';
 import '../../features/auth/presentation/views/login_view.dart';
 import '../../features/auth/presentation/views/register_view.dart';
+import '../../features/ai_chat/presentation/views/ai_chat_view.dart';
 
 class AppRoutes {
   static const String home = '/schedule';
   static const String login = '/login';
   static const String register = '/register';
+  static const String aiChat = '/ai-chat';
 
   static final GoRouter router = GoRouter(
     initialLocation: home,
@@ -31,6 +33,7 @@ class AppRoutes {
         path: register,
         builder: (context, state) => const RegisterView(),
       ),
+      GoRoute(path: aiChat, builder: (context, state) => const AiChatView()),
     ],
   );
 }

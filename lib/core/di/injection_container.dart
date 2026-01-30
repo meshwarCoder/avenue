@@ -4,6 +4,8 @@ import '../../features/schdules/data/datasources/task_local_data_source_impl.dar
 import '../../features/schdules/data/repo/schedule_repo_impl.dart';
 import '../../features/schdules/domain/repo/schedule_repository.dart';
 import '../../features/schdules/presentation/cubit/task_cubit.dart';
+import '../../features/ai_chat/data/ai_repository.dart';
+import '../../features/ai_chat/presentation/logic/chat_cubit.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -51,4 +53,12 @@ Future<void> initializeDependencies() async {
   // Cubits (Factory - new instance each time)
   sl.registerFactory(() => AuthCubit(repository: sl()));
   sl.registerFactory(() => TaskCubit(repository: sl(), syncService: sl()));
+
+  // AI Chat
+  sl.registerLazySingleton<AiRepository>(
+    () => AiRepository(apiKey: dotenv.env['GEMINI_API_KEY'] ?? ''),
+  );
+  sl.registerFactory(
+    () => ChatCubit(aiRepository: sl(), scheduleRepository: sl()),
+  );
 }
