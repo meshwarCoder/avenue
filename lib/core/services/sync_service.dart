@@ -10,6 +10,7 @@ class SyncService {
   final SupabaseClient supabase;
 
   static const String lastSyncKey = 'last_sync_timestamp';
+  bool _isSyncing = false; // Add lock flag
 
   SyncService({required this.databaseService, required this.supabase});
 
@@ -28,6 +29,12 @@ class SyncService {
         print("SyncService: No internet connection. Skipping sync.");
         return;
       }
+
+      if (_isSyncing) {
+        print("SyncService: Sync already in progress. Skipping.");
+        return;
+      }
+      _isSyncing = true;
 
       final user = supabase.auth.currentUser;
       if (user == null) {
@@ -82,7 +89,11 @@ class SyncService {
 
         if (localMaps.isEmpty) {
           // New task from server, ensure is_dirty = 0
-          await db.insert('tasks', remoteTask.copyWith(isDirty: false).toMap());
+          await db.insert(
+            'tasks',
+            remoteTask.copyWith(isDirty: false).toMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
           pulledTasksCount++;
         } else {
           final localTask = TaskModel.fromMap(localMaps.first);
@@ -149,6 +160,7 @@ class SyncService {
           await db.insert(
             'default_tasks',
             remoteTask.copyWith(isDirty: false).toMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace,
           );
           pulledDefaultCount++;
         } else {
@@ -201,6 +213,8 @@ class SyncService {
     } catch (e) {
       print("SyncService: Error during sync: $e");
       rethrow;
+    } finally {
+      _isSyncing = false;
     }
   }
 
