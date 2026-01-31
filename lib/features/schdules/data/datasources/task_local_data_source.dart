@@ -35,6 +35,9 @@ abstract class TaskLocalDataSource {
   /// Delete tasks older than a specific date from local cache
   Future<void> deleteTasksBefore(DateTime date);
 
+  /// Search tasks by query
+  Future<List<TaskModel>> searchTasks(String query);
+
   /// Get date bounds (min and max task dates)
   Future<Map<String, DateTime?>> getDateBounds();
 }

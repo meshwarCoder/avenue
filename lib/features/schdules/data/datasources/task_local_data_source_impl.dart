@@ -167,6 +167,24 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
   }
 
   @override
+  Future<List<TaskModel>> searchTasks(String query) async {
+    try {
+      final db = await databaseService.database;
+      final maps = await db.query(
+        'tasks',
+        where:
+            "(name LIKE ? OR desc LIKE ? OR category LIKE ?) AND is_deleted = 0",
+        whereArgs: ['%$query%', '%$query%', '%$query%'],
+        orderBy: 'task_date DESC',
+      );
+
+      return List.generate(maps.length, (i) => TaskModel.fromMap(maps[i]));
+    } catch (e) {
+      throw CacheException('Failed to search tasks');
+    }
+  }
+
+  @override
   Future<Map<String, DateTime?>> getDateBounds() async {
     try {
       final db = await databaseService.database;

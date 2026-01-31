@@ -1,139 +1,276 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../../schdules/data/models/task_model.dart';
+import '../../schdules/domain/repo/schedule_repository.dart';
+import 'ai_tools.dart';
 
 class AiRepository {
-  final ChatSession _chat;
+  final String _apiKey;
+  final List<Map<String, dynamic>> _history = [];
+  final ScheduleRepository _scheduleRepository;
+  final String _modelName = 'gemini-3-flash-preview';
+  final String _baseUrl =
+      'https://generativelanguage.googleapis.com/v1beta/models';
 
-  AiRepository({required String apiKey})
-    : _chat = GenerativeModel(
-        model: 'gemini-3-flash-preview',
-        apiKey: apiKey,
-        generationConfig: GenerationConfig(
-          responseMimeType: 'application/json',
-        ),
-      ).startChat(history: [Content.system(_systemPrompt)]);
+  AiRepository({
+    required String apiKey,
+    required ScheduleRepository scheduleRepository,
+  }) : _apiKey = apiKey,
+       _scheduleRepository = scheduleRepository {
+    // Initialize history with system prompt
+    _history.add({
+      'role': 'system',
+      'parts': [
+        {
+          'text':
+              'You are a helpful assistant for a Task Management App. '
+              'Use the available tools to manage tasks. '
+              'If you need to know the date, assume the user means relative to ${DateTime.now().toIso8601String()}. '
+              'Always confirm actions with a short message.',
+        },
+      ],
+    });
+  }
 
-  Future<AiResponse> sendMessage(
-    String message,
-    List<TaskModel> currentTasks,
-  ) async {
-    // We send the current tasks as context for every message to keep the AI updated
-    // or we could rely on history if we update the history manually, but passing context is safer for accuracy.
-    // To save tokens, we can summarize or only send relevant tasks if the list is huge.
-    // For now, we'll send a simplified list of today's tasks.
+  Future<String> sendMessage(String message) async {
+    // 1. Add user message to history
+    _history.add({
+      'role': 'user',
+      'parts': [
+        {'text': message},
+      ],
+    });
 
-    final tasksJson = currentTasks
-        .map(
-          (t) => {
-            'id': t.id,
-            'name': t.name,
-            'date': t.taskDate.toIso8601String(),
-            'start': t.startTime?.toIso8601String(),
-            'end': t.endTime?.toIso8601String(),
-            'completed': t.completed,
+    // 2. Generate initial response
+    var responseJson = await _generateContentRaw();
+    _addTurnToHistory(responseJson);
+
+    // 3. Tool Loop
+    int loopLimit = 5;
+    while (_hasFunctionCalls(responseJson) && loopLimit > 0) {
+      loopLimit--;
+      final functionCalls = _getFunctionCalls(responseJson);
+      final toolResponseParts = <Map<String, dynamic>>[];
+
+      for (final call in functionCalls) {
+        final name = call['name'] as String;
+        final args = Map<String, dynamic>.from(call['args'] as Map);
+        final signature = call['thought_signature'] as String?;
+
+        print('AI calling tool: $name with args: $args');
+        final result = await _handleToolCallInternal(name, args);
+        print('Tool $name result: $result');
+
+        final responsePart = {
+          'functionResponse': {
+            'name': name,
+            'response': result,
+            if (signature != null) 'thought_signature': signature,
           },
-        )
-        .toList();
+        };
+        toolResponseParts.add(responsePart);
+      }
 
-    final userContent = Content.text('''
-User Message: $message
+      // Add tool results to history
+      _history.add({'role': 'user', 'parts': toolResponseParts});
 
-Current Date: ${DateTime.now().toIso8601String()}
-
-Current Context (Tasks):
-${jsonEncode(tasksJson)}
-''');
-
-    final response = await _chat.sendMessage(userContent);
-    final text = response.text;
-
-    if (text == null) {
-      throw Exception('No response from AI');
+      // Call model again with updated history
+      responseJson = await _generateContentRaw();
+      _addTurnToHistory(responseJson);
     }
 
+    final text = _extractText(responseJson);
+    print('AI Response: $text');
+    return text ?? "I'm not sure how to help with that.";
+  }
+
+  Future<Map<String, dynamic>> _generateContentRaw() async {
+    final url = '$_baseUrl/$_modelName:generateContent?key=$_apiKey';
+
+    // Convert AiTools to JSON
+    final toolsJson = AiTools.tools.map((t) => t.toJson()).toList();
+
+    final requestBody = {'contents': _history, 'tools': toolsJson};
+
+    final client = HttpClient();
     try {
-      final json = jsonDecode(text);
-      return AiResponse.fromJson(json);
+      final request = await client.postUrl(Uri.parse(url));
+      request.headers.set('Content-Type', 'application/json');
+      request.add(utf8.encode(jsonEncode(requestBody)));
+
+      final response = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+
+      if (response.statusCode != 200) {
+        print('Gemini API Error: ${response.statusCode} - $responseBody');
+        throw Exception('Gemini API Error: $responseBody');
+      }
+
+      return jsonDecode(responseBody) as Map<String, dynamic>;
+    } finally {
+      client.close();
+    }
+  }
+
+  void _addTurnToHistory(Map<String, dynamic> responseJson) {
+    try {
+      final candidates = responseJson['candidates'] as List<dynamic>;
+      if (candidates.isEmpty) return;
+      final candidate = candidates.first as Map<String, dynamic>;
+      final content = candidate['content'] as Map<String, dynamic>;
+
+      // Crucial: Add the EXACT content from the API to history to preserve all fields
+      _history.add({
+        'role': content['role'] ?? 'model',
+        'parts': content['parts'] as List<dynamic>,
+      });
     } catch (e) {
-      // Fallback if JSON parsing fails (e.g. if model ignored instructions)
-      // Ideally we retry or have a robust error handling
-      print('AI JSON Parse Error: $e\nResponse: $text');
-      return AiResponse(
-        message:
-            "I'm having trouble processing that request properly. (Internal JSON Error)",
-        actions: [],
-      );
+      print('Error adding turn to history: $e');
     }
   }
 
-  static const _systemPrompt = '''
-You are a helpful assistant directly integrated into a Task Management App.
-Your goal is to help the user manage their schedule.
-
-You can Read, Add, Update, and Delete tasks.
-You will receive the user's message and a list of current tasks in the context.
-
-You MUST respond in strict JSON format.
-The JSON structure must be:
-{
-  "message": "A natural language response to the user explaining what you did or answering their question.",
-  "actions": [
-    {
-      "type": "add" | "update" | "delete",
-      "data": { ...task_fields... } // For add/update
-      "id": "task_id" // For update/delete
+  bool _hasFunctionCalls(Map<String, dynamic> responseJson) {
+    try {
+      final candidates = responseJson['candidates'] as List<dynamic>?;
+      if (candidates == null || candidates.isEmpty) return false;
+      final content = candidates.first['content'] as Map<String, dynamic>;
+      final parts = content['parts'] as List<dynamic>;
+      return parts.any((p) => (p as Map).containsKey('functionCall'));
+    } catch (e) {
+      print('Error checking for function calls: $e');
+      return false;
     }
-  ]
-}
-
-Task Fields for 'data':
-- name (required string)
-- desc (optional string)
-- task_date (required string ISO8601 YYYY-MM-DD)
-- start_time (optional string ISO8601)
-- end_time (optional string ISO8601)
-- category (optional string, default 'General')
-- color_value (optional int, default 0xFF004D61)
-- one_time (boolean, default true)
-
-Rules:
-1. Always analyze the "Current Context" before answering.
-2. If the user asks to "add a task", generate an "add" action.
-3. If the user asks to "change/reschedule", generate an "update" action.
-4. If the user asks to "remove/delete", generate a "delete" action.
-5. If the user just chats, return empty actions list.
-6. Be concise in your "message".
-7. For dates, use the current year/month unless specified. Assume "today" is the date found in the context or system time.
-''';
-}
-
-class AiResponse {
-  final String message;
-  final List<AiAction> actions;
-
-  AiResponse({required this.message, required this.actions});
-
-  factory AiResponse.fromJson(Map<String, dynamic> json) {
-    return AiResponse(
-      message: json['message'] ?? '',
-      actions:
-          (json['actions'] as List?)
-              ?.map((e) => AiAction.fromJson(e))
-              .toList() ??
-          [],
-    );
   }
-}
 
-class AiAction {
-  final String type; // 'add', 'update', 'delete'
-  final String? id;
-  final Map<String, dynamic>? data;
+  List<Map<String, dynamic>> _getFunctionCalls(
+    Map<String, dynamic> responseJson,
+  ) {
+    try {
+      final candidates = responseJson['candidates'] as List<dynamic>;
+      final content = candidates.first['content'] as Map<String, dynamic>;
+      final parts = content['parts'] as List<dynamic>;
+      return parts
+          .where((p) => (p as Map).containsKey('functionCall'))
+          .map((p) => Map<String, dynamic>.from(p['functionCall'] as Map))
+          .toList();
+    } catch (e) {
+      print('Error extracting function calls: $e');
+      return [];
+    }
+  }
 
-  AiAction({required this.type, this.id, this.data});
+  String? _extractText(Map<String, dynamic> responseJson) {
+    try {
+      final candidates = responseJson['candidates'] as List<dynamic>?;
+      if (candidates == null || candidates.isEmpty) return null;
+      final content = candidates.first['content'] as Map<String, dynamic>;
+      final parts = content['parts'] as List<dynamic>;
+      final textParts = parts.where((p) => (p as Map).containsKey('text'));
+      if (textParts.isEmpty) return null;
+      return textParts.map((p) => p['text']).join('\n');
+    } catch (_) {
+      return null;
+    }
+  }
 
-  factory AiAction.fromJson(Map<String, dynamic> json) {
-    return AiAction(type: json['type'], id: json['id'], data: json['data']);
+  Future<Map<String, dynamic>> _handleToolCallInternal(
+    String name,
+    Map<String, dynamic> args,
+  ) async {
+    try {
+      switch (name) {
+        case 'getTasks':
+          final startDate = DateTime.parse(args['startDate'] as String);
+          final result = await _scheduleRepository.getTasksByDate(startDate);
+          return result.fold(
+            (failure) => {'error': failure.message},
+            (tasks) => {
+              'tasks': tasks.map((t) => t.toSupabaseJson('user')).toList(),
+            },
+          );
+
+        case 'addTask':
+          final taskData = Map<String, dynamic>.from(args);
+          final task = TaskModel.fromSupabaseJson({
+            ...taskData,
+            'id': null,
+            'user_id': 'user',
+            'completed': false,
+            'is_deleted': false,
+          });
+          final result = await _scheduleRepository.addTask(task);
+          return result.fold(
+            (failure) => {'error': failure.message},
+            (_) => {'status': 'success', 'task': task.name},
+          );
+
+        case 'updateTask':
+          final id = args['id'] as String;
+          final fetchResult = await _scheduleRepository.getTaskById(id);
+
+          return await fetchResult.fold(
+            (failure) async => {'error': failure.message},
+            (existingTask) async {
+              if (existingTask == null) return {'error': 'Task not found'};
+              final currentMap = existingTask.toSupabaseJson('user');
+              final newMap = {
+                ...currentMap,
+                ...Map<String, dynamic>.from(args),
+              };
+
+              final updatedTask = TaskModel.fromSupabaseJson(newMap);
+              final updateResult = await _scheduleRepository.updateTask(
+                updatedTask,
+              );
+
+              return updateResult.fold(
+                (failure) => {'error': failure.message},
+                (_) => {'status': 'success'},
+              );
+            },
+          );
+
+        case 'deleteTask':
+          final id = args['id'] as String;
+          final result = await _scheduleRepository.deleteTask(id);
+          return result.fold(
+            (failure) => {'error': failure.message},
+            (_) => {'status': 'success'},
+          );
+
+        case 'searchTasks':
+          final query = args['query'] as String;
+          final result = await _scheduleRepository.searchTasks(query);
+          return result.fold(
+            (failure) => {'error': failure.message},
+            (tasks) => {
+              'tasks': tasks.map((t) => t.toSupabaseJson('user')).toList(),
+            },
+          );
+
+        case 'searchDefaultTasks':
+          final query = args['query'] as String;
+          final result = await _scheduleRepository.searchDefaultTasks(query);
+          return result.fold(
+            (failure) => {'error': failure.message},
+            (tasks) => {
+              'default_tasks': tasks
+                  .map((t) => t.toSupabaseJson('user'))
+                  .toList(),
+            },
+          );
+
+        default:
+          final error = 'Unknown tool $name';
+          print('Error: $error');
+          return {'error': error};
+      }
+    } catch (e, stack) {
+      print('Failed to execute $name: $e');
+      print(stack);
+      return {'error': 'Failed to execute $name: $e'};
+    }
   }
 }

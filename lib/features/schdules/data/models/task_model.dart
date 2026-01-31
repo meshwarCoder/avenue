@@ -16,6 +16,7 @@ class TaskModel {
   final DateTime serverUpdatedAt;
   final String? importanceType;
   final bool isDirty;
+  final List<double>? embedding;
 
   TaskModel({
     String? id,
@@ -32,6 +33,7 @@ class TaskModel {
     DateTime? serverUpdatedAt,
     this.importanceType,
     this.isDirty = false,
+    this.embedding,
   }) : id = id ?? const Uuid().v4(),
        oneTime = oneTime ?? true,
        isDeleted = isDeleted ?? false,
@@ -54,6 +56,9 @@ class TaskModel {
       'server_updated_at': serverUpdatedAt.toIso8601String(),
       'importance_type': importanceType,
       'is_dirty': isDirty ? 1 : 0,
+      'embedding': embedding != null
+          ? embedding!.join(',')
+          : null, // Store as CSV string locally
     };
   }
 
@@ -81,6 +86,12 @@ class TaskModel {
       ),
       importanceType: map['importance_type'],
       isDirty: (map['is_dirty'] ?? 0) == 1,
+      embedding: map['embedding'] != null
+          ? (map['embedding'] as String)
+                .split(',')
+                .map((e) => double.parse(e))
+                .toList()
+          : null,
     );
   }
 
@@ -107,6 +118,7 @@ class TaskModel {
       'is_deleted': isDeleted,
       'server_updated_at': serverUpdatedAt.toIso8601String(),
       'importance_type': importanceType,
+      'embedding': embedding, // Supabase handles vector/array
     };
   }
 
@@ -129,6 +141,26 @@ class TaskModel {
         json['task_date'] ?? json['date'] ?? DateTime.now().toIso8601String();
     final date = DateTime.parse(dateStr);
 
+    List<double>? parsedEmbedding;
+    if (json['embedding'] != null) {
+      // Supabase returns vector as string like "[0.1, 0.2, ...]" or List<dynamic> depending on client
+      if (json['embedding'] is List) {
+        parsedEmbedding = (json['embedding'] as List)
+            .map((e) => (e as num).toDouble())
+            .toList();
+      } else if (json['embedding'] is String) {
+        // Handle string representation if needed, though usually client decodes or returns string
+        final s = json['embedding'] as String;
+        if (s.startsWith('[') && s.endsWith(']')) {
+          parsedEmbedding = s
+              .substring(1, s.length - 1)
+              .split(',')
+              .map((e) => double.parse(e.trim()))
+              .toList();
+        }
+      }
+    }
+
     return TaskModel(
       id: json['id'] ?? const Uuid().v4(),
       name: json['name'] ?? 'Untitled Task',
@@ -145,6 +177,7 @@ class TaskModel {
           ? DateTime.parse(json['server_updated_at']).toUtc()
           : DateTime.now().toUtc(),
       importanceType: json['importance_type'],
+      embedding: parsedEmbedding,
     );
   }
 
@@ -225,6 +258,7 @@ class TaskModel {
     bool? isDeleted,
     DateTime? serverUpdatedAt,
     String? importanceType,
+    List<double>? embedding,
     bool? isDirty,
   }) {
     return TaskModel(
@@ -241,6 +275,7 @@ class TaskModel {
       isDeleted: isDeleted ?? this.isDeleted,
       serverUpdatedAt: serverUpdatedAt ?? DateTime.now().toUtc(),
       importanceType: importanceType ?? this.importanceType,
+      embedding: embedding ?? this.embedding,
       isDirty: isDirty ?? this.isDirty,
     );
   }

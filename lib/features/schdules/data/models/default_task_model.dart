@@ -15,6 +15,7 @@ class DefaultTaskModel {
   final DateTime serverUpdatedAt;
   final bool isDeleted;
   final bool isDirty;
+  final List<double>? embedding;
 
   DefaultTaskModel({
     String? id,
@@ -29,6 +30,7 @@ class DefaultTaskModel {
     DateTime? serverUpdatedAt,
     this.isDeleted = false,
     this.isDirty = false,
+    this.embedding,
   }) : id = id ?? const Uuid().v4(),
        serverUpdatedAt = serverUpdatedAt ?? DateTime.now().toUtc();
 
@@ -44,6 +46,7 @@ class DefaultTaskModel {
     DateTime? serverUpdatedAt,
     bool? isDeleted,
     bool? isDirty,
+    List<double>? embedding,
   }) {
     return DefaultTaskModel(
       id: id,
@@ -58,6 +61,7 @@ class DefaultTaskModel {
       serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
       isDirty: isDirty ?? this.isDirty,
+      embedding: embedding ?? this.embedding,
     );
   }
 
@@ -76,6 +80,7 @@ class DefaultTaskModel {
       'server_updated_at': serverUpdatedAt.toIso8601String(),
       'is_deleted': isDeleted ? 1 : 0,
       'is_dirty': isDirty ? 1 : 0,
+      'embedding': embedding != null ? embedding!.join(',') : null,
     };
   }
 
@@ -101,6 +106,12 @@ class DefaultTaskModel {
       serverUpdatedAt: DateTime.parse(map['server_updated_at']),
       isDeleted: map['is_deleted'] == 1,
       isDirty: (map['is_dirty'] ?? 0) == 1,
+      embedding: map['embedding'] != null
+          ? (map['embedding'] as String)
+                .split(',')
+                .map((e) => double.parse(e))
+                .toList()
+          : null,
     );
   }
 
@@ -119,6 +130,7 @@ class DefaultTaskModel {
       'importance_type': importanceType,
       'server_updated_at': serverUpdatedAt.toIso8601String(),
       'is_deleted': isDeleted,
+      'embedding': embedding,
     };
   }
 
@@ -126,6 +138,24 @@ class DefaultTaskModel {
     TimeOfDay parseTime(String timeStr) {
       final parts = timeStr.split(':');
       return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    }
+
+    List<double>? parsedEmbedding;
+    if (json['embedding'] != null) {
+      if (json['embedding'] is List) {
+        parsedEmbedding = (json['embedding'] as List)
+            .map((e) => (e as num).toDouble())
+            .toList();
+      } else if (json['embedding'] is String) {
+        final s = json['embedding'] as String;
+        if (s.startsWith('[') && s.endsWith(']')) {
+          parsedEmbedding = s
+              .substring(1, s.length - 1)
+              .split(',')
+              .map((e) => double.parse(e.trim()))
+              .toList();
+        }
+      }
     }
 
     return DefaultTaskModel(
@@ -143,6 +173,7 @@ class DefaultTaskModel {
       importanceType: json['importance_type'],
       serverUpdatedAt: DateTime.parse(json['server_updated_at']),
       isDeleted: json['is_deleted'] ?? false,
+      embedding: parsedEmbedding,
     );
   }
 

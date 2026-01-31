@@ -24,6 +24,9 @@ abstract class ScheduleRepository {
   /// Returns [Left(Failure)] on error
   Future<Either<Failure, void>> deleteTask(String id);
 
+  /// Get a task by ID
+  Future<Either<Failure, TaskModel?>> getTaskById(String id);
+
   /// Toggle task done status
   /// Returns [Right(void)] on success
   /// Returns [Left(Failure)] on error
@@ -40,6 +43,14 @@ abstract class ScheduleRepository {
 
   /// Delete tasks older than a specific date
   Future<Either<Failure, void>> deleteTasksBefore(DateTime date);
+
+  /// Search tasks by query
+  Future<Either<Failure, List<TaskModel>>> searchTasks(String query);
+
+  /// Search default tasks by query
+  Future<Either<Failure, List<DefaultTaskModel>>> searchDefaultTasks(
+    String query,
+  );
 
   /// Get date bounds (first and last task dates)
   Future<Either<Failure, Map<String, DateTime?>>> getDateBounds();
