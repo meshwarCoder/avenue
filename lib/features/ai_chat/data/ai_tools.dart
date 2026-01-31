@@ -81,6 +81,11 @@ class AiTools {
           SchemaType.boolean,
           description: 'Is it a one-time task? Default true',
         ),
+        'importance_type': Schema(
+          SchemaType.string,
+          description: 'Importance level',
+          enumValues: ['Low', 'Medium', 'High'],
+        ),
       },
       requiredProperties: ['name', 'task_date'],
     ),
@@ -114,6 +119,11 @@ class AiTools {
         'completed': Schema(
           SchemaType.boolean,
           description: 'Mark as completed (true) or pending (false)',
+        ),
+        'importance_type': Schema(
+          SchemaType.string,
+          description: 'New importance level',
+          enumValues: ['Low', 'Medium', 'High'],
         ),
       },
       requiredProperties: ['id'],

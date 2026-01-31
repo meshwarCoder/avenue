@@ -16,7 +16,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 5, // Increment version
+      version: 6, // Increment version
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -63,6 +63,11 @@ class DatabaseService {
         'ALTER TABLE default_tasks ADD COLUMN is_dirty INTEGER NOT NULL DEFAULT 0',
       );
     }
+    if (oldVersion < 6) {
+      // Add embedding column for semantic search
+      await db.execute('ALTER TABLE tasks ADD COLUMN embedding TEXT');
+      await db.execute('ALTER TABLE default_tasks ADD COLUMN embedding TEXT');
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -82,7 +87,8 @@ class DatabaseService {
         is_deleted INTEGER NOT NULL DEFAULT 0,
         server_updated_at TEXT NOT NULL,
         importance_type TEXT,
-        is_dirty INTEGER NOT NULL DEFAULT 0
+        is_dirty INTEGER NOT NULL DEFAULT 0,
+        embedding TEXT
       )
     ''');
 
@@ -100,7 +106,8 @@ class DatabaseService {
         importance_type TEXT,
         server_updated_at TEXT NOT NULL,
         is_deleted INTEGER NOT NULL DEFAULT 0,
-        is_dirty INTEGER NOT NULL DEFAULT 0
+        is_dirty INTEGER NOT NULL DEFAULT 0,
+        embedding TEXT
       )
     ''');
 

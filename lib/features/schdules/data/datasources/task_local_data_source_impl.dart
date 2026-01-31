@@ -70,14 +70,17 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
   Future<void> addTask(TaskModel task) async {
     try {
       final db = await databaseService.database;
-      final taskToSave = task.copyWith(serverUpdatedAt: DateTime.now().toUtc());
+      final taskToSave = task.copyWith(
+        serverUpdatedAt: DateTime.now().toUtc(),
+        isDirty: true,
+      );
       await db.insert(
         'tasks',
         taskToSave.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     } catch (e) {
-      throw CacheException(ErrorMessages.addTaskFailed);
+      throw CacheException(e.toString());
     }
   }
 
@@ -85,7 +88,10 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
   Future<void> updateTask(TaskModel task) async {
     try {
       final db = await databaseService.database;
-      final taskToSave = task.copyWith(serverUpdatedAt: DateTime.now().toUtc());
+      final taskToSave = task.copyWith(
+        serverUpdatedAt: DateTime.now().toUtc(),
+        isDirty: true,
+      );
       final count = await db.update(
         'tasks',
         taskToSave.toMap(),
@@ -111,6 +117,7 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
         {
           'is_deleted': 1,
           'server_updated_at': DateTime.now().toUtc().toIso8601String(),
+          'is_dirty': 1,
         },
         where: 'id = ?',
         whereArgs: [id],
@@ -141,7 +148,7 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
       final db = await databaseService.database;
       await db.insert(
         'default_tasks',
-        task.toMap(),
+        task.copyWith(isDirty: true).toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     } catch (e) {

@@ -75,6 +75,21 @@ class _TimelineViewState extends State<TimelineView> {
           return const SizedBox.shrink();
         },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => AddTaskView(
+              initialDate: widget.selectedDate,
+              disableRecurring: true,
+            ),
+          );
+        },
+        backgroundColor: const Color(0xFF004D61),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
 }

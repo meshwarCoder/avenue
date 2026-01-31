@@ -1,9 +1,9 @@
 // Error Messages
 class ErrorMessages {
-  static const String cacheFailure = 'فشل في حفظ أو استرجاع البيانات';
-  static const String taskNotFound = 'المهمة غير موجودة';
-  static const String addTaskFailed = 'فشل في إضافة المهمة';
-  static const String updateTaskFailed = 'فشل في تحديث المهمة';
-  static const String deleteTaskFailed = 'فشل في حذف المهمة';
-  static const String loadTasksFailed = 'فشل في تحميل المهام';
+  static const String cacheFailure = 'Failed to cache data';
+  static const String taskNotFound = 'Task not found';
+  static const String addTaskFailed = 'Failed to add task';
+  static const String updateTaskFailed = 'Failed to update task';
+  static const String deleteTaskFailed = 'Failed to delete task';
+  static const String loadTasksFailed = 'Failed to load tasks';
 }

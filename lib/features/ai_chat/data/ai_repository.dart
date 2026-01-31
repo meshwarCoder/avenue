@@ -27,6 +27,7 @@ class AiRepository {
           'text':
               'You are a helpful assistant for a Task Management App. '
               'Use the available tools to manage tasks. '
+              'Tasks have an "importance_type" attribute which can be "Low", "Medium", or "High". '
               'If you need to know the date, assume the user means relative to ${DateTime.now().toIso8601String()}. '
               'Always confirm actions with a short message.',
         },
