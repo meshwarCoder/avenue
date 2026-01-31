@@ -9,6 +9,12 @@ abstract class ScheduleRepository {
   /// Returns [Left(Failure)] on error
   Future<Either<Failure, List<TaskModel>>> getTasksByDate(DateTime date);
 
+  /// Get all tasks for a specific date range
+  Future<Either<Failure, List<TaskModel>>> getTasksByDateRange(
+    DateTime start,
+    DateTime end,
+  );
+
   /// Add a new task
   /// Returns [Right(void)] on success
   /// Returns [Left(Failure)] on error

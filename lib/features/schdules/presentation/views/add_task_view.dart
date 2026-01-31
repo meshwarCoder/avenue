@@ -36,7 +36,7 @@ class _AddTaskViewState extends State<AddTaskView> {
 
   // New state
   bool _isRecurring = false;
-  List<int> _selectedWeekdays = [];
+  final List<int> _selectedWeekdays = [];
   DateTime? _selectedDate;
 
   @override

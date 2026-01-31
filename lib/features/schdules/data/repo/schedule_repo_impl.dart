@@ -21,7 +21,22 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));
     } catch (e) {
-      return Left(CacheFailure('حدث خطأ غير متوقع'));
+      return Left(CacheFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<TaskModel>>> getTasksByDateRange(
+    DateTime start,
+    DateTime end,
+  ) async {
+    try {
+      final tasks = await localDataSource.getTasksByDateRange(start, end);
+      return Right(tasks);
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.message));
+    } catch (e) {
+      return Left(CacheFailure('Unexpected error occurred'));
     }
   }
 
@@ -33,7 +48,7 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));
     } catch (e) {
-      return Left(CacheFailure('حدث خطأ غير متوقع'));
+      return Left(CacheFailure('Unexpected error occurred'));
     }
   }
 
@@ -45,7 +60,7 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));
     } catch (e) {
-      return Left(CacheFailure('حدث خطأ غير متوقع'));
+      return Left(CacheFailure('Unexpected error occurred'));
     }
   }
 
@@ -57,7 +72,7 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));
     } catch (e) {
-      return Left(CacheFailure('حدث خطأ غير متوقع'));
+      return Left(CacheFailure('Unexpected error occurred'));
     }
   }
 
@@ -66,7 +81,7 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     try {
       final task = await localDataSource.getTaskById(id);
       if (task == null) {
-        return const Left(CacheFailure('المهمة غير موجودة'));
+        return const Left(CacheFailure('Task not found'));
       }
 
       final updatedTask = task.copyWith(completed: !task.completed);
@@ -75,7 +90,7 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));
     } catch (e) {
-      return Left(CacheFailure('حدث خطأ غير متوقع'));
+      return Left(CacheFailure('Unexpected error occurred'));
     }
   }
 
@@ -87,7 +102,7 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));
     } catch (e) {
-      return Left(CacheFailure('حدث خطأ غير متوقع'));
+      return Left(CacheFailure('Unexpected error occurred'));
     }
   }
 
@@ -99,7 +114,7 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));
     } catch (e) {
-      return Left(CacheFailure('حدث خطأ غير متوقع'));
+      return Left(CacheFailure('Unexpected error occurred'));
     }
   }
 
@@ -113,7 +128,7 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));
     } catch (e) {
-      return Left(CacheFailure('حدث خطأ غير متوقع'));
+      return Left(CacheFailure('Unexpected error occurred'));
     }
   }
 
@@ -125,7 +140,7 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));
     } catch (e) {
-      return Left(CacheFailure('حدث خطأ غير متوقع'));
+      return Left(CacheFailure('Unexpected error occurred'));
     }
   }
 

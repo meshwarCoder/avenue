@@ -35,6 +35,38 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
   }
 
   @override
+  Future<List<TaskModel>> getTasksByDateRange(
+    DateTime start,
+    DateTime end,
+  ) async {
+    try {
+      final db = await databaseService.database;
+      final startStr = DateTime(
+        start.year,
+        start.month,
+        start.day,
+      ).toIso8601String().split('T')[0];
+      final endStr = DateTime(
+        end.year,
+        end.month,
+        end.day,
+      ).toIso8601String().split('T')[0];
+
+      final List<Map<String, dynamic>> maps = await db.query(
+        'tasks',
+        where:
+            "date(task_date) >= ? AND date(task_date) <= ? AND is_deleted = 0",
+        whereArgs: [startStr, endStr],
+        orderBy: 'task_date ASC, start_time ASC',
+      );
+
+      return List.generate(maps.length, (i) => TaskModel.fromMap(maps[i]));
+    } catch (e) {
+      throw CacheException(ErrorMessages.loadTasksFailed);
+    }
+  }
+
+  @override
   Future<void> addTask(TaskModel task) async {
     try {
       final db = await databaseService.database;
