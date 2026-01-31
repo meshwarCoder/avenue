@@ -7,6 +7,9 @@ import '../../features/schdules/presentation/cubit/task_cubit.dart';
 import '../../features/ai_chat/data/ai_repository.dart';
 import '../../features/ai_chat/presentation/logic/chat_cubit.dart';
 import '../services/embedding_service.dart';
+import '../../features/weeks/domain/repo/weekly_repository.dart';
+import '../../features/weeks/data/repo/weekly_repo_impl.dart';
+import '../../features/weeks/presentation/cubit/weekly_cubit.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -54,10 +57,14 @@ Future<void> initializeDependencies() async {
       embeddingService: sl(),
     ),
   );
+  sl.registerLazySingleton<WeeklyRepository>(
+    () => WeeklyRepositoryImpl(localDataSource: sl()),
+  );
 
   // Cubits (Factory - new instance each time)
   sl.registerFactory(() => AuthCubit(repository: sl()));
   sl.registerFactory(() => TaskCubit(repository: sl(), syncService: sl()));
+  sl.registerFactory(() => WeeklyCubit(repository: sl()));
 
   // AI Chat
   sl.registerLazySingleton<EmbeddingService>(

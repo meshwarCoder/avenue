@@ -6,6 +6,9 @@ abstract class TaskLocalDataSource {
   /// Throws [CacheException] if operation fails
   Future<List<TaskModel>> getTasksByDate(DateTime date);
 
+  /// Get all tasks for a specific date range
+  Future<List<TaskModel>> getTasksByDateRange(DateTime start, DateTime end);
+
   /// Add a new task
   /// Throws [CacheException] if operation fails
   Future<void> addTask(TaskModel task);

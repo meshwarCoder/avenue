@@ -348,8 +348,7 @@ class TaskCubit extends Cubit<TaskState> {
     await result.fold(
       (failure) async {
         // If failed because not found, create it as a new task (Crystallization)
-        if (failure.message.contains('not found') ||
-            failure.message.contains('غير موجودة')) {
+        if (failure.message.toLowerCase().contains('not found')) {
           print("Crystallizing default task: ${task.name}");
           await addTask(task.copyWith(completed: true));
         } else {

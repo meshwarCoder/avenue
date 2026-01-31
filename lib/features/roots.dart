@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:line/core/di/injection_container.dart';
 import 'package:line/features/schdules/presentation/views/days_view.dart';
 import 'package:line/features/schdules/presentation/views/schedule_view.dart';
+import 'package:line/features/weeks/presentation/cubit/weekly_cubit.dart';
+import 'package:line/features/weeks/presentation/pages/weekly_calendar_page.dart';
 import 'package:liquid_glass_navbar/liquid_glass_navbar.dart';
 
 class Root extends StatefulWidget {
@@ -16,14 +20,17 @@ class _RootState extends State<Root> {
   final items = [
     LiquidGlassNavItem(icon: Icons.calendar_month, label: "Days"),
     LiquidGlassNavItem(icon: Icons.access_time, label: "Today"),
-    LiquidGlassNavItem(icon: Icons.bar_chart, label: "Stats"),
+    LiquidGlassNavItem(icon: Icons.view_week, label: "Week"),
     LiquidGlassNavItem(icon: Icons.person, label: "Profile"),
   ];
 
-  final pages = [
+  final List<Widget> pages = [
     const DaysView(),
     const HomeView(), // This will default to today in HomeView's initState
-    const Center(child: Text("Stats")),
+    BlocProvider(
+      create: (context) => sl<WeeklyCubit>(),
+      child: const WeeklyCalendarPage(),
+    ),
     const Center(child: Text("Profile")),
   ];
 

@@ -32,6 +32,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   google_generative_ai: ^0.4.7
   flutter_markdown: ^0.7.1
+  intl: ^0.20.2
 
 
 
