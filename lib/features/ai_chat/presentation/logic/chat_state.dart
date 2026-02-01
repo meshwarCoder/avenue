@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../ai/ai_orchestrator/ai_action_models.dart';
 
 abstract class ChatState extends Equatable {
   const ChatState();
@@ -32,9 +33,30 @@ class ChatError extends ChatState {
 class ChatMessage extends Equatable {
   final String text;
   final bool isUser;
+  final List<AiAction>? suggestedActions;
+  final bool isExecuted;
 
-  const ChatMessage({required this.text, required this.isUser});
+  const ChatMessage({
+    required this.text,
+    required this.isUser,
+    this.suggestedActions,
+    this.isExecuted = false,
+  });
+
+  ChatMessage copyWith({
+    String? text,
+    bool? isUser,
+    List<AiAction>? suggestedActions,
+    bool? isExecuted,
+  }) {
+    return ChatMessage(
+      text: text ?? this.text,
+      isUser: isUser ?? this.isUser,
+      suggestedActions: suggestedActions ?? this.suggestedActions,
+      isExecuted: isExecuted ?? this.isExecuted,
+    );
+  }
 
   @override
-  List<Object> get props => [text, isUser];
+  List<Object?> get props => [text, isUser, suggestedActions, isExecuted];
 }

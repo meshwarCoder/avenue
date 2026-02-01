@@ -4,7 +4,7 @@ import '../../features/schdules/data/datasources/task_local_data_source_impl.dar
 import '../../features/schdules/data/repo/schedule_repo_impl.dart';
 import '../../features/schdules/domain/repo/schedule_repository.dart';
 import '../../features/schdules/presentation/cubit/task_cubit.dart';
-import '../../features/ai_chat/data/ai_repository.dart';
+import '../../features/ai/ai_orchestrator/ai_orchestrator.dart';
 import '../../features/ai_chat/presentation/logic/chat_cubit.dart';
 import '../services/embedding_service.dart';
 import '../../features/weeks/domain/repo/weekly_repository.dart';
@@ -71,11 +71,11 @@ Future<void> initializeDependencies() async {
     () => EmbeddingService(apiKey: dotenv.env['GEMINI_API_KEY'] ?? ''),
   );
 
-  sl.registerLazySingleton<AiRepository>(
-    () => AiRepository(
+  sl.registerLazySingleton<AiOrchestrator>(
+    () => AiOrchestrator(
       apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
       scheduleRepository: sl(),
     ),
   );
-  sl.registerFactory(() => ChatCubit(aiRepository: sl()));
+  sl.registerFactory(() => ChatCubit(aiOrchestrator: sl()));
 }
