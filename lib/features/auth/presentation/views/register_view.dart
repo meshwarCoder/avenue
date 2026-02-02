@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../cubit/auth_cubit.dart';
+import '../../../../core/widgets/avenue_loading.dart';
 import '../cubit/auth_state.dart';
 
 class RegisterView extends StatefulWidget {
@@ -128,7 +129,11 @@ class _RegisterViewState extends State<RegisterView> {
                               ),
                             ),
                             child: state is AuthLoading
-                                ? const CircularProgressIndicator()
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: AvenueLoadingIndicator(),
+                                  )
                                 : const Text(
                                     "Register",
                                     style: TextStyle(

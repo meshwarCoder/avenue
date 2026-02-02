@@ -304,4 +304,28 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
       }
     }
   }
+
+  @override
+  Future<Either<Failure, void>> deleteDefaultTask(String id) async {
+    try {
+      await localDataSource.deleteDefaultTask(id);
+      return const Right(null);
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.message));
+    } catch (e) {
+      return Left(CacheFailure('Unexpected error occurred'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateDefaultTask(DefaultTaskModel task) async {
+    try {
+      await localDataSource.updateDefaultTask(task);
+      return const Right(null);
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.message));
+    } catch (e) {
+      return Left(CacheFailure('Unexpected error occurred'));
+    }
+  }
 }

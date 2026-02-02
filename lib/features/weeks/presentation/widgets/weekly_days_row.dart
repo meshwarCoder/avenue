@@ -12,27 +12,20 @@ class WeeklyDaysRow extends StatelessWidget {
     required this.onDayTapped,
   });
 
-  // Color Palette matches WeeklyCalendarView
-  static const Color _textColor = Colors.white;
-  static const Color _secondaryTextColor = Colors.white70;
-  static const Color _gridLineColor = Colors.white12;
-  static const Color _currentDayIndicatorColor = Color(0xFF02D7FF);
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onBackground;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF121212).withOpacity(0.8),
-        border: const Border(
-          bottom: BorderSide(color: _gridLineColor, width: 0.5),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+        color: theme.scaffoldBackgroundColor,
+        border: Border(
+          bottom: BorderSide(
+            color: theme.dividerColor.withOpacity(0.1),
+            width: 0.5,
           ),
-        ],
+        ),
       ),
       padding: const EdgeInsets.only(top: 8, bottom: 8),
       child: Row(
@@ -52,8 +45,8 @@ class WeeklyDaysRow extends StatelessWidget {
                           _getDayName(date.weekday),
                           style: TextStyle(
                             color: isToday
-                                ? _currentDayIndicatorColor
-                                : _secondaryTextColor,
+                                ? theme.colorScheme.primary
+                                : onSurface.withOpacity(0.5),
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -62,15 +55,15 @@ class WeeklyDaysRow extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: isToday
-                              ? const BoxDecoration(
-                                  color: _currentDayIndicatorColor,
+                              ? BoxDecoration(
+                                  color: theme.colorScheme.primary,
                                   shape: BoxShape.circle,
                                 )
                               : null,
                           child: Text(
                             date.day.toString(),
                             style: TextStyle(
-                              color: isToday ? Colors.black : _textColor,
+                              color: isToday ? Colors.white : onSurface,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),

@@ -17,6 +17,7 @@ class TaskModel {
   final String? importanceType;
   final bool isDirty;
   final List<double>? embedding;
+  final String? defaultTaskId;
 
   TaskModel({
     String? id,
@@ -34,6 +35,7 @@ class TaskModel {
     this.importanceType,
     this.isDirty = false,
     this.embedding,
+    this.defaultTaskId,
   }) : id = id ?? const Uuid().v4(),
        oneTime = oneTime ?? true,
        isDeleted = isDeleted ?? false,
@@ -59,6 +61,7 @@ class TaskModel {
       'embedding': embedding != null
           ? embedding!.join(',')
           : null, // Store as CSV string locally
+      'default_task_id': defaultTaskId,
     };
   }
 
@@ -92,6 +95,7 @@ class TaskModel {
                 .map((e) => double.parse(e))
                 .toList()
           : null,
+      defaultTaskId: map['default_task_id'],
     );
   }
 
@@ -119,6 +123,7 @@ class TaskModel {
       'server_updated_at': serverUpdatedAt.toIso8601String(),
       'importance_type': importanceType,
       'embedding': embedding, // Supabase handles vector/array
+      'default_task_id': defaultTaskId,
     };
   }
 
@@ -178,6 +183,7 @@ class TaskModel {
           : DateTime.now().toUtc(),
       importanceType: json['importance_type'],
       embedding: parsedEmbedding,
+      defaultTaskId: json['default_task_id'],
     );
   }
 
@@ -212,6 +218,7 @@ class TaskModel {
     required Color color,
     bool oneTime = true,
     String? importanceType,
+    String? defaultTaskId,
   }) {
     final normalizedDate = DateTime(
       taskDate.year,
@@ -242,6 +249,7 @@ class TaskModel {
       colorValue: color.value,
       oneTime: oneTime,
       importanceType: importanceType,
+      defaultTaskId: defaultTaskId,
     );
   }
 
@@ -277,6 +285,7 @@ class TaskModel {
       importanceType: importanceType ?? this.importanceType,
       embedding: embedding ?? this.embedding,
       isDirty: isDirty ?? this.isDirty,
+      defaultTaskId: defaultTaskId ?? this.defaultTaskId,
     );
   }
 

@@ -10,7 +10,9 @@ import 'package:line/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqlite3/open.dart';
+import 'package:line/core/utils/constants.dart';
 import 'package:line/features/schdules/domain/repo/schedule_repository.dart';
+import 'package:line/core/logic/theme_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,16 +55,56 @@ class Line extends StatelessWidget {
       providers: [
         BlocProvider(create: (context) => sl<AuthCubit>()),
         BlocProvider(create: (context) => sl<TaskCubit>()),
+        BlocProvider(create: (context) => sl<ThemeCubit>()),
       ],
-      child: MaterialApp.router(
-        title: 'Line Schedule',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          scaffoldBackgroundColor: const Color(0xFFF5F7FA),
-          useMaterial3: true,
-        ),
-        routerConfig: AppRoutes.router,
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp.router(
+            title: 'Avenue',
+            debugShowCheckedModeBanner: false,
+            themeMode: themeMode,
+            theme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: AppColors.deepPurple,
+                primary: AppColors.deepPurple,
+                secondary: AppColors.slatePurple,
+                tertiary: AppColors.creamTan,
+                surface: AppColors.lightBg,
+                background: AppColors.lightBg,
+              ),
+              scaffoldBackgroundColor: AppColors.lightBg,
+              cardColor: Colors.white,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: AppColors.lightBg,
+                foregroundColor: AppColors.deepPurple,
+                elevation: 0,
+              ),
+            ),
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                brightness: Brightness.dark,
+                seedColor: AppColors.deepPurple,
+                primary: AppColors.slatePurple,
+                secondary: AppColors.deepPurple,
+                tertiary: AppColors.salmonPink,
+                surface: AppColors.darkBg,
+                background: AppColors.darkBg,
+              ),
+              scaffoldBackgroundColor: AppColors.darkBg,
+              cardColor: const Color(
+                0xFF1E1E1E,
+              ), // Slightly lighter than background for depth
+              appBarTheme: const AppBarTheme(
+                backgroundColor: AppColors.darkBg,
+                foregroundColor: Colors.white,
+                elevation: 0,
+              ),
+            ),
+            routerConfig: AppRoutes.router,
+          );
+        },
       ),
     );
   }

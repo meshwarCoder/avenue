@@ -4,6 +4,7 @@ import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
 import '../widgets/task_card.dart';
 import 'add_task_view.dart';
+import '../../../../core/widgets/avenue_loading.dart';
 import '../../data/models/task_model.dart';
 
 class FutureTasksView extends StatefulWidget {
@@ -40,7 +41,7 @@ class _FutureTasksViewState extends State<FutureTasksView> {
       body: BlocBuilder<TaskCubit, TaskState>(
         builder: (context, state) {
           if (state is TaskLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: AvenueLoadingIndicator());
           } else if (state is FutureTasksLoaded) {
             final tasks = state.tasks;
             if (tasks.isEmpty) {

@@ -19,6 +19,7 @@ import '../services/database_service.dart';
 import '../../features/auth/data/repo/auth_repository_impl.dart';
 import '../../features/auth/domain/repo/auth_repository.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
+import '../logic/theme_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -63,8 +64,11 @@ Future<void> initializeDependencies() async {
 
   // Cubits (Factory - new instance each time)
   sl.registerFactory(() => AuthCubit(repository: sl()));
-  sl.registerFactory(() => TaskCubit(repository: sl(), syncService: sl()));
+  sl.registerLazySingleton(
+    () => TaskCubit(repository: sl(), syncService: sl()),
+  );
   sl.registerFactory(() => WeeklyCubit(repository: sl()));
+  sl.registerLazySingleton(() => ThemeCubit());
 
   // AI Chat
   sl.registerLazySingleton<EmbeddingService>(

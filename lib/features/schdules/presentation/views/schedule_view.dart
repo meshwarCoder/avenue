@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:line/core/utils/constants.dart';
 import 'package:line/features/schdules/data/models/task_model.dart';
 import 'package:line/features/schdules/presentation/views/add_task_view.dart';
 import 'package:line/features/schdules/presentation/views/timeline_view.dart';
 import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
 import '../widgets/task_card.dart';
-import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../../core/widgets/avenue_loading.dart';
+import '../../../../core/utils/task_utils.dart';
+import '../../../../core/utils/calendar_utils.dart';
 
 class HomeView extends StatefulWidget {
   final DateTime? selectedDate;
@@ -25,13 +28,15 @@ class _HomeViewState extends State<HomeView> {
     _date = widget.selectedDate ?? DateTime.now();
     _date = DateTime(_date.year, _date.month, _date.day);
 
-    context.read<TaskCubit>().loadTasks(date: _date, shouldSync: false);
+    context.read<TaskCubit>().loadTasks(date: _date);
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           _formatDate(_date),
@@ -42,35 +47,19 @@ class _HomeViewState extends State<HomeView> {
         centerTitle: true,
         leading: Navigator.canPop(context)
             ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: theme.colorScheme.onBackground,
+                ),
                 onPressed: () => Navigator.pop(context),
               )
             : IconButton(
-                icon: const Icon(Icons.logout, color: Colors.redAccent),
-                onPressed: () {
-                  context.read<AuthCubit>().signOut();
-                },
+                icon: const Icon(Icons.sync_rounded),
+                onPressed: () => context.read<TaskCubit>().syncTasks(),
               ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => AddTaskView(initialDate: _date),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.sync),
-            onPressed: () {
-              context.read<TaskCubit>().syncTasks();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.timeline),
+            icon: const Icon(Icons.timeline_rounded),
             onPressed: () {
               Navigator.push(
                 context,
@@ -84,48 +73,100 @@ class _HomeViewState extends State<HomeView> {
       ),
       body: BlocBuilder<TaskCubit, TaskState>(
         builder: (context, state) {
-          // If loading OR the data is for a different date, show loading
-          if (state is TaskLoading ||
-              (state.selectedDate != null && state.selectedDate != _date)) {
-            return const Center(child: CircularProgressIndicator());
+          final isSameDate =
+              state.selectedDate != null &&
+              CalendarUtils.normalize(state.selectedDate!) == _date;
+
+          // Show loader if:
+          // 1. State is explicitly TaskLoading
+          // 2. We are in TaskInitial (just started)
+          // 3. The state belongs to a different date and it's NOT an error/loaded state we can use
+          bool shouldShowLoader = state is TaskLoading || state is TaskInitial;
+          if (!isSameDate && state is! TaskError && state is! TaskLoaded) {
+            shouldShowLoader = true;
+          }
+
+          if (shouldShowLoader) {
+            return const Center(child: AvenueLoadingIndicator());
           } else if (state is TaskLoaded) {
             final tasks = state.tasks;
             final completedTasks = tasks.where((t) => t.completed).length;
             final pendingTasks = tasks.length - completedTasks;
 
-            return Column(
-              children: [
-                _buildSummaryCard(tasks.length, completedTasks, pendingTasks),
-                Expanded(
-                  child: tasks.isEmpty
-                      ? const Center(child: Text('No tasks for this day'))
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: tasks.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 16),
-                          itemBuilder: (context, index) {
-                            final task = tasks[index];
-                            final isPast = _isPastDate(_date);
-                            return TaskCard(
-                              task: task,
-                              height: 100,
-                              onTap: isPast
-                                  ? null
-                                  : () {
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _buildSummaryCard(
+                    tasks.length,
+                    completedTasks,
+                    pendingTasks,
+                  ),
+                ),
+                if (tasks.isEmpty)
+                  const SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.task_alt_rounded,
+                            size: 64,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text('No tasks for today. Relax!'),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final task = tasks[index];
+                        final isPast = _isPastDate(_date);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: TaskCard(
+                            task: task,
+                            height: 100,
+                            onTap: isPast
+                                ? null
+                                : () async {
+                                    if (!TaskUtils.canCompleteTask(task)) {
+                                      TaskUtils.showBlockedActionMessage(
+                                        context,
+                                        "This task hasn't started yet!",
+                                      );
+                                      return;
+                                    }
+
+                                    final confirm = task.completed
+                                        ? await TaskUtils.confirmTaskUndo(
+                                            context,
+                                          )
+                                        : await TaskUtils.confirmTaskCompletion(
+                                            context,
+                                          );
+
+                                    if (confirm && context.mounted) {
                                       context.read<TaskCubit>().toggleTaskDone(
                                         task,
                                       );
-                                    },
-                              onLongPress: isPast
-                                  ? null
-                                  : () {
-                                      _showTaskOptions(context, task);
-                                    },
-                            );
-                          },
-                        ),
-                ),
+                                    }
+                                  },
+                            onLongPress: isPast
+                                ? null
+                                : () {
+                                    _showTaskOptions(context, task);
+                                  },
+                          ),
+                        );
+                      }, childCount: tasks.length),
+                    ),
+                  ),
               ],
             );
           } else if (state is TaskError) {
@@ -142,7 +183,7 @@ class _HomeViewState extends State<HomeView> {
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -155,9 +196,13 @@ class _HomeViewState extends State<HomeView> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildSummaryItem("Total", total.toString(), Colors.blue),
+          _buildSummaryItem("Total", total.toString(), AppColors.slatePurple),
           _buildSummaryItem("Done", completed.toString(), Colors.green),
-          _buildSummaryItem("Pending", pending.toString(), Colors.orange),
+          _buildSummaryItem(
+            "Pending",
+            pending.toString(),
+            AppColors.salmonPink,
+          ),
         ],
       ),
     );
@@ -175,7 +220,13 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).textTheme.bodySmall?.color,
+          ),
+        ),
       ],
     );
   }
@@ -184,13 +235,26 @@ class _HomeViewState extends State<HomeView> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const SizedBox(height: 8),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
           ListTile(
-            leading: const Icon(Icons.edit, color: Colors.blue),
+            leading: const Icon(
+              Icons.edit_rounded,
+              color: AppColors.slatePurple,
+            ),
             title: const Text('Edit Task'),
             onTap: () {
               Navigator.pop(context);
@@ -203,37 +267,72 @@ class _HomeViewState extends State<HomeView> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.delete, color: Colors.red),
+            leading: const Icon(Icons.delete_rounded, color: Colors.redAccent),
             title: const Text('Delete Task'),
             onTap: () {
               Navigator.pop(context);
               _showDeleteConfirmation(context, task);
             },
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
   void _showDeleteConfirmation(BuildContext context, TaskModel task) {
+    final isDefaultTask = !task.oneTime || task.defaultTaskId != null;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Task'),
-        content: const Text('Are you sure you want to delete this task?'),
+        title: Text(isDefaultTask ? 'Delete Recurring Task' : 'Delete Task'),
+        content: Text(
+          isDefaultTask
+              ? 'Would you like to delete this task for today only, or stop it from recurring entirely?'
+              : 'Are you sure you want to delete this task?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () {
-              context.read<TaskCubit>().deleteTask(task.id);
-              Navigator.pop(context);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
+          if (isDefaultTask) ...[
+            TextButton(
+              onPressed: () {
+                context.read<TaskCubit>().hideDefaultTaskForDate(
+                  task.defaultTaskId ?? task.id,
+                  _date,
+                  taskId: task.id,
+                );
+                Navigator.pop(context);
+              },
+              child: const Text('Only Today'),
+            ),
+            TextButton(
+              onPressed: () {
+                context.read<TaskCubit>().deleteDefaultTaskEntirely(
+                  task.defaultTaskId ?? task.id,
+                  taskId: task.id,
+                );
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'Entirely',
+                style: TextStyle(color: Colors.redAccent),
+              ),
+            ),
+          ] else
+            TextButton(
+              onPressed: () {
+                context.read<TaskCubit>().deleteTask(task.id);
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.redAccent),
+              ),
+            ),
         ],
       ),
     );
@@ -253,28 +352,20 @@ class _HomeViewState extends State<HomeView> {
       return "Today";
     }
 
-    final days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final months = [
-      'January',
-      'February',
-      'March',
-      'April',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
       'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return "${days[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}";
   }

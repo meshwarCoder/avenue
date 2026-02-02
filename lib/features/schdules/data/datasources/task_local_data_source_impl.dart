@@ -160,13 +160,49 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
   Future<List<DefaultTaskModel>> getDefaultTasks() async {
     try {
       final db = await databaseService.database;
-      final maps = await db.query('default_tasks');
+      final maps = await db.query('default_tasks', where: 'is_deleted = 0');
       return List.generate(
         maps.length,
         (i) => DefaultTaskModel.fromMap(maps[i]),
       );
     } catch (e) {
       throw CacheException('Failed to load default tasks');
+    }
+  }
+
+  @override
+  Future<void> deleteDefaultTask(String id) async {
+    try {
+      final db = await databaseService.database;
+      await db.update(
+        'default_tasks',
+        {
+          'is_deleted': 1,
+          'server_updated_at': DateTime.now().toUtc().toIso8601String(),
+          'is_dirty': 1,
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e) {
+      throw CacheException('Failed to delete default task');
+    }
+  }
+
+  @override
+  Future<void> updateDefaultTask(DefaultTaskModel task) async {
+    try {
+      final db = await databaseService.database;
+      await db.update(
+        'default_tasks',
+        task
+            .copyWith(isDirty: true, serverUpdatedAt: DateTime.now().toUtc())
+            .toMap(),
+        where: 'id = ?',
+        whereArgs: [task.id],
+      );
+    } catch (e) {
+      throw CacheException('Failed to update default task');
     }
   }
 

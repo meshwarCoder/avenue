@@ -16,7 +16,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 6, // Increment version
+      version: 7, // Increment version
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -68,6 +68,11 @@ class DatabaseService {
       await db.execute('ALTER TABLE tasks ADD COLUMN embedding TEXT');
       await db.execute('ALTER TABLE default_tasks ADD COLUMN embedding TEXT');
     }
+    if (oldVersion < 7) {
+      // Add hide_on for default tasks and default_task_id for regular tasks
+      await db.execute('ALTER TABLE default_tasks ADD COLUMN hide_on TEXT');
+      await db.execute('ALTER TABLE tasks ADD COLUMN default_task_id TEXT');
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -88,7 +93,8 @@ class DatabaseService {
         server_updated_at TEXT NOT NULL,
         importance_type TEXT,
         is_dirty INTEGER NOT NULL DEFAULT 0,
-        embedding TEXT
+        embedding TEXT,
+        default_task_id TEXT
       )
     ''');
 
@@ -107,7 +113,8 @@ class DatabaseService {
         server_updated_at TEXT NOT NULL,
         is_deleted INTEGER NOT NULL DEFAULT 0,
         is_dirty INTEGER NOT NULL DEFAULT 0,
-        embedding TEXT
+        embedding TEXT,
+        hide_on TEXT
       )
     ''');
 

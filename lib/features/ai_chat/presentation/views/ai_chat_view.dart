@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:line/core/utils/constants.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../../../core/di/injection_container.dart';
 import '../logic/chat_cubit.dart';
@@ -10,13 +11,28 @@ class AiChatView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return BlocProvider(
       create: (context) => sl<ChatCubit>(),
       child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          title: const Text('AI Assistant'),
-          backgroundColor: const Color(0xFF004D61),
-          foregroundColor: Colors.white,
+          title: const Text(
+            'AI Assistant',
+            style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2),
+          ),
+          backgroundColor: theme.scaffoldBackgroundColor,
+          foregroundColor: theme.colorScheme.onBackground,
+          elevation: 0,
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.history_rounded),
+              onPressed: () {}, // Future history feature
+            ),
+          ],
         ),
         body: Column(
           children: [
@@ -24,107 +40,41 @@ class AiChatView extends StatelessWidget {
               child: BlocBuilder<ChatCubit, ChatState>(
                 builder: (context, state) {
                   List<ChatMessage> messages = [];
-                  if (state is ChatLoaded) {
-                    messages = state.messages;
-                  }
+                  if (state is ChatLoaded) messages = state.messages;
 
                   if (messages.isEmpty && state is! ChatError) {
-                    return const Center(
-                      child: Text(
-                        'Hi! I can help you manage your tasks.\nTry "Add a meeting tomorrow at 10am"',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    );
+                    return _buildEmptyState(theme, isDark);
                   }
 
                   return ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 24,
+                    ),
+                    reverse: false,
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final msg = messages[index];
-                      return Align(
-                        alignment: msg.isUser
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: msg.isUser
-                                ? const Color(0xFF004D61)
-                                : Colors.grey[200],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.8,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              msg.isUser
-                                  ? Text(
-                                      msg.text,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : MarkdownBody(
-                                      data: msg.text,
-                                      styleSheet: MarkdownStyleSheet(
-                                        p: const TextStyle(
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                    ),
-                              if (msg.suggestedActions != null &&
-                                  !msg.isExecuted)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: ElevatedButton(
-                                    onPressed: () => context
-                                        .read<ChatCubit>()
-                                        .confirmAllActions(index),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF004D61),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      msg.suggestedActions!.length == 1
-                                          ? 'Confirm'
-                                          : 'Confirm ${msg.suggestedActions!.length} Actions',
-                                    ),
-                                  ),
-                                ),
-                              if (msg.isExecuted)
-                                const Padding(
-                                  padding: EdgeInsets.only(top: 8),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle,
-                                        color: Colors.green,
-                                        size: 16,
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        'Executed',
-                                        style: TextStyle(
-                                          color: Colors.green,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
+                      return TweenAnimationBuilder<double>(
+                        key: ValueKey(msg.text + index.toString()),
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, child) {
+                          return Transform.translate(
+                            offset: Offset(0, 20 * (1 - value)),
+                            child: Opacity(
+                              opacity: value,
+                              child: _buildMessageBubble(
+                                context,
+                                msg,
+                                index,
+                                theme,
+                                isDark,
+                              ),
+                            ),
+                          );
+                        },
                       );
                     },
                   );
@@ -132,6 +82,158 @@ class AiChatView extends StatelessWidget {
               ),
             ),
             const _ChatInput(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme, bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : AppColors.deepPurple.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              size: 48,
+              color: isDark ? Colors.white70 : AppColors.deepPurple,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'How can I help you today?',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppColors.deepPurple,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48),
+            child: Text(
+              'Try "Plan my week" or "Add a gym session every Monday at 6pm"',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.slatePurple.withOpacity(0.6),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(
+    BuildContext context,
+    ChatMessage msg,
+    int index,
+    ThemeData theme,
+    bool isDark,
+  ) {
+    return Align(
+      alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: msg.isUser
+              ? AppColors.deepPurple
+              : (isDark ? Colors.grey[900] : Colors.grey[100]),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: Radius.circular(msg.isUser ? 20 : 4),
+            bottomRight: Radius.circular(msg.isUser ? 4 : 20),
+          ),
+          boxShadow: [
+            if (!msg.isUser)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+          ],
+        ),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (msg.isUser)
+              Text(
+                msg.text,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              )
+            else
+              MarkdownBody(
+                data: msg.text,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
+                  strong: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            if (msg.suggestedActions != null && !msg.isExecuted) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () =>
+                      context.read<ChatCubit>().confirmAllActions(index),
+                  icon: const Icon(Icons.done_all_rounded, size: 18),
+                  label: Text(
+                    msg.suggestedActions!.length == 1
+                        ? 'Confirm Action'
+                        : 'Confirm All (${msg.suggestedActions!.length})',
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.salmonPink,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            if (msg.isExecuted) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Perfect! All set.',
+                    style: TextStyle(
+                      color: Colors.green[600],
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -152,34 +254,59 @@ class _ChatInputState extends State<_ChatInput> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 10,
-          ),
-        ],
+        color: theme.scaffoldBackgroundColor,
+        border: Border(
+          top: BorderSide(color: theme.dividerColor.withOpacity(0.1)),
+        ),
       ),
       child: Row(
         children: [
           Expanded(
-            child: TextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              decoration: const InputDecoration(
-                hintText: 'Type a message...',
-                border: InputBorder.none,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey[900] : Colors.grey[100],
+                borderRadius: BorderRadius.circular(28),
               ),
-              onSubmitted: (_) => _sendMessage(),
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                decoration: const InputDecoration(
+                  hintText: 'Message Assistant...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(fontSize: 15),
+                ),
+                style: const TextStyle(fontSize: 15),
+                onSubmitted: (_) => _sendMessage(),
+              ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.send, color: Color(0xFF004D61)),
-            onPressed: _sendMessage,
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: _sendMessage,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: const BoxDecoration(
+                color: AppColors.deepPurple,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_upward_rounded,
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),

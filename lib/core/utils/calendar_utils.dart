@@ -4,11 +4,12 @@ class CalendarUtils {
   /// Returns the Monday of the week for the given [date].
   /// Week starts on Monday (1).
   static DateTime getStartOfWeek(DateTime date) {
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-    ).subtract(Duration(days: date.weekday - 1));
+    return normalize(date).subtract(Duration(days: date.weekday - 1));
+  }
+
+  /// Returns the date at 00:00:00 local time.
+  static DateTime normalize(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
   }
 
   static DateTime getNextWeek(DateTime currentMonday) {

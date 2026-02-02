@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../schdules/data/models/task_model.dart';
+import '../../../schdules/presentation/views/add_task_view.dart';
 import '../cubit/weekly_state.dart';
 import 'weekly_task_item.dart';
+import '../../../../core/utils/task_utils.dart';
 
 class WeeklyGrid extends StatelessWidget {
   final List<DateTime> days;
@@ -15,33 +17,27 @@ class WeeklyGrid extends StatelessWidget {
     required this.scrollController,
   });
 
-  // Color Palette matches WeeklyCalendarView
-  static const Color _secondaryTextColor = Colors.white70;
-  static const Color _gridLineColor = Colors.white12;
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final dayWidth = (screenWidth - 60) / 7;
 
-    return Expanded(
-      child: SingleChildScrollView(
-        controller: scrollController,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTimeColumn(),
-              Expanded(child: _buildDaysGrid(days, state, dayWidth)),
-            ],
-          ),
+    return SingleChildScrollView(
+      controller: scrollController,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTimeColumn(context),
+            Expanded(child: _buildDaysGrid(context, days, state, dayWidth)),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTimeColumn() {
+  Widget _buildTimeColumn(BuildContext context) {
     return SizedBox(
       width: 60.0,
       child: Column(
@@ -53,8 +49,10 @@ class WeeklyGrid extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 30.0),
                 child: Text(
                   '${index.toString().padLeft(2, '0')}:00',
-                  style: const TextStyle(
-                    color: _secondaryTextColor,
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onBackground.withOpacity(0.5),
                     fontSize: 10,
                   ),
                 ),
@@ -67,6 +65,7 @@ class WeeklyGrid extends StatelessWidget {
   }
 
   Widget _buildDaysGrid(
+    BuildContext context,
     List<DateTime> weekDays,
     WeeklyState state,
     double dayWidth,
@@ -80,11 +79,15 @@ class WeeklyGrid extends StatelessWidget {
           final localTaskDate = task.taskDate.toLocal();
           return localTaskDate.year == date.year &&
               localTaskDate.month == date.month &&
-              localTaskDate.day == date.day;
+              localTaskDate.day == date.day &&
+              task.startTime != null &&
+              task.endTime != null;
         }).toList();
 
         if (dayTasks.isEmpty) {
-          return Expanded(child: Stack(children: [_buildGridLines()]));
+          return Expanded(
+            child: Stack(children: [_buildGridLines(context, date)]),
+          );
         }
 
         final groups = _groupOverlappingTasks(dayTasks);
@@ -93,7 +96,7 @@ class WeeklyGrid extends StatelessWidget {
           child: Stack(
             children: [
               // Grid Lines Column
-              _buildGridLines(),
+              _buildGridLines(context, date),
               // Tasks
               ...groups.expand((group) {
                 final columns = _assignColumns(group);
@@ -116,16 +119,44 @@ class WeeklyGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildGridLines() {
+  Widget _buildGridLines(BuildContext context, DateTime date) {
     return Column(
       children: List.generate(
         24,
-        (_) => Container(
-          height: 60,
-          decoration: const BoxDecoration(
-            border: Border(
-              right: BorderSide(color: _gridLineColor, width: 0.5),
-              bottom: BorderSide(color: _gridLineColor, width: 0.5),
+        (hour) => GestureDetector(
+          onTap: () {
+            if (TaskUtils.isPast(date, TimeOfDay(hour: hour, minute: 0))) {
+              TaskUtils.showBlockedActionMessage(
+                context,
+                "Cannot schedule tasks in the past!",
+              );
+              return;
+            }
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => AddTaskView(
+                initialDate: date,
+                initialStartTime: TimeOfDay(hour: hour, minute: 0),
+                initialEndTime: TimeOfDay(hour: (hour + 1) % 24, minute: 0),
+                disableRecurring: true,
+              ),
+            );
+          },
+          child: Container(
+            height: 60,
+            decoration: BoxDecoration(
+              border: Border(
+                right: BorderSide(
+                  color: Theme.of(context).dividerColor.withOpacity(0.1),
+                  width: 0.5,
+                ),
+                bottom: BorderSide(
+                  color: Theme.of(context).dividerColor.withOpacity(0.1),
+                  width: 0.5,
+                ),
+              ),
             ),
           ),
         ),

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
+import '../../../../core/widgets/avenue_loading.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -119,7 +120,11 @@ class _LoginViewState extends State<LoginView> {
                               ),
                             ),
                             child: state is AuthLoading
-                                ? const CircularProgressIndicator()
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: AvenueLoadingIndicator(),
+                                  )
                                 : const Text(
                                     "Login",
                                     style: TextStyle(

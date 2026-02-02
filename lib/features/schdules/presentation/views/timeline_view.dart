@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:line/features/schdules/presentation/views/add_task_view.dart';
 import 'package:line/features/schdules/presentation/widgets/task_card.dart';
+import 'package:line/features/ai_chat/presentation/widgets/animated_ai_button.dart';
+import 'package:line/core/widgets/animated_task_button.dart';
+import '../../../../core/widgets/avenue_loading.dart';
+import '../../../../core/utils/task_utils.dart';
 import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
 import '../../data/models/task_model.dart';
+import 'package:line/core/utils/constants.dart';
 
 class TimelineView extends StatefulWidget {
   final DateTime selectedDate;
@@ -15,8 +21,8 @@ class TimelineView extends StatefulWidget {
 }
 
 class _TimelineViewState extends State<TimelineView> {
-  final double hourHeight = 120.0;
-  final double timeColumnWidth = 60.0;
+  final double hourHeight = 140.0;
+  final double timeColumnWidth = 72.0;
 
   @override
   void initState() {
@@ -26,8 +32,9 @@ class _TimelineViewState extends State<TimelineView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           "Timeline",
@@ -36,33 +43,17 @@ class _TimelineViewState extends State<TimelineView> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => AddTaskView(
-                  initialDate: widget.selectedDate,
-                  disableRecurring: true,
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: BlocBuilder<TaskCubit, TaskState>(
         builder: (context, state) {
-          // If loading OR the data is for a different date, show loading
+          Widget content;
           if (state is TaskLoading ||
               (state.selectedDate != null &&
                   state.selectedDate != widget.selectedDate)) {
-            return const Center(child: CircularProgressIndicator());
+            content = const Center(child: AvenueLoadingIndicator());
           } else if (state is TaskLoaded) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 20),
+            content = SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 20, bottom: 100),
               child: TimelineLayout(
                 tasks: state.tasks,
                 hourHeight: hourHeight,
@@ -70,25 +61,44 @@ class _TimelineViewState extends State<TimelineView> {
               ),
             );
           } else if (state is TaskError) {
-            return Center(child: Text(state.message));
+            content = Center(child: Text(state.message));
+          } else {
+            content = const SizedBox.shrink();
           }
-          return const SizedBox.shrink();
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => AddTaskView(
-              initialDate: widget.selectedDate,
-              disableRecurring: true,
-            ),
+
+          return Stack(
+            children: [
+              content,
+
+              // AI Chat Button
+              Positioned(
+                right: 0,
+                bottom: 100, // Adjusted for being inside body
+                child: AnimatedAIChatButton(
+                  visible: true,
+                  onTap: () => context.push('/ai-chat'),
+                ),
+              ),
+
+              // New Task Button
+              Positioned(
+                right: 0,
+                bottom: 24,
+                child: AnimatedTaskButton(
+                  visible: true,
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => const AddTaskView(),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
-        backgroundColor: const Color(0xFF004D61),
-        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -108,6 +118,7 @@ class TimelineLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     const double startHour = 0.0;
     const double endHour = 24.0;
     final totalHours = endHour - startHour;
@@ -128,6 +139,7 @@ class TimelineLayout extends StatelessWidget {
                 startHour: startHour,
                 endHour: endHour,
                 hourHeight: hourHeight,
+                theme: theme,
               ),
             ),
           ),
@@ -145,11 +157,15 @@ class TimelineLayout extends StatelessWidget {
                 left: timeColumnWidth - 13,
                 top: startTop - 3,
                 child: Container(
-                  width: 6,
-                  height: 6,
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(
                     color: task.color,
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: theme.scaffoldBackgroundColor,
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -158,37 +174,59 @@ class TimelineLayout extends StatelessWidget {
                 left: timeColumnWidth - 13,
                 top: endTop - 3,
                 child: Container(
-                  width: 6,
-                  height: 6,
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(
                     color: task.color,
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: theme.scaffoldBackgroundColor,
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
               Positioned(
                 left: timeColumnWidth - 5,
                 top: startTop - 10,
-                child: Text(
-                  _formatTime(task.startTimeOfDay!),
-                  style: TextStyle(
-                    color: task.color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    backgroundColor: const Color(0xFFF5F7FA),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _formatTime(task.startTimeOfDay!),
+                    style: TextStyle(
+                      color: task.color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
               Positioned(
                 left: timeColumnWidth - 5,
                 top: endTop - 10,
-                child: Text(
-                  _formatTime(task.endTimeOfDay!),
-                  style: TextStyle(
-                    color: task.color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    backgroundColor: const Color(0xFFF5F7FA),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _formatTime(task.endTimeOfDay!),
+                    style: TextStyle(
+                      color: task.color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -227,8 +265,22 @@ class TimelineLayout extends StatelessWidget {
                   height: height,
                   onTap: _isNotToday(task.taskDate)
                       ? null
-                      : () {
-                          context.read<TaskCubit>().toggleTaskDone(task);
+                      : () async {
+                          if (!TaskUtils.canCompleteTask(task)) {
+                            TaskUtils.showBlockedActionMessage(
+                              context,
+                              "This task hasn't started yet!",
+                            );
+                            return;
+                          }
+
+                          final confirm = task.completed
+                              ? await TaskUtils.confirmTaskUndo(context)
+                              : await TaskUtils.confirmTaskCompletion(context);
+
+                          if (confirm && context.mounted) {
+                            context.read<TaskCubit>().toggleTaskDone(task);
+                          }
                         },
                   onLongPress: _isNotToday(task.taskDate)
                       ? null
@@ -385,21 +437,24 @@ class TimeColumnPainter extends CustomPainter {
   final double startHour;
   final double endHour;
   final double hourHeight;
+  final ThemeData theme;
 
   TimeColumnPainter({
     required this.startHour,
     required this.endHour,
     required this.hourHeight,
+    required this.theme,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    final isDark = theme.brightness == Brightness.dark;
     final linePaint = Paint()
-      ..color = Colors.blue.shade100
-      ..strokeWidth = 2;
+      ..color = (isDark ? Colors.white : AppColors.slatePurple).withOpacity(0.1)
+      ..strokeWidth = 1.5;
 
     final dotPaint = Paint()
-      ..color = Colors.blue
+      ..color = AppColors.salmonPink.withOpacity(0.5)
       ..style = PaintingStyle.fill;
 
     final textPainter = TextPainter(
@@ -417,15 +472,15 @@ class TimeColumnPainter extends CustomPainter {
       final double y = i * hourHeight;
       final int hour = (startHour + i).toInt();
 
-      canvas.drawCircle(Offset(size.width - 10, y), 4, dotPaint);
+      canvas.drawCircle(Offset(size.width - 10, y), 3, dotPaint);
 
       final timeText = '${hour.toString().padLeft(2, '0')}:00';
       textPainter.text = TextSpan(
         text: timeText,
         style: TextStyle(
-          color: Colors.grey.shade600,
+          color: theme.colorScheme.onBackground.withOpacity(0.4),
           fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
       );
       textPainter.layout();

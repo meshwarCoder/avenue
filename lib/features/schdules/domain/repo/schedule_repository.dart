@@ -60,4 +60,10 @@ abstract class ScheduleRepository {
 
   /// Get date bounds (first and last task dates)
   Future<Either<Failure, Map<String, DateTime?>>> getDateBounds();
+
+  /// Delete a default task entirely
+  Future<Either<Failure, void>> deleteDefaultTask(String id);
+
+  /// Update a default task (e.g., for hiding on specific dates)
+  Future<Either<Failure, void>> updateDefaultTask(DefaultTaskModel task);
 }

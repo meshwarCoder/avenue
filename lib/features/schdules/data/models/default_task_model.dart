@@ -16,6 +16,7 @@ class DefaultTaskModel {
   final bool isDeleted;
   final bool isDirty;
   final List<double>? embedding;
+  final List<DateTime> hideOn;
 
   DefaultTaskModel({
     String? id,
@@ -31,8 +32,10 @@ class DefaultTaskModel {
     this.isDeleted = false,
     this.isDirty = false,
     this.embedding,
+    List<DateTime>? hideOn,
   }) : id = id ?? const Uuid().v4(),
-       serverUpdatedAt = serverUpdatedAt ?? DateTime.now().toUtc();
+       serverUpdatedAt = serverUpdatedAt ?? DateTime.now().toUtc(),
+       hideOn = hideOn ?? [];
 
   DefaultTaskModel copyWith({
     String? name,
@@ -47,6 +50,7 @@ class DefaultTaskModel {
     bool? isDeleted,
     bool? isDirty,
     List<double>? embedding,
+    List<DateTime>? hideOn,
   }) {
     return DefaultTaskModel(
       id: id,
@@ -62,6 +66,7 @@ class DefaultTaskModel {
       isDeleted: isDeleted ?? this.isDeleted,
       isDirty: isDirty ?? this.isDirty,
       embedding: embedding ?? this.embedding,
+      hideOn: hideOn ?? this.hideOn,
     );
   }
 
@@ -81,6 +86,7 @@ class DefaultTaskModel {
       'is_deleted': isDeleted ? 1 : 0,
       'is_dirty': isDirty ? 1 : 0,
       'embedding': embedding != null ? embedding!.join(',') : null,
+      'hide_on': hideOn.map((d) => d.toIso8601String().split('T')[0]).join(','),
     };
   }
 
@@ -112,6 +118,12 @@ class DefaultTaskModel {
                 .map((e) => double.parse(e))
                 .toList()
           : null,
+      hideOn: map['hide_on'] != null && (map['hide_on'] as String).isNotEmpty
+          ? (map['hide_on'] as String)
+                .split(',')
+                .map((e) => DateTime.parse(e))
+                .toList()
+          : [],
     );
   }
 
@@ -131,6 +143,7 @@ class DefaultTaskModel {
       'server_updated_at': serverUpdatedAt.toIso8601String(),
       'is_deleted': isDeleted,
       'embedding': embedding,
+      'hide_on': hideOn.map((d) => d.toIso8601String().split('T')[0]).toList(),
     };
   }
 
@@ -174,6 +187,9 @@ class DefaultTaskModel {
       serverUpdatedAt: DateTime.parse(json['server_updated_at']),
       isDeleted: json['is_deleted'] ?? false,
       embedding: parsedEmbedding,
+      hideOn: json['hide_on'] != null
+          ? (json['hide_on'] as List).map((e) => DateTime.parse(e)).toList()
+          : [],
     );
   }
 

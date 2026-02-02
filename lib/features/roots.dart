@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:line/core/di/injection_container.dart';
-import 'package:line/features/schdules/presentation/views/days_view.dart';
 import 'package:line/features/schdules/presentation/views/schedule_view.dart';
 import 'package:line/features/weeks/presentation/cubit/weekly_cubit.dart';
 import 'package:line/features/weeks/presentation/pages/weekly_calendar_page.dart';
-import 'package:liquid_glass_navbar/liquid_glass_navbar.dart';
+import 'package:line/features/ai_chat/presentation/widgets/animated_ai_button.dart';
+import 'package:line/features/settings/presentation/views/settings_view.dart';
+import 'package:go_router/go_router.dart';
+import '../core/di/injection_container.dart';
+import 'package:line/features/schdules/presentation/views/add_task_view.dart';
+import '../core/widgets/animated_task_button.dart';
+import '../core/widgets/avenue_nav_bar.dart';
 
 class Root extends StatefulWidget {
   const Root({super.key});
@@ -14,44 +19,120 @@ class Root extends StatefulWidget {
   State<Root> createState() => _RootState();
 }
 
-class _RootState extends State<Root> {
-  int _index = 1; // Default to Today (HomeView)
+class _RootState extends State<Root> with SingleTickerProviderStateMixin {
+  int _index = 0; // Default to Today (HomeView)
+  bool _isNavVisible = true;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  late final PageController _pageController = PageController(
+    initialPage: _index,
+  );
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   final items = [
-    LiquidGlassNavItem(icon: Icons.calendar_month, label: "Days"),
-    LiquidGlassNavItem(icon: Icons.access_time, label: "Today"),
-    LiquidGlassNavItem(icon: Icons.view_week, label: "Week"),
-    LiquidGlassNavItem(icon: Icons.person, label: "Profile"),
+    AvenueNavBarItem(icon: Icons.calendar_today_rounded, label: "Today"),
+    AvenueNavBarItem(icon: Icons.calendar_view_week_rounded, label: "Week"),
+    AvenueNavBarItem(icon: Icons.settings_rounded, label: "Settings"),
   ];
 
-  final List<Widget> pages = [
-    const DaysView(),
-    const HomeView(), // This will default to today in HomeView's initState
+  late final List<Widget> pages = [
+    const HomeView(),
     BlocProvider(
       create: (context) => sl<WeeklyCubit>(),
       child: const WeeklyCalendarPage(),
     ),
-    const Center(child: Text("Profile")),
+    const SettingsView(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true, // Important for floating nav bars
-      body: LiquidGlassNavBar(
-        bubbleColor: Colors.white,
-        backgroundColor: const Color(0xFF004D61), // Using app theme color
-        backgroundOpacity: 0.9,
-        itemColor: Colors.white,
-        currentIndex: _index,
-        onPageChanged: (i) => setState(() => _index = i),
-        pages: pages,
-        items: items,
-        bottomPadding: 16,
-        horizontalPadding: 16,
-        bubbleBorderWidth: 1,
-        bubbleOpacity: 0.4,
+      extendBody: true,
+      body: NotificationListener<UserScrollNotification>(
+        onNotification: (notification) {
+          if (notification.direction == ScrollDirection.reverse) {
+            if (_isNavVisible) setState(() => _isNavVisible = false);
+          } else if (notification.direction == ScrollDirection.forward) {
+            if (!_isNavVisible) setState(() => _isNavVisible = true);
+          }
+          return false;
+        },
+        child: Stack(
+          children: [
+            PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() => _index = index);
+              },
+              children: pages,
+            ),
+
+            // AI Chat Button (Middle)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+              right: _isNavVisible ? 0 : -120,
+              bottom: 186, // 110 (task) + 60 (task height) + 16 (spacing)
+              child: AnimatedAIChatButton(
+                visible: true,
+                onTap: () => context.push('/ai-chat'),
+              ),
+            ),
+
+            // New Task Button (Bottom)
+            AnimatedPositioned(
+              duration: _isNavVisible
+                  ? const Duration(milliseconds: 600) // Slower slide in
+                  : const Duration(milliseconds: 250), // Faster slide out
+              curve: Curves.easeOutCubic,
+              right: _isNavVisible ? 0 : -120,
+              bottom: 110,
+              child: AnimatedTaskButton(
+                visible: true,
+                onTap: () => _showAddTask(context),
+              ),
+            ),
+
+            // Navigation Bar with Slide Down Animation
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutCubic,
+              left: 0,
+              right: 0,
+              bottom: _isNavVisible ? 0 : -200, // Slide down out of screen
+              child: AvenueNavBar(
+                currentIndex: _index,
+                items: items,
+                onTap: (i) {
+                  _pageController.animateToPage(
+                    i,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeOutCubic,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  void _showAddTask(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AddTaskView(),
     );
   }
 }

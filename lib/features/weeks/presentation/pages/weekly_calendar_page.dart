@@ -4,6 +4,8 @@ import '../../../../../core/utils/calendar_utils.dart';
 import '../../../schdules/presentation/views/schedule_view.dart';
 import '../cubit/weekly_cubit.dart';
 import '../cubit/weekly_state.dart';
+import '../../../schdules/presentation/cubit/task_cubit.dart';
+import '../../../schdules/presentation/cubit/task_state.dart';
 import '../widgets/weekly_header.dart';
 import '../widgets/weekly_days_row.dart';
 import '../widgets/weekly_grid.dart';
@@ -38,54 +40,70 @@ class _WeeklyCalendarPageState extends State<WeeklyCalendarPage> {
   @override
   Widget build(BuildContext context) {
     final days = List.generate(7, (i) => _currentMonday.add(Duration(days: i)));
+    final theme = Theme.of(context); // Keep theme as it's used
 
     return BlocBuilder<WeeklyCubit, WeeklyState>(
       builder: (context, state) {
         return Scaffold(
-          backgroundColor: const Color(0xFF001A20),
+          backgroundColor: theme.scaffoldBackgroundColor,
           body: SafeArea(
-            child: Column(
-              children: [
-                // Header: Navigation and Month/Year range
-                WeeklyHeader(
-                  currentMonday: _currentMonday,
-                  firstTaskDate: state.firstTaskDate,
-                  lastTaskDate: state.lastTaskDate,
-                  onWeekChanged: (newMonday) {
-                    setState(() {
-                      _currentMonday = newMonday;
-                    });
-                    context.read<WeeklyCubit>().loadWeeklyTasks(newMonday);
-                  },
-                ),
+            bottom: false,
+            child: BlocListener<TaskCubit, TaskState>(
+              listener: (context, taskState) {
+                // If a task was added, updated, or deleted, reload the week
+                if (taskState is TaskLoaded) {
+                  context.read<WeeklyCubit>().loadWeeklyTasks(_currentMonday);
+                }
+              },
+              child: Column(
+                children: [
+                  // Header: Navigation and Month/Year range
+                  WeeklyHeader(
+                    currentMonday: _currentMonday,
+                    firstTaskDate: state.firstTaskDate,
+                    lastTaskDate: state.lastTaskDate,
+                    onWeekChanged: (newMonday) {
+                      setState(() {
+                        _currentMonday = newMonday;
+                      });
+                      context.read<WeeklyCubit>().loadWeeklyTasks(newMonday);
+                    },
+                  ),
 
-                // Days Row: Clickable day labels (Mon, Tue, etc.)
-                WeeklyDaysRow(
-                  days: days,
-                  currentMonday: _currentMonday,
-                  onDayTapped: (date) async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => HomeView(selectedDate: date),
-                      ),
-                    );
-                    // Reload weekly tasks upon return to ensure UI is in sync
-                    if (mounted) {
-                      context.read<WeeklyCubit>().loadWeeklyTasks(
-                        _currentMonday,
-                      );
-                    }
-                  },
-                ),
+                  // Days Row: Clickable day labels (Mon, Tue, etc.)
+                  WeeklyDaysRow(
+                    days: days,
+                    currentMonday: _currentMonday,
+                    onDayTapped: (date) async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BlocProvider.value(
+                            value: context.read<TaskCubit>(),
+                            child: HomeView(selectedDate: date),
+                          ),
+                        ),
+                      ).then((_) {
+                        // Reload weekly tasks upon return to ensure UI is in sync
+                        if (mounted) {
+                          context.read<WeeklyCubit>().loadWeeklyTasks(
+                            _currentMonday,
+                          );
+                        }
+                      });
+                    },
+                  ),
 
-                // Main Grid: Scrollable area with time sidebar and tasks
-                WeeklyGrid(
-                  days: days,
-                  state: state,
-                  scrollController: _scrollController,
-                ),
-              ],
+                  // Main Grid: Scrollable area with time sidebar and tasks
+                  Expanded(
+                    child: WeeklyGrid(
+                      days: days,
+                      state: state,
+                      scrollController: _scrollController,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

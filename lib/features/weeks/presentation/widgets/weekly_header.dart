@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../core/utils/calendar_utils.dart';
 
 class WeeklyHeader extends StatelessWidget {
   final DateTime currentMonday;
@@ -14,74 +15,115 @@ class WeeklyHeader extends StatelessWidget {
     this.lastTaskDate,
   });
 
-  // Color Palette matches WeeklyCalendarView
-  static const Color _textColor = Colors.white;
-  static const Color _secondaryTextColor = Colors.white70;
-
   @override
   Widget build(BuildContext context) {
     final curSunday = currentMonday.add(const Duration(days: 6));
-    final canGoPrev =
-        firstTaskDate == null ||
-        currentMonday
-            .subtract(const Duration(days: 7))
-            .isAfter(firstTaskDate!.subtract(const Duration(days: 1)));
-    final canGoNext =
-        lastTaskDate == null ||
-        curSunday
-            .add(const Duration(days: 1))
-            .isBefore(lastTaskDate!.add(const Duration(days: 1)));
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onBackground;
+    final today = CalendarUtils.getStartOfWeek(DateTime.now());
+
+    final isPast = currentMonday.isBefore(today);
+    final isFuture = currentMonday.isAfter(today);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Text(
-                _getMonthYearRange(currentMonday, curSunday),
-                style: const TextStyle(
-                  color: _textColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+          // Month Range
+          Expanded(
+            child: Text(
+              _getMonthYearRange(currentMonday, curSunday),
+              style: TextStyle(
+                color: onSurface,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
-            ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
+
+          // Navigation Row
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios,
-                  size: 18,
-                  color: canGoPrev
-                      ? _textColor
-                      : _secondaryTextColor.withOpacity(0.3),
-                ),
-                onPressed: canGoPrev
-                    ? () => onWeekChanged(
-                        currentMonday.subtract(const Duration(days: 7)),
-                      )
-                    : null,
+              // Future Today Button (Left of arrows)
+              Visibility(
+                visible: isFuture,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: _buildTodayButton(context, today),
               ),
-              IconButton(
-                icon: Icon(
-                  Icons.arrow_forward_ios,
-                  size: 18,
-                  color: canGoNext
-                      ? _textColor
-                      : _secondaryTextColor.withOpacity(0.3),
+              const SizedBox(width: 8),
+
+              // Arrows Container
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.dividerColor.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                onPressed: canGoNext
-                    ? () => onWeekChanged(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.arrow_back_ios_new,
+                        size: 16,
+                        color: onSurface,
+                      ),
+                      onPressed: () => onWeekChanged(
+                        currentMonday.subtract(const Duration(days: 7)),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 20,
+                      color: theme.dividerColor.withOpacity(0.1),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: onSurface,
+                      ),
+                      onPressed: () => onWeekChanged(
                         currentMonday.add(const Duration(days: 7)),
-                      )
-                    : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+              // Past Today Button (Right of arrows)
+              Visibility(
+                visible: isPast,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: _buildTodayButton(context, today),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTodayButton(BuildContext context, DateTime today) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: IconButton(
+        icon: Icon(Icons.today, size: 18, color: theme.colorScheme.primary),
+        onPressed: () => onWeekChanged(today),
+        tooltip: 'Back to Today',
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        padding: EdgeInsets.zero,
       ),
     );
   }

@@ -55,6 +55,21 @@ class WeeklyCubit extends Cubit<WeeklyState> {
 
     final sunday = monday.add(const Duration(days: 6));
 
+    // Smart Skip: If the entire week is before the first recorded task,
+    // we skip the range fetch but still allow recurring tasks logic if needed.
+    // However, usually recurring tasks don't exist in the far past either.
+    if (state.firstTaskDate != null && sunday.isBefore(state.firstTaskDate!)) {
+      emit(
+        WeeklyLoaded(
+          [],
+          mondayDate: monday,
+          firstTaskDate: state.firstTaskDate,
+          lastTaskDate: state.lastTaskDate,
+        ),
+      );
+      return;
+    }
+
     // 1. Get real tasks for the week
     final result = await repository.getTasksByDateRange(monday, sunday);
 

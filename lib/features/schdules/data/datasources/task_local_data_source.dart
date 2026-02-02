@@ -43,4 +43,10 @@ abstract class TaskLocalDataSource {
 
   /// Get date bounds (min and max task dates)
   Future<Map<String, DateTime?>> getDateBounds();
+
+  /// Delete a default task
+  Future<void> deleteDefaultTask(String id);
+
+  /// Update a default task
+  Future<void> updateDefaultTask(DefaultTaskModel task);
 }

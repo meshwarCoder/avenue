@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dartz/dartz.dart';
+import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/errors/failures.dart';
@@ -9,6 +10,7 @@ import '../../domain/repo/schedule_repository.dart';
 import 'task_state.dart';
 
 import '../../../../core/services/sync_service.dart';
+import '../../../../core/utils/calendar_utils.dart';
 
 class TaskCubit extends Cubit<TaskState> {
   final ScheduleRepository repository;
@@ -18,7 +20,8 @@ class TaskCubit extends Cubit<TaskState> {
 
   TaskCubit({required this.repository, required this.syncService})
     : super(TaskInitial()) {
-    loadTasks();
+    _selectedDate = CalendarUtils.normalize(_selectedDate);
+    // Removed loadTasks(); Views will trigger it with their specific dates
     syncTasks(); // Sync once on app start
 
     // Listen for connectivity changes to auto-sync when back online
@@ -92,118 +95,97 @@ class TaskCubit extends Cubit<TaskState> {
     }
   }
 
-  Future<void> loadTasks({DateTime? date, bool shouldSync = false}) async {
-    if (date != null) {
-      _selectedDate = date;
+  Future<void> loadTasks({DateTime? date, bool force = false}) async {
+    final targetDate = CalendarUtils.normalize(date ?? _selectedDate);
+
+    // Prevent redundant loads if already on this date
+    if (!force && state is TaskLoaded && _selectedDate == targetDate) {
+      print("TaskCubit: Already loaded for $targetDate, skipping.");
+      return;
     }
+
+    _selectedDate = targetDate;
+    print("TaskCubit: Loading tasks for $targetDate");
+
     emit(
       TaskLoading(
-        selectedDate: _selectedDate,
+        selectedDate: targetDate,
         firstTaskDate: state.firstTaskDate,
         lastTaskDate: state.lastTaskDate,
       ),
     );
 
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    // Check if the selected date is in the past (before today)
-    final isPastDate =
-        _selectedDate.day != today.day ||
-            _selectedDate.month != today.month ||
-            _selectedDate.year != today.year
-        ? _selectedDate.isBefore(today)
-        : false;
-
-    // Smart Fetching: If date is older than 7 days, fetch from backend
-    // We only preserve 1 week locally.
-    final retentionLimit = today.subtract(const Duration(days: 7));
-    if (_selectedDate.isBefore(retentionLimit)) {
-      try {
-        // Fetch the specific week containing this date
-        // E.g., fetch from selectedDate to selectedDate + 7 days or similar chunk
-        // For simplicity, let's fetch the whole week context
-        final startOfWeek = _selectedDate.subtract(
-          Duration(days: _selectedDate.weekday - 1),
-        );
-        final endOfWeek = startOfWeek.add(const Duration(days: 6));
-        await syncService.fetchTasksForDateRange(startOfWeek, endOfWeek);
-      } catch (e) {
-        print("TaskCubit: Error fetching historical data: $e");
-        // Continue to try loading from local DB even if fetch fails
-      }
-    } else if (shouldSync) {
-      try {
-        await syncService.sync();
-      } catch (e) {
-        print("Sync failed during load: $e");
-      }
-    }
+    final today = CalendarUtils.normalize(now);
+    final isPastDate = targetDate.isBefore(today);
 
     // 1. Get specific tasks
-    final result = await repository.getTasksByDate(_selectedDate);
+    final result = await repository.getTasksByDate(targetDate);
 
     // 2. Get default tasks
-    // ONLY fetch/merge default tasks if we are NOT in the past.
-    // For past dates, we only show crystallized records (real TaskModels).
     final Either<Failure, List<DefaultTaskModel>> defaultTasksResult =
         isPastDate
-        ? const Right<Failure, List<DefaultTaskModel>>(
-            [],
-          ) // Return empty list for past dates
-        : await repository.getDefaultTasks(); // Fetch for Today/Future
+        ? const Right<Failure, List<DefaultTaskModel>>([])
+        : await repository.getDefaultTasks();
 
     result.fold(
-      (failure) => emit(
-        TaskError(
-          failure.message,
-          selectedDate: _selectedDate,
-          firstTaskDate: state.firstTaskDate,
-          lastTaskDate: state.lastTaskDate,
-        ),
-      ),
+      (failure) {
+        print("TaskCubit: Load failed for $targetDate: ${failure.message}");
+        emit(
+          TaskError(
+            failure.message,
+            selectedDate: targetDate,
+            firstTaskDate: state.firstTaskDate,
+            lastTaskDate: state.lastTaskDate,
+          ),
+        );
+      },
       (tasks) {
-        // Merge default tasks
+        print(
+          "TaskCubit: Successfully loaded ${tasks.length} tasks for $targetDate",
+        );
         final List<TaskModel> allTasks = List.from(tasks);
 
-        defaultTasksResult.fold(
-          (l) => null, // Ignore default tasks error or if skipped
-          (defaultTasks) {
-            // will be empty list if isPastDate is true
-            for (var dt in defaultTasks) {
-              // Check if default task runs on this weekday
-              if (dt.weekdays.contains(_selectedDate.weekday)) {
-                // Generate predictable ID for this instance
-                final predictableId = TaskModel.generatePredictableId(
-                  dt.id,
-                  _selectedDate,
-                );
+        defaultTasksResult.fold((l) => null, (defaultTasks) {
+          for (var dt in defaultTasks) {
+            if (dt.weekdays.contains(targetDate.weekday)) {
+              final predictableId = TaskModel.generatePredictableId(
+                dt.id,
+                targetDate,
+              );
 
-                // Check if this instance is already "crystallized" in the DB
-                if (tasks.any((t) => t.id == predictableId)) {
-                  continue; // Skip adding template, use the one from DB
-                }
-
-                allTasks.add(
-                  TaskModel.fromTimeOfDay(
-                    id: predictableId,
-                    name: dt.name,
-                    desc: dt.desc,
-                    startTime: dt.startTime,
-                    endTime: dt.endTime,
-                    taskDate: _selectedDate,
-                    category: dt.category,
-                    color: dt.color,
-                    completed: false, // Default tasks start as not completed
-                    oneTime: false,
-                    importanceType: dt.importanceType,
-                  ),
-                );
+              // Filter out default tasks that are hidden for this specific date
+              final dateStr = targetDate.toIso8601String().split('T')[0];
+              if (dt.hideOn.any(
+                (d) => d.toIso8601String().split('T')[0] == dateStr,
+              )) {
+                continue;
               }
-            }
-          },
-        );
 
-        // Sort by start time
+              if (tasks.any((t) => t.id == predictableId)) {
+                continue;
+              }
+
+              allTasks.add(
+                TaskModel.fromTimeOfDay(
+                  id: predictableId,
+                  name: dt.name,
+                  desc: dt.desc,
+                  startTime: dt.startTime,
+                  endTime: dt.endTime,
+                  taskDate: targetDate,
+                  category: dt.category,
+                  color: dt.color,
+                  completed: false,
+                  oneTime: false,
+                  importanceType: dt.importanceType,
+                  defaultTaskId: dt.id,
+                ),
+              );
+            }
+          }
+        });
+
         allTasks.sort((a, b) {
           if (a.startTime == null) return 1;
           if (b.startTime == null) return -1;
@@ -213,7 +195,7 @@ class TaskCubit extends Cubit<TaskState> {
         emit(
           TaskLoaded(
             allTasks,
-            selectedDate: _selectedDate,
+            selectedDate: targetDate,
             firstTaskDate: state.firstTaskDate,
             lastTaskDate: state.lastTaskDate,
           ),
@@ -265,7 +247,7 @@ class TaskCubit extends Cubit<TaskState> {
         if (state is FutureTasksLoaded) {
           loadFutureTasks();
         } else {
-          loadTasks();
+          loadTasks(force: true);
         }
       },
     );
@@ -287,7 +269,7 @@ class TaskCubit extends Cubit<TaskState> {
         if (state is FutureTasksLoaded) {
           loadFutureTasks();
         } else {
-          loadTasks(); // Reload locally first
+          loadTasks(force: true); // Reload locally first
           syncTasks(); // Then sync in background
         }
       },
@@ -310,7 +292,7 @@ class TaskCubit extends Cubit<TaskState> {
         if (state is FutureTasksLoaded) {
           loadFutureTasks();
         } else {
-          loadTasks(); // Reload locally first
+          loadTasks(force: true); // Reload locally first
           syncTasks(); // Then sync in background
         }
       },
@@ -327,7 +309,7 @@ class TaskCubit extends Cubit<TaskState> {
         if (state is FutureTasksLoaded) {
           loadFutureTasks();
         } else {
-          loadTasks(); // Reload locally first
+          loadTasks(force: true); // Reload locally first
           syncTasks(); // Then sync in background
         }
       },
@@ -366,7 +348,7 @@ class TaskCubit extends Cubit<TaskState> {
         if (state is FutureTasksLoaded) {
           loadFutureTasks();
         } else {
-          loadTasks(); // Reload locally first
+          loadTasks(force: true); // Reload locally first
           syncTasks(); // Then sync in background
         }
       },
@@ -374,4 +356,73 @@ class TaskCubit extends Cubit<TaskState> {
   }
 
   DateTime get selectedDate => _selectedDate;
+
+  Future<void> deleteDefaultTaskEntirely(
+    String defaultTaskId, {
+    String? taskId,
+  }) async {
+    // 1. Delete the specific instance if provided
+    if (taskId != null) {
+      await repository.deleteTask(taskId);
+    }
+
+    // 2. Delete the template
+    final result = await repository.deleteDefaultTask(defaultTaskId);
+    result.fold(
+      (failure) =>
+          emit(TaskError(failure.message, selectedDate: _selectedDate)),
+      (_) {
+        loadTasks(force: true);
+        syncTasks();
+      },
+    );
+  }
+
+  Future<void> hideDefaultTaskForDate(
+    String defaultTaskId,
+    DateTime date, {
+    String? taskId,
+  }) async {
+    // 1. Delete the specific instance if it exists (crystallized)
+    if (taskId != null) {
+      await repository.deleteTask(taskId);
+    }
+
+    // 2. Add date to hideOn in the template
+    final defaultTasksResult = await repository.getDefaultTasks();
+    await defaultTasksResult.fold(
+      (failure) async =>
+          emit(TaskError(failure.message, selectedDate: _selectedDate)),
+      (defaultTasks) async {
+        final task = defaultTasks.firstWhereOrNull(
+          (t) => t.id == defaultTaskId,
+        );
+        if (task == null) {
+          // If template is missing, just reload (it's essentially gone anyway)
+          loadTasks(force: true);
+          return;
+        }
+
+        final dateStr = date.toIso8601String().split('T')[0];
+        // Only add if not already present
+        if (!task.hideOn.any(
+          (d) => d.toIso8601String().split('T')[0] == dateStr,
+        )) {
+          final updatedHideOn = List<DateTime>.from(task.hideOn)..add(date);
+          final updatedTask = task.copyWith(hideOn: updatedHideOn);
+          final result = await repository.updateDefaultTask(updatedTask);
+          result.fold(
+            (failure) =>
+                emit(TaskError(failure.message, selectedDate: _selectedDate)),
+            (_) {
+              loadTasks(force: true);
+              syncTasks();
+            },
+          );
+        } else {
+          loadTasks();
+        }
+      },
+    );
+  }
 }
