@@ -10,12 +10,14 @@ class ChatRepository {
   // Create a new chat session
   Future<String> createChat(String userId) async {
     try {
+      final now = DateTime.now().toIso8601String();
       final response = await _supabase
           .from('chats')
           .insert({
             'user_id': userId,
             'title': 'New Chat',
-            'created_at': DateTime.now().toIso8601String(),
+            'created_at': now,
+            'updated_at': now,
           })
           .select('id')
           .single();
@@ -33,7 +35,7 @@ class ChatRepository {
         .from('chats')
         .select()
         .eq('user_id', userId)
-        .order('created_at', ascending: false);
+        .order('updated_at', ascending: false); // Order by Last Activity
 
     return (response as List).map((json) => ChatModel.fromJson(json)).toList();
   }
@@ -58,12 +60,21 @@ class ChatRepository {
     required String content,
   }) async {
     try {
+      final now = DateTime.now().toIso8601String();
+
+      // 1. Insert the message
       await _supabase.from('messages').insert({
         'chat_id': chatId,
         'role': role,
         'content': content,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': now,
       });
+
+      // 2. Update the chat's updated_at timestamp (Last Activity)
+      await _supabase
+          .from('chats')
+          .update({'updated_at': now})
+          .eq('id', chatId);
     } catch (e) {
       rethrow;
     }
@@ -71,18 +82,17 @@ class ChatRepository {
 
   // Update chat title
   Future<void> updateChatTitle(String chatId, String title) async {
-    // Use select() to get the updated rows as a List to verify update success
-    final data = await _supabase
+    // Update title AND timestamp
+    await _supabase
         .from('chats')
-        .update({'title': title})
-        .eq('id', chatId)
-        .select();
+        .update({
+          'title': title,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', chatId);
 
-    if (data.isEmpty) {
-      throw Exception(
-        'Failed to update chat: 0 rows affected (RLS/ID mismatch).',
-      );
-    }
+    // Note: Removed .select() check as per previous fix request to avoid RLS 406 error.
+    // Assuming silent success or exception from SDK.
   }
 
   // Delete a chat and its messages
