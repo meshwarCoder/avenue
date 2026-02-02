@@ -19,7 +19,9 @@ class AiOrchestrator {
        _executor = AiExecutor(scheduleRepository),
        _client = GeminiHttpClient(apiKey: apiKey, model: 'gemini-flash-latest');
 
-  Future<(String, List<AiAction>)> processUserMessage(String message) async {
+  Future<(String, List<AiAction>, String?)> processUserMessage(
+    String message,
+  ) async {
     // 1. Build Context
     final context = await _contextBuilder.buildContext();
     final systemPrompt = AiPromptBuilder.buildSystemPrompt(context);
@@ -32,7 +34,7 @@ class AiOrchestrator {
     );
 
     // 3. Parse Response
-    final (msg, actions) = AiResponseParser.parse(responseText);
+    final (msg, actions, suggestedTitle) = AiResponseParser.parse(responseText);
 
     // 4. Update History
     _history.add({
@@ -48,10 +50,19 @@ class AiOrchestrator {
       ],
     });
 
-    return (msg, actions);
+    return (msg, actions, suggestedTitle);
   }
 
   Future<void> confirmAndExecute(AiAction action) async {
     await _executor.execute(action);
+  }
+
+  void clearHistory() {
+    _history.clear();
+  }
+
+  void loadHistory(List<Map<String, dynamic>> messages) {
+    _history.clear();
+    _history.addAll(messages);
   }
 }

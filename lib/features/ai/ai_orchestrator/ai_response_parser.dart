@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'ai_action_models.dart';
 
 class AiResponseParser {
-  static (String message, List<AiAction> actions) parse(String response) {
+  static (String message, List<AiAction> actions, String? suggestedTitle) parse(
+    String response,
+  ) {
     try {
       // 1. Try to find JSON block, handling potential markdown markers
       String jsonStr = response.trim();
@@ -36,6 +38,7 @@ class AiResponseParser {
       if (decoded is Map<String, dynamic>) {
         final message = decoded['message'] as String? ?? '';
         final actionsRaw = decoded['actions'] as List<dynamic>? ?? [];
+        final suggestedTitle = decoded['suggested_chat_title'] as String?;
 
         final actions = actionsRaw.map((a) {
           try {
@@ -46,7 +49,7 @@ class AiResponseParser {
           }
         }).toList();
 
-        return (message, actions);
+        return (message, actions, suggestedTitle);
       }
     } catch (e) {
       print('Error parsing AI response: $e');
@@ -54,6 +57,6 @@ class AiResponseParser {
     }
 
     // Default: return the whole response as a message with no actions
-    return (response, <AiAction>[]);
+    return (response, <AiAction>[], null);
   }
 }
