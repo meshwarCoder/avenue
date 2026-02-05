@@ -15,29 +15,8 @@ class AnimatedAIChatButton extends StatefulWidget {
   State<AnimatedAIChatButton> createState() => _AnimatedAIChatButtonState();
 }
 
-class _AnimatedAIChatButtonState extends State<AnimatedAIChatButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _breathingController;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _breathingController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(parent: _breathingController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _breathingController.dispose();
-    super.dispose();
-  }
+class _AnimatedAIChatButtonState extends State<AnimatedAIChatButton> {
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -46,29 +25,32 @@ class _AnimatedAIChatButtonState extends State<AnimatedAIChatButton>
       opacity: widget.visible ? 1.0 : 0.0,
       child: Padding(
         padding: const EdgeInsets.only(right: 24),
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: GestureDetector(
-            onTap: widget.onTap,
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          onTap: widget.onTap,
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 150),
+            scale: _isPressed ? 0.92 : 1.0,
             child: Container(
               width: 62,
               height: 62,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   colors: [
                     AppColors.salmonPink,
-                    Color(0xFFFF85A1), // Slightly lighter pink
+                    AppColors.salmonPink.withOpacity(0.8),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.salmonPink.withOpacity(0.4),
-                    blurRadius: 18,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 5),
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),

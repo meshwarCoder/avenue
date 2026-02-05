@@ -116,7 +116,6 @@ class WeeklyCubit extends Cubit<WeeklyState> {
                     endTime: dt.endTime,
                     taskDate: date,
                     category: dt.category,
-                    color: dt.color,
                     completed: false,
                     oneTime: false,
                     importanceType: dt.importanceType,

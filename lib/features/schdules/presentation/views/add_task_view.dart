@@ -7,6 +7,7 @@ import '../../data/models/default_task_model.dart';
 import '../cubit/task_cubit.dart';
 import '../../../../core/utils/task_utils.dart';
 import '../../../../core/utils/calendar_utils.dart';
+import '../../../../core/utils/category_utils.dart';
 
 class AddTaskView extends StatefulWidget {
   final TaskModel? task;
@@ -511,14 +512,7 @@ class _AddTaskViewState extends State<AddTaskView> {
   }
 
   Widget _buildCategorySelector() {
-    final categories = [
-      'Work',
-      'Meeting',
-      'Important',
-      'Personal',
-      'Health',
-      'Break',
-    ];
+    final categories = CategoryUtils.categories;
     return SizedBox(
       height: 44,
       child: ListView.separated(
@@ -528,7 +522,7 @@ class _AddTaskViewState extends State<AddTaskView> {
         itemBuilder: (context, index) {
           final category = categories[index];
           final isSelected = _selectedCategory == category;
-          final color = _getCategoryColor(category);
+          final color = CategoryUtils.getCategoryColor(category);
           return GestureDetector(
             onTap: () => setState(() => _selectedCategory = category),
             child: AnimatedContainer(
@@ -627,7 +621,6 @@ class _AddTaskViewState extends State<AddTaskView> {
           endTime: _endTime!,
           taskDate: _selectedDate ?? DateTime.now(),
           category: _selectedCategory,
-          color: _getCategoryColor(_selectedCategory),
           completed: widget.task?.completed ?? false,
           importanceType: _selectedImportance,
           oneTime: true,
@@ -652,30 +645,10 @@ class _AddTaskViewState extends State<AddTaskView> {
       startTime: _startTime!,
       endTime: _endTime!,
       category: _selectedCategory,
-      colorValue: _getCategoryColor(_selectedCategory).value,
       weekdays: _selectedWeekdays,
       importanceType: _selectedImportance,
     );
     context.read<TaskCubit>().addDefaultTask(defaultTask);
     Navigator.pop(context);
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Meeting':
-        return Colors.redAccent;
-      case 'Work':
-        return AppColors.slatePurple;
-      case 'Important':
-        return Colors.red;
-      case 'Break':
-        return Colors.green;
-      case 'Personal':
-        return Colors.blue;
-      case 'Health':
-        return Colors.purple;
-      default:
-        return AppColors.slatePurple;
-    }
   }
 }

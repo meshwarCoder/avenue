@@ -175,7 +175,6 @@ class TaskCubit extends Cubit<TaskState> {
                   endTime: dt.endTime,
                   taskDate: targetDate,
                   category: dt.category,
-                  color: dt.color,
                   completed: false,
                   oneTime: false,
                   importanceType: dt.importanceType,

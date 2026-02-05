@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/utils/category_utils.dart';
 
 class DefaultTaskModel {
   final String id;
@@ -8,7 +9,6 @@ class DefaultTaskModel {
   final TimeOfDay startTime;
   final TimeOfDay endTime;
   final String category;
-  final int colorValue;
   final List<int> weekdays; // 1 = Monday, 7 = Sunday
   final String? importanceType;
 
@@ -25,7 +25,6 @@ class DefaultTaskModel {
     required this.startTime,
     required this.endTime,
     required this.category,
-    required this.colorValue,
     required this.weekdays,
     this.importanceType,
     DateTime? serverUpdatedAt,
@@ -43,7 +42,6 @@ class DefaultTaskModel {
     TimeOfDay? startTime,
     TimeOfDay? endTime,
     String? category,
-    int? colorValue,
     List<int>? weekdays,
     String? importanceType,
     DateTime? serverUpdatedAt,
@@ -59,7 +57,6 @@ class DefaultTaskModel {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       category: category ?? this.category,
-      colorValue: colorValue ?? this.colorValue,
       weekdays: weekdays ?? this.weekdays,
       importanceType: importanceType ?? this.importanceType,
       serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
@@ -79,7 +76,6 @@ class DefaultTaskModel {
       'start_time': '${startTime.hour}:${startTime.minute}',
       'end_time': '${endTime.hour}:${endTime.minute}',
       'category': category,
-      'color_value': colorValue,
       'weekdays': weekdays.join(','), // Store as comma-separated string
       'importance_type': importanceType,
       'server_updated_at': serverUpdatedAt.toIso8601String(),
@@ -103,7 +99,6 @@ class DefaultTaskModel {
       startTime: parseTime(map['start_time']),
       endTime: parseTime(map['end_time']),
       category: map['category'],
-      colorValue: map['color_value'],
       weekdays: (map['weekdays'] as String)
           .split(',')
           .map((e) => int.parse(e))
@@ -132,7 +127,6 @@ class DefaultTaskModel {
       'start_time': '${startTime.hour}:${startTime.minute}',
       'end_time': '${endTime.hour}:${endTime.minute}',
       'category': category,
-      'color_value': colorValue,
       'weekdays': weekdays.join(','),
       'importance_type': importanceType,
       'server_updated_at': serverUpdatedAt.toIso8601String(),
@@ -173,7 +167,6 @@ class DefaultTaskModel {
       startTime: parseTime(json['start_time']),
       endTime: parseTime(json['end_time']),
       category: json['category'],
-      colorValue: json['color_value'],
       weekdays: (json['weekdays'] as String)
           .split(',')
           .map((e) => int.parse(e))
@@ -188,5 +181,5 @@ class DefaultTaskModel {
     );
   }
 
-  Color get color => Color(colorValue);
+  Color get color => CategoryUtils.getCategoryColor(category);
 }

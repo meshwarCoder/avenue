@@ -19,8 +19,7 @@ class AiExecutor {
           endTime: _parseTime(endTime, date),
           importanceType: importance,
           desc: note,
-          category: 'Meeting', // Default category
-          colorValue: 0xFF004D61, // Default color
+          category: 'Other', // Generic default
         );
         await _scheduleRepository.addTask(task);
       },
@@ -77,8 +76,7 @@ class AiExecutor {
               ),
               importanceType: importance,
               desc: note,
-              category: 'Meeting', // Default category
-              colorValue: 0xFF004D61, // Default color
+              category: 'Other', // Generic default
             );
             await _scheduleRepository.addDefaultTask(task);
           },

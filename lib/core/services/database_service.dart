@@ -16,7 +16,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 8, // Increment version
+      version: 9, // Increment version
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -88,6 +88,15 @@ class DatabaseService {
         print('Warning: Could not drop embedding column: $e');
       }
     }
+    if (oldVersion < 9) {
+      // Drop color_value column
+      try {
+        await db.execute('ALTER TABLE tasks DROP COLUMN color_value');
+        await db.execute('ALTER TABLE default_tasks DROP COLUMN color_value');
+      } catch (e) {
+        print('Warning: Could not drop color_value column: $e');
+      }
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -102,7 +111,6 @@ class DatabaseService {
         end_time TEXT,
         completed INTEGER NOT NULL DEFAULT 0,
         category TEXT NOT NULL,
-        color_value INTEGER NOT NULL,
         one_time INTEGER NOT NULL DEFAULT 1,
         is_deleted INTEGER NOT NULL DEFAULT 0,
         server_updated_at TEXT NOT NULL,
@@ -121,7 +129,6 @@ class DatabaseService {
         start_time TEXT NOT NULL,
         end_time TEXT NOT NULL,
         category TEXT NOT NULL,
-        color_value INTEGER NOT NULL,
         weekdays TEXT NOT NULL,
         importance_type TEXT,
         server_updated_at TEXT NOT NULL,
