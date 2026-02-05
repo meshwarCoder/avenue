@@ -34,6 +34,7 @@ dependencies:
   freezed_annotation: ^3.1.0
   json_annotation: ^4.10.0
   collection: ^1.19.1
+  device_info_plus: ^12.3.0
 
 
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:avenue/core/logic/theme_cubit.dart';
 import 'package:avenue/core/utils/constants.dart';
+import 'package:avenue/features/auth/presentation/cubit/auth_cubit.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -49,8 +50,31 @@ class SettingsView extends StatelessWidget {
             icon: Icons.logout_rounded,
             title: "Logout",
             titleColor: Colors.redAccent,
-            onTap: () {
-              // sl<AuthCubit>().logout();
+            onTap: () async {
+              final shouldLogout = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'Logout',
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
+              if (shouldLogout == true && context.mounted) {
+                context.read<AuthCubit>().signOut();
+              }
             },
           ),
           const SizedBox(height: 40),

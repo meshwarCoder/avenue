@@ -17,5 +17,8 @@ abstract class AuthRepository {
   bool get isAuthenticated;
   String? get currentUserId;
 
-  Future<Either<Failure, void>> updateTimezone(int offsetInHours);
+  Future<Either<Failure, void>> createDeviceRecord(String deviceId);
+  Future<Either<Failure, void>> createOrUpdateProfile(int timezoneOffset);
+  Future<Either<Failure, bool>> deviceExists(String deviceId);
+  Future<Either<Failure, void>> updateDeviceSyncTimestamp(String deviceId);
 }

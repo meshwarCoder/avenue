@@ -58,9 +58,7 @@ class TaskModel {
       'server_updated_at': serverUpdatedAt.toIso8601String(),
       'importance_type': importanceType,
       'is_dirty': isDirty ? 1 : 0,
-      'embedding': embedding != null
-          ? embedding!.join(',')
-          : null, // Store as CSV string locally
+      // Embedding removed locally to save space
       'default_task_id': defaultTaskId,
     };
   }
@@ -89,12 +87,7 @@ class TaskModel {
       ),
       importanceType: map['importance_type'],
       isDirty: (map['is_dirty'] ?? 0) == 1,
-      embedding: map['embedding'] != null
-          ? (map['embedding'] as String)
-                .split(',')
-                .map((e) => double.parse(e))
-                .toList()
-          : null,
+      // embedding: not stored locally anymore
       defaultTaskId: map['default_task_id'],
     );
   }

@@ -16,7 +16,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 7, // Increment version
+      version: 8, // Increment version
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -65,13 +65,28 @@ class DatabaseService {
     }
     if (oldVersion < 6) {
       // Add embedding column for semantic search
-      await db.execute('ALTER TABLE tasks ADD COLUMN embedding TEXT');
-      await db.execute('ALTER TABLE default_tasks ADD COLUMN embedding TEXT');
+      // DEPRECATED in v8 - removed
+      try {
+        await db.execute('ALTER TABLE tasks ADD COLUMN embedding TEXT');
+        await db.execute('ALTER TABLE default_tasks ADD COLUMN embedding TEXT');
+      } catch (e) {
+        // Ignore if exists
+      }
     }
     if (oldVersion < 7) {
       // Add hide_on for default tasks and default_task_id for regular tasks
       await db.execute('ALTER TABLE default_tasks ADD COLUMN hide_on TEXT');
       await db.execute('ALTER TABLE tasks ADD COLUMN default_task_id TEXT');
+    }
+    if (oldVersion < 8) {
+      // Drop embedding column to save space
+      // Note: SQLite DROP COLUMN support varies. If it fails, we ignore it.
+      try {
+        await db.execute('ALTER TABLE tasks DROP COLUMN embedding');
+        await db.execute('ALTER TABLE default_tasks DROP COLUMN embedding');
+      } catch (e) {
+        print('Warning: Could not drop embedding column: $e');
+      }
     }
   }
 
@@ -93,11 +108,10 @@ class DatabaseService {
         server_updated_at TEXT NOT NULL,
         importance_type TEXT,
         is_dirty INTEGER NOT NULL DEFAULT 0,
-        embedding TEXT,
         default_task_id TEXT
       )
     ''');
-
+    // Removed embedding column
     // Default Tasks Table (Recurring)
     await db.execute('''
       CREATE TABLE IF NOT EXISTS default_tasks (
@@ -113,11 +127,10 @@ class DatabaseService {
         server_updated_at TEXT NOT NULL,
         is_deleted INTEGER NOT NULL DEFAULT 0,
         is_dirty INTEGER NOT NULL DEFAULT 0,
-        embedding TEXT,
         hide_on TEXT
       )
     ''');
-
+    // Removed embedding column
     // Settings Table (for last_sync_timestamp, etc.)
     await db.execute('''
       CREATE TABLE IF NOT EXISTS settings (
@@ -125,12 +138,26 @@ class DatabaseService {
         value TEXT
       )
     ''');
+
+    Future<void> close() async {
+      final db = _database;
+      if (db != null) {
+        await db.close();
+      }
+    }
   }
 
-  Future<void> close() async {
-    final db = _database;
-    if (db != null) {
-      await db.close();
-    }
+  Future<void> clearUserData() async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('tasks');
+      await txn.delete('default_tasks');
+      await txn.delete(
+        'settings',
+        where: 'key = ?',
+        whereArgs: ['last_sync_timestamp'],
+      );
+    });
+    print('Local user data cleared.');
   }
 }

@@ -85,7 +85,7 @@ class DefaultTaskModel {
       'server_updated_at': serverUpdatedAt.toIso8601String(),
       'is_deleted': isDeleted ? 1 : 0,
       'is_dirty': isDirty ? 1 : 0,
-      'embedding': embedding != null ? embedding!.join(',') : null,
+      // Embedding removed locally
       'hide_on': hideOn.map((d) => d.toIso8601String().split('T')[0]).join(','),
     };
   }
@@ -112,12 +112,7 @@ class DefaultTaskModel {
       serverUpdatedAt: DateTime.parse(map['server_updated_at']),
       isDeleted: map['is_deleted'] == 1,
       isDirty: (map['is_dirty'] ?? 0) == 1,
-      embedding: map['embedding'] != null
-          ? (map['embedding'] as String)
-                .split(',')
-                .map((e) => double.parse(e))
-                .toList()
-          : null,
+      // embedding: not stored locally anymore
       hideOn: map['hide_on'] != null && (map['hide_on'] as String).isNotEmpty
           ? (map['hide_on'] as String)
                 .split(',')
