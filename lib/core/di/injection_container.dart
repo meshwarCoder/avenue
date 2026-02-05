@@ -10,6 +10,7 @@ import '../services/embedding_service.dart';
 import '../../features/weeks/domain/repo/weekly_repository.dart';
 import '../../features/weeks/data/repo/weekly_repo_impl.dart';
 import '../../features/weeks/presentation/cubit/weekly_cubit.dart';
+import '../services/device_service.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -39,8 +40,15 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
 
   // Services
+  sl.registerLazySingleton<DeviceService>(() => DeviceService());
   sl.registerLazySingleton<SyncService>(
-    () => SyncService(databaseService: sl(), supabase: sl()),
+    () => SyncService(
+      databaseService: sl(),
+      supabase: sl(),
+      embeddingService: sl(),
+      authRepository: sl(),
+      deviceService: sl(),
+    ),
   );
 
   // Data sources
@@ -64,7 +72,10 @@ Future<void> initializeDependencies() async {
   );
 
   // Cubits (Factory - new instance each time)
-  sl.registerFactory(() => AuthCubit(repository: sl()));
+  sl.registerLazySingleton(
+    () =>
+        AuthCubit(repository: sl(), deviceService: sl(), databaseService: sl()),
+  );
   sl.registerLazySingleton(
     () => TaskCubit(repository: sl(), syncService: sl()),
   );

@@ -4,15 +4,27 @@ import 'package:sqflite/sqflite.dart';
 import '../../features/schdules/data/models/task_model.dart';
 import '../../features/schdules/data/models/default_task_model.dart';
 import 'database_service.dart';
+import 'embedding_service.dart';
+import '../../features/auth/domain/repo/auth_repository.dart';
+import 'device_service.dart';
 
 class SyncService {
   final DatabaseService databaseService;
   final SupabaseClient supabase;
+  final EmbeddingService embeddingService;
+  final AuthRepository authRepository;
+  final DeviceService deviceService;
 
   static const String lastSyncKey = 'last_sync_timestamp';
   bool _isSyncing = false; // Add lock flag
 
-  SyncService({required this.databaseService, required this.supabase});
+  SyncService({
+    required this.databaseService,
+    required this.supabase,
+    required this.embeddingService,
+    required this.authRepository,
+    required this.deviceService,
+  });
 
   Future<bool> _hasInternet() async {
     try {
@@ -117,9 +129,22 @@ class SyncService {
       );
 
       if (localDirtyTasks.isNotEmpty) {
-        final tasksToPush = localDirtyTasks
-            .map((m) => TaskModel.fromMap(m).toSupabaseJson(userId))
-            .toList();
+        final tasksToPush = <Map<String, dynamic>>[];
+        for (final m in localDirtyTasks) {
+          final task = TaskModel.fromMap(m);
+          // Generate embedding on the fly if needed
+          final text =
+              "Name: ${task.name}. Desc: ${task.desc ?? ''}. Category: ${task.category}";
+          List<double>? embedding;
+          try {
+            embedding = await embeddingService.generateEmbedding(text);
+          } catch (e) {
+            print("SyncService: Embedding generation failed: $e");
+          }
+          tasksToPush.add(
+            task.copyWith(embedding: embedding).toSupabaseJson(userId),
+          );
+        }
 
         await supabase.from('tasks').upsert(tasksToPush);
 
@@ -184,9 +209,22 @@ class SyncService {
       );
 
       if (localDirtyDefaults.isNotEmpty) {
-        final defaultsToPush = localDirtyDefaults
-            .map((m) => DefaultTaskModel.fromMap(m).toSupabaseJson(userId))
-            .toList();
+        final defaultsToPush = <Map<String, dynamic>>[];
+        for (final m in localDirtyDefaults) {
+          final task = DefaultTaskModel.fromMap(m);
+          // Generate embedding on the fly
+          final text =
+              "Name: ${task.name}. Desc: ${task.desc ?? ''}. Category: ${task.category}";
+          List<double>? embedding;
+          try {
+            embedding = await embeddingService.generateEmbedding(text);
+          } catch (e) {
+            print("SyncService: Embedding generation failed for default: $e");
+          }
+          defaultsToPush.add(
+            task.copyWith(embedding: embedding).toSupabaseJson(userId),
+          );
+        }
 
         await supabase.from('default_tasks').upsert(defaultsToPush);
 
@@ -206,6 +244,14 @@ class SyncService {
         'key': lastSyncKey,
         'value': newWatermark,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+      // --- 3. REFRESH DEVICE ACTIVITY ---
+      try {
+        final deviceId = await deviceService.getDeviceId();
+        await authRepository.updateDeviceSyncTimestamp(deviceId);
+      } catch (e) {
+        print("SyncService: Failed to update device activity: $e");
+      }
 
       print(
         "SyncService: Sync completed. Pulled Tasks: $pulledTasksCount, Pulled Defaults: $pulledDefaultCount, Pushed Tasks: ${localDirtyTasks.length}",

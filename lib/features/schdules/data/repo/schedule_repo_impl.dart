@@ -52,17 +52,8 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
   Future<Either<Failure, void>> addTask(TaskModel task) async {
     try {
       // Generate embedding for "Name: ... Desc: ..."
-      final text =
-          "Name: ${task.name}. Desc: ${task.desc ?? ''}. Category: ${task.category}";
-      List<double>? embedding;
-      try {
-        embedding = await embeddingService.generateEmbedding(text);
-      } catch (e) {
-        print('Embedding generation failed: $e');
-        // Continue without embedding (will be null)
-      }
-
-      final taskWithEmbedding = task.copyWith(embedding: embedding);
+      // Embedding generation moved to SyncService to save time and local space
+      final taskWithEmbedding = task.copyWith(embedding: null);
       await localDataSource.addTask(taskWithEmbedding);
       return const Right(null);
     } on CacheException catch (e) {
@@ -76,23 +67,8 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
   Future<Either<Failure, void>> updateTask(TaskModel task) async {
     try {
       // Generate embedding for "Name: ... Desc: ..."
-      final text =
-          "Name: ${task.name}. Desc: ${task.desc ?? ''}. Category: ${task.category}";
-      List<double>? embedding;
-      try {
-        embedding = await embeddingService.generateEmbedding(text);
-      } catch (e) {
-        print('Embedding generation failed: $e');
-      }
-
-      final taskWithEmbedding = task.copyWith(
-        embedding: embedding, // Update embedding if generated
-        // If generation failed, should we keep old?
-        // copyWith(embedding: null) replaces it.
-        // We typically want to update it if text changed.
-      );
-
-      await localDataSource.updateTask(taskWithEmbedding);
+      // Embedding generation moved to SyncService
+      await localDataSource.updateTask(task);
       return const Right(null);
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));

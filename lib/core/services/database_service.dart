@@ -16,7 +16,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 11, // Added order_index removed
+      version: 8, // Increment version
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -28,27 +28,64 @@ class DatabaseService {
       await db.execute('DROP TABLE IF EXISTS default_tasks');
       await _createDB(db, newVersion);
     }
-
-    if (oldVersion >= 9 && oldVersion < 11) {
-      // Migration to remove order_index if it exists
+    if (oldVersion < 3) {
+      // Add default_tasks table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS default_tasks (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          desc TEXT,
+          start_time TEXT NOT NULL,
+          end_time TEXT NOT NULL,
+          category TEXT NOT NULL,
+          color_value INTEGER NOT NULL,
+          weekdays TEXT NOT NULL,
+          importance_type TEXT,
+          server_updated_at TEXT NOT NULL DEFAULT '', 
+          is_deleted INTEGER NOT NULL DEFAULT 0
+        )
+      ''');
+    } else if (oldVersion < 4) {
+      // Add missing sync columns if already on v3
+      await db.execute(
+        'ALTER TABLE default_tasks ADD COLUMN server_updated_at TEXT NOT NULL DEFAULT ""',
+      );
+      await db.execute(
+        'ALTER TABLE default_tasks ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0',
+      );
+    }
+    if (oldVersion < 5) {
+      // Add is_dirty column to track local changes for delta sync
+      await db.execute(
+        'ALTER TABLE tasks ADD COLUMN is_dirty INTEGER NOT NULL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE default_tasks ADD COLUMN is_dirty INTEGER NOT NULL DEFAULT 0',
+      );
+    }
+    if (oldVersion < 6) {
+      // Add embedding column for semantic search
+      // DEPRECATED in v8 - removed
       try {
-        final tableInfo = await db.rawQuery('PRAGMA table_info(tasks)');
-        final hasOrderIndex = tableInfo.any(
-          (column) => column['name'] == 'order_index',
-        );
-
-        if (hasOrderIndex) {
-          await db.execute('ALTER TABLE tasks RENAME TO tasks_old');
-          await _createDB(db, newVersion);
-          await db.execute('''
-            INSERT INTO tasks (id, name, desc, task_date, start_time, end_time, completed, category, one_time, is_deleted, server_updated_at, importance_type, is_dirty, embedding, default_task_id)
-            SELECT id, name, desc, task_date, start_time, end_time, completed, category, one_time, is_deleted, server_updated_at, importance_type, is_dirty, embedding, default_task_id
-            FROM tasks_old
-          ''');
-          await db.execute('DROP TABLE tasks_old');
-        }
+        await db.execute('ALTER TABLE tasks ADD COLUMN embedding TEXT');
+        await db.execute('ALTER TABLE default_tasks ADD COLUMN embedding TEXT');
       } catch (e) {
-        print('DB Migration Error: $e');
+        // Ignore if exists
+      }
+    }
+    if (oldVersion < 7) {
+      // Add hide_on for default tasks and default_task_id for regular tasks
+      await db.execute('ALTER TABLE default_tasks ADD COLUMN hide_on TEXT');
+      await db.execute('ALTER TABLE tasks ADD COLUMN default_task_id TEXT');
+    }
+    if (oldVersion < 8) {
+      // Drop embedding column to save space
+      // Note: SQLite DROP COLUMN support varies. If it fails, we ignore it.
+      try {
+        await db.execute('ALTER TABLE tasks DROP COLUMN embedding');
+        await db.execute('ALTER TABLE default_tasks DROP COLUMN embedding');
+      } catch (e) {
+        print('Warning: Could not drop embedding column: $e');
       }
     }
   }
@@ -70,11 +107,10 @@ class DatabaseService {
         server_updated_at TEXT NOT NULL,
         importance_type TEXT,
         is_dirty INTEGER NOT NULL DEFAULT 0,
-        embedding TEXT,
         default_task_id TEXT
       )
     ''');
-
+    // Removed embedding column
     // Default Tasks Table (Recurring)
     await db.execute('''
       CREATE TABLE IF NOT EXISTS default_tasks (
@@ -89,11 +125,10 @@ class DatabaseService {
         server_updated_at TEXT NOT NULL,
         is_deleted INTEGER NOT NULL DEFAULT 0,
         is_dirty INTEGER NOT NULL DEFAULT 0,
-        embedding TEXT,
         hide_on TEXT
       )
     ''');
-
+    // Removed embedding column
     // Settings Table (for last_sync_timestamp, etc.)
     await db.execute('''
       CREATE TABLE IF NOT EXISTS settings (
@@ -101,12 +136,26 @@ class DatabaseService {
         value TEXT
       )
     ''');
+
+    Future<void> close() async {
+      final db = _database;
+      if (db != null) {
+        await db.close();
+      }
+    }
   }
 
-  Future<void> close() async {
-    final db = _database;
-    if (db != null) {
-      await db.close();
-    }
+  Future<void> clearUserData() async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('tasks');
+      await txn.delete('default_tasks');
+      await txn.delete(
+        'settings',
+        where: 'key = ?',
+        whereArgs: ['last_sync_timestamp'],
+      );
+    });
+    print('Local user data cleared.');
   }
 }
