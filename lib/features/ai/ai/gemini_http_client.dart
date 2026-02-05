@@ -12,7 +12,7 @@ class GeminiHttpClient {
   Future<Map<String, dynamic>> generateContent({
     required String systemPrompt,
     required List<Map<String, dynamic>> history,
-    required String userMessage,
+    String? userMessage,
     List<Map<String, dynamic>>? tools,
   }) async {
     final client = HttpClient();
@@ -24,12 +24,13 @@ class GeminiHttpClient {
       final v1betaBody = {
         'contents': [
           ...history,
-          {
-            'role': 'user',
-            'parts': [
-              {'text': userMessage},
-            ],
-          },
+          if (userMessage != null)
+            {
+              'role': 'user',
+              'parts': [
+                {'text': userMessage},
+              ],
+            },
         ],
         'system_instruction': {
           'parts': [
@@ -59,10 +60,24 @@ class GeminiHttpClient {
       final json = jsonDecode(responseBody);
 
       try {
-        final content = json['candidates'][0]['content'];
+        final candidate = json['candidates'][0];
+        final content = candidate['content'];
+
+        // Safety check: sometimes content is null if finishReason is SAFETY/recitation
+        if (content == null) {
+          final finishReason = candidate['finishReason'];
+          throw Exception(
+            'Gemini blocked response. FinishReason: $finishReason',
+          );
+        }
+
+        if (content['parts'] == null) {
+          throw Exception('Gemini response missing "parts". Content: $content');
+        }
+
         return content;
       } catch (e) {
-        throw Exception('Unexpected response format: $responseBody');
+        throw Exception('Unexpected response format: ${e.toString()}');
       }
     } finally {
       client.close();

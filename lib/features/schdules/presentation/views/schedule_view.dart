@@ -28,7 +28,9 @@ class _HomeViewState extends State<HomeView> {
     _date = widget.selectedDate ?? DateTime.now();
     _date = DateTime(_date.year, _date.month, _date.day);
 
-    context.read<TaskCubit>().loadTasks(date: _date);
+    final cubit = context.read<TaskCubit>();
+    print('HomeView: initState. TaskCubit: ${cubit.hashCode}');
+    cubit.loadTasks(date: _date);
   }
 
   @override
@@ -49,7 +51,7 @@ class _HomeViewState extends State<HomeView> {
             ? IconButton(
                 icon: Icon(
                   Icons.arrow_back_ios_new_rounded,
-                  color: theme.colorScheme.onBackground,
+                  color: theme.colorScheme.onSurface,
                 ),
                 onPressed: () => Navigator.pop(context),
               )

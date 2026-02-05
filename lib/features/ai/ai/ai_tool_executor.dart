@@ -1,7 +1,4 @@
-import 'package:avenue/features/schdules/data/models/task_model.dart';
-import 'package:avenue/features/schdules/data/models/default_task_model.dart';
 import 'package:avenue/features/schdules/domain/repo/schedule_repository.dart';
-import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 class AiToolExecutor {
@@ -85,155 +82,78 @@ class AiToolExecutor {
   }
 
   Future<Map<String, dynamic>> _handleAddTask(Map<String, dynamic> args) async {
-    final date = DateTime.parse(args['date'] as String);
-
-    final task = TaskModel(
-      id: const Uuid().v4(),
-      name: args['name'] as String,
-      taskDate: date,
-      startTime: _parseRelativeTime(date, args['startTime'] as String),
-      endTime: _parseRelativeTime(date, args['endTime'] as String),
-      importanceType: args['importance'] ?? 'Medium',
-      desc: args['note'] ?? '',
-      completed: false,
-      category: 'General', // Default or extract from AI
-      isDeleted: false,
-      serverUpdatedAt: DateTime.now(),
-    );
-
-    final result = await _repository.addTask(task);
-    return result.fold(
-      (f) => {'error': f.message},
-      (_) => {'success': true, 'taskId': task.id},
-    );
+    // [Draft Mode] Generate ID but do not save to DB yet.
+    // The UI will confirm and execute.
+    final id = const Uuid().v4();
+    print('[AI][Draft] addTask proposed: $id');
+    return {
+      'success': true,
+      'taskId': id,
+      'status': 'success_draft_waiting_confirmation',
+      'message': 'Draft created. Ask user to confirm.',
+    };
   }
 
   Future<Map<String, dynamic>> _handleAddDefaultTask(
     Map<String, dynamic> args,
   ) async {
-    final startTime = _parseTimeOfDay(args['startTime'] as String);
-    final endTime = _parseTimeOfDay(args['endTime'] as String);
-
-    final task = DefaultTaskModel(
-      id: const Uuid().v4(),
-      name: args['name'] as String,
-      startTime: startTime,
-      endTime: endTime,
-      category: args['category'] ?? 'General',
-      weekdays: List<int>.from(args['weekdays'] as List),
-      importanceType: args['importance'] ?? 'Medium',
-      desc: args['note'] ?? '',
-      serverUpdatedAt: DateTime.now(),
-    );
-
-    final result = await _repository.addDefaultTask(task);
-    return result.fold(
-      (f) => {'error': f.message},
-      (_) => {'success': true, 'defaultTaskId': task.id},
-    );
+    // [Draft Mode]
+    final id = const Uuid().v4();
+    print('[AI][Draft] addDefaultTask proposed: $id');
+    return {
+      'success': true,
+      'defaultTaskId': id,
+      'status': 'success_draft_waiting_confirmation',
+      'message': 'Draft created. Ask user to confirm.',
+    };
   }
 
   Future<Map<String, dynamic>> _handleUpdateTask(
     Map<String, dynamic> args,
   ) async {
-    final id = args['id'] as String;
-    final existingResult = await _repository.getTaskById(id);
+    // [Draft Mode] We still check if it exists to be nice, but act as if updated
+    // Optional: Check existence?
+    // final existingResult = await _repository.getTaskById(id);
+    // if (existingResult.isLeft()) return {'error': 'Task not found'};
 
-    return await existingResult.fold((f) => {'error': f.message}, (
-      existing,
-    ) async {
-      if (existing == null) return {'error': 'Task not found'};
-
-      DateTime? updatedDate;
-      if (args['date'] != null) {
-        updatedDate = DateTime.parse(args['date'] as String);
-      }
-
-      final dateContext = updatedDate ?? existing.taskDate;
-
-      final updated = existing.copyWith(
-        name: args['name'] as String?,
-        completed: args['isDone'] as bool?,
-        taskDate: updatedDate,
-        startTime: args['startTime'] != null
-            ? _parseRelativeTime(dateContext, args['startTime'] as String)
-            : null,
-        endTime: args['endTime'] != null
-            ? _parseRelativeTime(dateContext, args['endTime'] as String)
-            : null,
-        importanceType: args['importance'] as String?,
-        desc: args['note'] as String?,
-        serverUpdatedAt: DateTime.now(),
-      );
-
-      final result = await _repository.updateTask(updated);
-      return result.fold((f) => {'error': f.message}, (_) => {'success': true});
-    });
+    // Validate we can parse the inputs at least?
+    // For now, assume success to let user confirm.
+    return {
+      'success': true,
+      'status': 'success_draft_waiting_confirmation',
+      'message': 'Update draft ready. Ask user to confirm.',
+    };
   }
 
   Future<Map<String, dynamic>> _handleUpdateDefaultTask(
     Map<String, dynamic> args,
   ) async {
-    final id = args['id'] as String;
-    final existingResult = await _repository.getDefaultTaskById(id);
-
-    return await existingResult.fold((f) => {'error': f.message}, (
-      existing,
-    ) async {
-      if (existing == null) return {'error': 'Default task not found'};
-
-      final updated = existing.copyWith(
-        name: args['name'] as String?,
-        desc: args['note'] as String?,
-        startTime: args['startTime'] != null
-            ? _parseTimeOfDay(args['startTime'] as String)
-            : null,
-        endTime: args['endTime'] != null
-            ? _parseTimeOfDay(args['endTime'] as String)
-            : null,
-        category: args['category'] as String?,
-        weekdays: args['weekdays'] != null
-            ? List<int>.from(args['weekdays'] as List)
-            : null,
-        importanceType: args['importance'] as String?,
-        serverUpdatedAt: DateTime.now(),
-      );
-
-      final result = await _repository.updateDefaultTask(updated);
-      return result.fold((f) => {'error': f.message}, (_) => {'success': true});
-    });
+    return {
+      'success': true,
+      'status': 'success_draft_waiting_confirmation',
+      'message': 'Update draft ready. Ask user to confirm.',
+    };
   }
 
   Future<Map<String, dynamic>> _handleDeleteTask(
     Map<String, dynamic> args,
   ) async {
-    final id = args['id'] as String;
-    final result = await _repository.deleteTask(id);
-    return result.fold((f) => {'error': f.message}, (_) => {'success': true});
+    // [Draft Mode]
+    return {
+      'success': true,
+      'status': 'success_draft_waiting_confirmation',
+      'message': 'Delete draft ready. Ask user to confirm.',
+    };
   }
 
   Future<Map<String, dynamic>> _handleDeleteDefaultTask(
     Map<String, dynamic> args,
   ) async {
-    final id = args['id'] as String;
-    final result = await _repository.deleteDefaultTask(id);
-    return result.fold((f) => {'error': f.message}, (_) => {'success': true});
-  }
-
-  DateTime? _parseRelativeTime(DateTime date, String? timeStr) {
-    if (timeStr == null) return null;
-    final parts = timeStr.split(':');
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-      int.parse(parts[0]),
-      int.parse(parts[1]),
-    );
-  }
-
-  TimeOfDay _parseTimeOfDay(String timeStr) {
-    final parts = timeStr.split(':');
-    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    // [Draft Mode]
+    return {
+      'success': true,
+      'status': 'success_draft_waiting_confirmation',
+      'message': 'Delete draft ready. Ask user to confirm.',
+    };
   }
 }

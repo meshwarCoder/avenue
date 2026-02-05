@@ -20,18 +20,26 @@ class AiRepository {
     required String userMessage,
     required String systemPrompt,
   }) async {
+    // 0. Add User Message to History FIRST
+    _history.add({
+      'role': 'user',
+      'parts': [
+        {'text': userMessage},
+      ],
+    });
+
     // 1. Initial Call to Gemini with Search Tools
     var currentResponse = await _client.generateContent(
       systemPrompt: systemPrompt,
       history: _getRecentHistory(),
-      userMessage: userMessage,
+      userMessage: null, // User message is already in history
       tools: AiTools.declarations,
     );
 
     // 2. Loop until no more function calls or max iterations reached
     int iterations = 0;
     while (iterations < _maxToolIterations) {
-      final parts = currentResponse['parts'] as List;
+      final parts = (currentResponse['parts'] as List?) ?? [];
       final functionCalls = parts
           .where((p) => p.containsKey('functionCall'))
           .toList();
@@ -57,12 +65,6 @@ class AiRepository {
       }
 
       // Add AI's intent and Tool results to history
-      _history.add({
-        'role': 'user',
-        'parts': [
-          {'text': userMessage},
-        ],
-      });
       _history.add({'role': 'model', 'parts': parts});
       _history.add({'role': 'function', 'parts': toolResults});
 
@@ -70,20 +72,14 @@ class AiRepository {
       currentResponse = await _client.generateContent(
         systemPrompt: systemPrompt,
         history: _getRecentHistory(),
-        userMessage: 'Please continue based on the data provided.',
+        userMessage: null,
         tools: AiTools.declarations,
       );
 
       iterations++;
     }
 
-    // 3. Update Final History with Text Response
-    _history.add({
-      'role': 'user',
-      'parts': [
-        {'text': userMessage},
-      ],
-    });
+    // 3. Update Final History with Text Response ONLY (User msg already added)
     _history.add({'role': 'model', 'parts': currentResponse['parts']});
 
     return currentResponse;

@@ -89,5 +89,57 @@ class AiTools {
         'required': ['id'],
       },
     },
+    {
+      'name': 'addDefaultTask',
+      'description': 'Create a new recurring (default) task/habit.',
+      'parameters': {
+        'type': 'OBJECT',
+        'properties': {
+          'name': {'type': 'STRING'},
+          'weekdays': {
+            'type': 'ARRAY',
+            'items': {'type': 'INTEGER'},
+            'description': '1=Monday, 7=Sunday',
+          },
+          'startTime': {'type': 'STRING', 'description': 'HH:mm'},
+          'endTime': {'type': 'STRING', 'description': 'HH:mm'},
+          'importance': {
+            'type': 'STRING',
+            'enum': ['Low', 'Medium', 'High'],
+          },
+          'note': {'type': 'STRING'},
+        },
+        'required': ['name', 'weekdays', 'startTime', 'endTime'],
+      },
+    },
+    {
+      'name': 'updateDefaultTask',
+      'description': 'Update a recurring (default) task template.',
+      'parameters': {
+        'type': 'OBJECT',
+        'properties': {
+          'id': {'type': 'STRING'},
+          'name': {'type': 'STRING'},
+          'weekdays': {
+            'type': 'ARRAY',
+            'items': {'type': 'INTEGER'},
+          },
+          'startTime': {'type': 'STRING', 'description': 'HH:mm'},
+          'endTime': {'type': 'STRING', 'description': 'HH:mm'},
+        },
+        'required': ['id'],
+      },
+    },
+    {
+      'name': 'deleteDefaultTask',
+      'description': 'Delete a recurring (default) task template.',
+      'parameters': {
+        'type': 'OBJECT',
+        'properties': {
+          'id': {'type': 'STRING'},
+        },
+        'required': ['id'],
+      },
+    },
   ];
 }

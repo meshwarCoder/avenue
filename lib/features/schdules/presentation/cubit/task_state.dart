@@ -24,16 +24,24 @@ class TaskLoading extends TaskState {
 
 class TaskLoaded extends TaskState {
   final List<TaskModel> tasks;
+  final DateTime? updatedAt;
 
   const TaskLoaded(
     this.tasks, {
     required DateTime super.selectedDate,
     super.firstTaskDate,
     super.lastTaskDate,
+    this.updatedAt,
   });
 
   @override
-  List<Object?> get props => [tasks, selectedDate, firstTaskDate, lastTaskDate];
+  List<Object?> get props => [
+    tasks,
+    selectedDate,
+    firstTaskDate,
+    lastTaskDate,
+    updatedAt,
+  ];
 }
 
 class TaskError extends TaskState {

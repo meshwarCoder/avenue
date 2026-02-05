@@ -5,7 +5,7 @@ abstract class ChatState extends Equatable {
   const ChatState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class ChatInitial extends ChatState {}
@@ -14,11 +14,12 @@ class ChatLoading extends ChatState {}
 
 class ChatLoaded extends ChatState {
   final List<ChatMessage> messages;
+  final DateTime? updatedAt;
 
-  const ChatLoaded(this.messages);
+  const ChatLoaded(this.messages, {this.updatedAt});
 
   @override
-  List<Object> get props => [messages];
+  List<Object?> get props => [messages, updatedAt];
 }
 
 class ChatError extends ChatState {
@@ -27,7 +28,7 @@ class ChatError extends ChatState {
   const ChatError(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }
 
 class ChatMessage extends Equatable {

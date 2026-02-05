@@ -76,7 +76,7 @@ Future<void> initializeDependencies() async {
     () => EmbeddingService(apiKey: dotenv.env['GEMINI_API_KEY'] ?? ''),
   );
 
-  sl.registerLazySingleton<AiOrchestrator>(
+  sl.registerFactory<AiOrchestrator>(
     () => AiOrchestrator(
       apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
       scheduleRepository: sl(),
@@ -89,5 +89,5 @@ Future<void> initializeDependencies() async {
     () => ChatRepository(supabase: sl()),
   );
 
-  sl.registerFactory(() => ChatCubit(aiOrchestrator: sl()));
+  sl.registerFactory(() => ChatCubit(aiOrchestrator: sl(), taskCubit: sl()));
 }

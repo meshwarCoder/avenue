@@ -7,6 +7,7 @@ import '../logic/chat_cubit.dart';
 import '../logic/chat_state.dart';
 import '../logic/chat_session_cubit.dart';
 import '../logic/chat_session_state.dart';
+import '../../ai/ai_action_models.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/presentation/cubit/auth_state.dart' as auth_state;
 
@@ -32,6 +33,7 @@ class AiChatView extends StatelessWidget {
               create: (context) => ChatCubit(
                 aiOrchestrator: sl(),
                 sessionCubit: context.read<ChatSessionCubit>(),
+                taskCubit: sl(),
               ),
             ),
           ],
@@ -52,39 +54,85 @@ class _ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<_ChatScreen> {
   String? _lastChatId;
   bool _isSwitching = false;
+  final Set<int> _notifiedMessageIndexes = {};
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return BlocListener<ChatSessionCubit, ChatSessionState>(
-      listener: (context, sessionState) {
-        if (sessionState is ChatSessionLoaded) {
-          // If the chatId changed, we are transitioning to a different chat
-          if (sessionState.currentChatId != _lastChatId) {
-            final oldId = _lastChatId;
-            _lastChatId = sessionState.currentChatId;
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<ChatSessionCubit, ChatSessionState>(
+          listener: (context, sessionState) {
+            if (sessionState is ChatSessionLoaded) {
+              // If the chatId changed, we are transitioning to a different chat
+              if (sessionState.currentChatId != _lastChatId) {
+                final oldId = _lastChatId;
+                _lastChatId = sessionState.currentChatId;
+                _notifiedMessageIndexes.clear(); // Reset on switch
 
-            // CRITICAL FIX: Only load messages if we are explicitly switching.
-            // If oldId was empty and newId is not, it means we just created a chat
-            // for the first message. In this case, ChatCubit ALREADY has the messages.
-            // Overwriting them now will cause the 'User message disappears' bug
-            // because Supabase might not have indexed it fast enough or the
-            // messages list in sessionState is lagging.
-            if (oldId != null &&
-                oldId.isEmpty &&
-                sessionState.currentChatId.isNotEmpty &&
-                !_isSwitching) {
-              return;
+                // CRITICAL FIX: Only load messages if we are explicitly switching.
+                if (oldId != null &&
+                    oldId.isEmpty &&
+                    sessionState.currentChatId.isNotEmpty &&
+                    !_isSwitching) {
+                  return;
+                }
+
+                // Normal switching (e.g. from Drawer) or loading first chat
+                context.read<ChatCubit>().loadMessages(sessionState.messages);
+                _isSwitching = false; // Reset flag
+              }
             }
+          },
+        ),
+        BlocListener<ChatCubit, ChatState>(
+          listener: (context, state) {
+            if (state is ChatLoaded) {
+              final messages = state.messages;
+              for (int i = 0; i < messages.length; i++) {
+                final m = messages[i];
+                if (!m.isUser &&
+                    m.isExecuted &&
+                    !_notifiedMessageIndexes.contains(i)) {
+                  _notifiedMessageIndexes.add(i);
 
-            // Normal switching (e.g. from Drawer) or loading first chat
-            context.read<ChatCubit>().loadMessages(sessionState.messages);
-            _isSwitching = false; // Reset flag
-          }
-        }
-      },
+                  // Extract date for better feedback if available
+                  String dateStr = "بنجاح";
+                  if (m.suggestedActions != null &&
+                      m.suggestedActions!.isNotEmpty) {
+                    final firstAction = m.suggestedActions!.first;
+                    if (firstAction is CreateTaskAction) {
+                      final d = firstAction.date;
+                      dateStr = "ليوم ${d.day}/${d.month}";
+                    }
+                  }
+
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Text('تم التنفيذ $dateStr!'),
+                        ],
+                      ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              }
+            }
+          },
+        ),
+      ],
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
@@ -131,7 +179,11 @@ class _ChatScreenState extends State<_ChatScreen> {
                     itemBuilder: (context, index) {
                       final msg = messages[index];
                       return TweenAnimationBuilder<double>(
-                        key: ValueKey(msg.text + index.toString()),
+                        key: ValueKey(
+                          msg.text +
+                              index.toString() +
+                              msg.isExecuted.toString(),
+                        ),
                         tween: Tween(begin: 0.0, end: 1.0),
                         duration: const Duration(milliseconds: 400),
                         curve: Curves.easeOutCubic,
@@ -285,23 +337,39 @@ class _ChatScreenState extends State<_ChatScreen> {
                   ),
                 ),
               ),
-            ],
-            if (msg.isExecuted) ...[
+            ] else if (msg.isExecuted) ...[
               const SizedBox(height: 12),
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    color: Colors.green,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Perfect! All set.',
-                    style: TextStyle(
-                      color: Colors.green[600],
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.green,
+                          size: 16,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'تم التنفيذ بنجاح',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

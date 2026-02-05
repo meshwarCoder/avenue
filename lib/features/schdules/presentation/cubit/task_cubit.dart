@@ -197,6 +197,7 @@ class TaskCubit extends Cubit<TaskState> {
             selectedDate: targetDate,
             firstTaskDate: state.firstTaskDate,
             lastTaskDate: state.lastTaskDate,
+            updatedAt: DateTime.now(),
           ),
         );
       },
@@ -253,6 +254,15 @@ class TaskCubit extends Cubit<TaskState> {
   }
 
   Future<void> addTask(TaskModel task) async {
+    // 1. Emit loading immediately to signal the UI that work has started
+    emit(
+      TaskLoading(
+        selectedDate: _selectedDate,
+        firstTaskDate: state.firstTaskDate,
+        lastTaskDate: state.lastTaskDate,
+      ),
+    );
+
     final result = await repository.addTask(task);
 
     result.fold(
@@ -421,6 +431,30 @@ class TaskCubit extends Cubit<TaskState> {
         } else {
           loadTasks();
         }
+      },
+    );
+  }
+
+  Future<void> updateDefaultTask(DefaultTaskModel task) async {
+    final result = await repository.updateDefaultTask(task);
+    result.fold(
+      (failure) =>
+          emit(TaskError(failure.message, selectedDate: _selectedDate)),
+      (_) {
+        loadTasks(force: true);
+        syncTasks();
+      },
+    );
+  }
+
+  Future<void> deleteDefaultTask(String id) async {
+    final result = await repository.deleteDefaultTask(id);
+    result.fold(
+      (failure) =>
+          emit(TaskError(failure.message, selectedDate: _selectedDate)),
+      (_) {
+        loadTasks(force: true);
+        syncTasks();
       },
     );
   }

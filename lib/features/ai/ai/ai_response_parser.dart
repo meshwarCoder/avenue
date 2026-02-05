@@ -40,10 +40,28 @@ class AiResponseParser {
         final message = decoded['message'] as String? ?? '';
         final suggestedTitle = decoded['suggested_chat_title'] as String?;
 
-        final actionsList = decoded['actions'] as List? ?? [];
-        final actions = actionsList
-            .map((a) => AiAction.fromJson(a as Map<String, dynamic>))
-            .toList();
+        List<AiAction> actions = [];
+        try {
+          final actionsList = decoded['actions'] as List? ?? [];
+          actions = actionsList.map((a) {
+            try {
+              final map = Map<String, dynamic>.from(a as Map);
+              // Normalize type to match AiAction union keys
+              // Model now expects 'createTask', 'updateTask', 'deleteTask'
+              if (map['type'] == 'addTask') {
+                map['type'] = 'createTask';
+              }
+              return AiAction.fromJson(map);
+            } catch (e) {
+              print('Error parsing single action: $e');
+              return const AiAction.unknown(
+                rawResponse: 'Invalid action format',
+              );
+            }
+          }).toList();
+        } catch (e) {
+          print('Error parsing actions list: $e');
+        }
 
         return (message, actions, suggestedTitle);
       }
