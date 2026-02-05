@@ -7,6 +7,7 @@ import '../../domain/repo/schedule_repository.dart';
 import '../datasources/task_local_data_source.dart';
 import '../models/task_model.dart';
 import '../models/default_task_model.dart';
+import '../../../../core/utils/observability.dart';
 
 class ScheduleRepositoryImpl implements ScheduleRepository {
   final TaskLocalDataSource localDataSource;
@@ -21,10 +22,23 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
 
   @override
   Future<Either<Failure, List<TaskModel>>> getTasksByDate(
-    DateTime taskDate,
-  ) async {
+    DateTime taskDate, {
+    String? traceId,
+  }) async {
     try {
+      AvenueLogger.log(
+        event: 'DB_READ',
+        layer: LoggerLayer.DB,
+        traceId: traceId,
+        payload: {'source': 'LOCAL_CACHE', 'entity': 'tasks', 'date': taskDate},
+      );
       final tasks = await localDataSource.getTasksByDate(taskDate);
+      AvenueLogger.log(
+        event: 'DB_RESULT',
+        layer: LoggerLayer.DB,
+        traceId: traceId,
+        payload: {'count': tasks.length},
+      );
       return Right(tasks);
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));
@@ -49,8 +63,17 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
   }
 
   @override
-  Future<Either<Failure, void>> addTask(TaskModel task) async {
+  Future<Either<Failure, void>> addTask(
+    TaskModel task, {
+    String? traceId,
+  }) async {
     try {
+      AvenueLogger.log(
+        event: 'DB_INSERT',
+        layer: LoggerLayer.DB,
+        traceId: traceId,
+        payload: {'source': 'LOCAL_CACHE', 'entity': 'task', 'id': task.id},
+      );
       // Generate embedding for "Name: ... Desc: ..."
       // Embedding generation moved to SyncService to save time and local space
       final taskWithEmbedding = task.copyWith(embedding: null);
@@ -64,8 +87,17 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
   }
 
   @override
-  Future<Either<Failure, void>> updateTask(TaskModel task) async {
+  Future<Either<Failure, void>> updateTask(
+    TaskModel task, {
+    String? traceId,
+  }) async {
     try {
+      AvenueLogger.log(
+        event: 'DB_UPDATE',
+        layer: LoggerLayer.DB,
+        traceId: traceId,
+        payload: {'source': 'LOCAL_CACHE', 'entity': 'task', 'id': task.id},
+      );
       // Generate embedding for "Name: ... Desc: ..."
       // Embedding generation moved to SyncService
       await localDataSource.updateTask(task);
@@ -78,8 +110,14 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
   }
 
   @override
-  Future<Either<Failure, void>> deleteTask(String id) async {
+  Future<Either<Failure, void>> deleteTask(String id, {String? traceId}) async {
     try {
+      AvenueLogger.log(
+        event: 'DB_DELETE',
+        layer: LoggerLayer.DB,
+        traceId: traceId,
+        payload: {'source': 'LOCAL_CACHE', 'entity': 'task', 'id': id},
+      );
       await localDataSource.deleteTask(id);
       return const Right(null);
     } on CacheException catch (e) {
@@ -120,8 +158,21 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
   }
 
   @override
-  Future<Either<Failure, void>> addDefaultTask(DefaultTaskModel task) async {
+  Future<Either<Failure, void>> addDefaultTask(
+    DefaultTaskModel task, {
+    String? traceId,
+  }) async {
     try {
+      AvenueLogger.log(
+        event: 'DB_INSERT',
+        layer: LoggerLayer.DB,
+        traceId: traceId,
+        payload: {
+          'source': 'LOCAL_CACHE',
+          'entity': 'default_task',
+          'id': task.id,
+        },
+      );
       await localDataSource.insertDefaultTask(task);
       return const Right(null);
     } on CacheException catch (e) {
@@ -175,11 +226,20 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
       final bounds = await localDataSource.getDateBounds();
       return Right(bounds);
     } on CacheException catch (e) {
-      print('Repository Error (getDateBounds): ${e.message}');
+      AvenueLogger.log(
+        event: 'DB_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.DB,
+        payload: 'Repository Error (getDateBounds): ${e.message}',
+      );
       return Left(CacheFailure(e.message));
-    } catch (e, stack) {
-      print('Unexpected Repository Error (getDateBounds): $e');
-      print(stack);
+    } catch (e) {
+      AvenueLogger.log(
+        event: 'DB_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.DB,
+        payload: 'Unexpected Repository Error (getDateBounds): $e',
+      );
       return Left(CacheFailure('Failed to get date bounds'));
     }
   }

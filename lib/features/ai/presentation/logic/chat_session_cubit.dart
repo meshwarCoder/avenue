@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/chat_repository.dart';
 import 'chat_session_state.dart';
 import 'chat_state.dart';
+import '../../../../core/utils/observability.dart';
 
 class ChatSessionCubit extends Cubit<ChatSessionState> {
   final ChatRepository _repository;
@@ -15,24 +16,32 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
   // Initialize: Create a new chat automatically
   Future<void> initialize() async {
     try {
-      print('ChatSessionCubit: Starting initialization...');
-      print('User ID: $_userId');
+      AvenueLogger.log(
+        event: 'CHAT_SESSION_INIT',
+        layer: LoggerLayer.UI,
+        payload: {'userId': _userId},
+      );
 
       emit(ChatSessionLoading());
 
       // Load user's chats (don't create a new one)
-      print('Loading user chats...');
       final chats = await _repository.getUserChats(_userId);
-      print('Loaded ${chats.length} chats');
+      AvenueLogger.log(
+        event: 'CHAT_SESSION_LOADED',
+        layer: LoggerLayer.UI,
+        payload: {'count': chats.length},
+      );
 
       // Start with no active chat (will be created on first message)
 
       emit(ChatSessionLoaded(currentChatId: '', messages: [], chatList: chats));
-      print('ChatSessionCubit initialized successfully!');
-    } catch (e, stackTrace) {
-      print('ChatSessionCubit initialization failed!');
-      print('Error: $e');
-      print('Stack trace: $stackTrace');
+    } catch (e) {
+      AvenueLogger.log(
+        event: 'CHAT_SESSION_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.UI,
+        payload: e.toString(),
+      );
       emit(ChatSessionError('Failed to initialize: $e'));
     }
   }
@@ -46,14 +55,23 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
     // Only create if we don't have a chat yet
     if (currentState.currentChatId.isEmpty) {
       try {
-        print('Creating new chat on first message...');
+        AvenueLogger.log(event: 'CHAT_CREATE_START', layer: LoggerLayer.UI);
         final chatId = await _repository.createChat(_userId);
-        print('Chat created with ID: $chatId');
+        AvenueLogger.log(
+          event: 'CHAT_CREATE_SUCCESS',
+          layer: LoggerLayer.UI,
+          payload: {'chatId': chatId},
+        );
 
         final chats = await _repository.getUserChats(_userId);
         emit(currentState.copyWith(currentChatId: chatId, chatList: chats));
       } catch (e) {
-        print('Error creating chat: $e');
+        AvenueLogger.log(
+          event: 'CHAT_CREATE_ERROR',
+          level: LoggerLevel.ERROR,
+          layer: LoggerLayer.UI,
+          payload: e.toString(),
+        );
       }
     }
   }
@@ -139,7 +157,7 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
     try {
       // 1. Persist to Supabase first
       await _repository.deleteChat(chatId);
-      print('ChatSessionCubit: Chat deleted from Supabase');
+      AvenueLogger.log(event: 'CHAT_DELETE_SUCCESS', layer: LoggerLayer.UI);
 
       // 2. Refetch and handle current chat state
       final chats = await _repository.getUserChats(_userId);
@@ -157,7 +175,12 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
         emit(currentState.copyWith(chatList: chats));
       }
     } catch (e) {
-      print('Error deleting chat: $e');
+      AvenueLogger.log(
+        event: 'CHAT_DELETE_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.UI,
+        payload: e.toString(),
+      );
       await loadChats();
     }
   }
@@ -177,11 +200,20 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
     if (currentChat.title == 'New Chat' ||
         currentChat.title == 'AI Assistant') {
       try {
-        print('Updating chat title from AI to: $suggestedTitle');
+        AvenueLogger.log(
+          event: 'CHAT_RENAME_AI',
+          layer: LoggerLayer.UI,
+          payload: suggestedTitle,
+        );
         // This will call renameChat which handles persistence + refetch
         await renameChat(currentState.currentChatId, suggestedTitle);
       } catch (e) {
-        print('Error updating title from AI: $e');
+        AvenueLogger.log(
+          event: 'CHAT_RENAME_ERROR',
+          level: LoggerLevel.WARN,
+          layer: LoggerLayer.UI,
+          payload: e.toString(),
+        );
       }
     }
   }
@@ -189,16 +221,20 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
   // Save a message to current chat
   Future<void> saveMessage(String role, String content) async {
     if (state is! ChatSessionLoaded) {
-      print('⚠️ Cannot save message: state is not ChatSessionLoaded');
+      AvenueLogger.log(
+        event: 'CHAT_SAVE_SKIPPED',
+        level: LoggerLevel.WARN,
+        layer: LoggerLayer.UI,
+        payload: 'State not Loaded',
+      );
       return;
     }
 
     final currentState = state as ChatSessionLoaded;
-    print('🔵 Saving message to Supabase...');
-    print('🔵 Chat ID: ${currentState.currentChatId}');
-    print('🔵 Role: $role');
-    print(
-      '🔵 Content: ${content.substring(0, content.length > 50 ? 50 : content.length)}...',
+    AvenueLogger.log(
+      event: 'CHAT_SAVE_START',
+      layer: LoggerLayer.UI,
+      payload: {'role': role, 'chatId': currentState.currentChatId},
     );
 
     try {
@@ -207,10 +243,14 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
         role: role,
         content: content,
       );
-      print('✅ Message saved successfully!');
-    } catch (e, stackTrace) {
-      print('❌ Error saving message: $e');
-      print('❌ Stack trace: $stackTrace');
+      AvenueLogger.log(event: 'CHAT_SAVE_SUCCESS', layer: LoggerLayer.UI);
+    } catch (e) {
+      AvenueLogger.log(
+        event: 'CHAT_SAVE_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.UI,
+        payload: e.toString(),
+      );
     }
   }
 

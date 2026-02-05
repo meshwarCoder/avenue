@@ -9,6 +9,7 @@ import 'chat_state.dart';
 import 'chat_session_cubit.dart';
 
 import 'package:avenue/features/schdules/presentation/cubit/task_cubit.dart';
+import '../../../../core/utils/observability.dart';
 
 class ChatCubit extends Cubit<ChatState> {
   final AiOrchestrator aiOrchestrator;
@@ -23,11 +24,29 @@ class ChatCubit extends Cubit<ChatState> {
 
   List<ChatMessage> _messages = [];
 
+  void _logState(ChatState state, {String? traceId}) {
+    AvenueLogger.log(
+      event: 'STATE_CHAT_UPDATED',
+      layer: LoggerLayer.STATE,
+      traceId: traceId,
+      payload: {'state': state.runtimeType.toString()},
+    );
+    emit(state);
+  }
+
   void sendMessage(String text) async {
+    final tid = const Uuid().v4().substring(0, 8);
+    AvenueLogger.log(
+      event: 'UI_SEND_MESSAGE_CLICKED',
+      layer: LoggerLayer.UI,
+      traceId: tid,
+      payload: {'text': text},
+    );
+
     // Optimistic UI update
     _messages = List.from(_messages)
       ..add(ChatMessage(text: text, isUser: true));
-    emit(ChatLoaded(_messages, updatedAt: DateTime.now()));
+    _logState(ChatLoaded(_messages, updatedAt: DateTime.now()), traceId: tid);
 
     // Create chat if this is the first message
     final isFirstMessage = _messages.length == 1;
@@ -40,7 +59,7 @@ class ChatCubit extends Cubit<ChatState> {
 
     try {
       final (responseText, actions, suggestedTitle) = await aiOrchestrator
-          .processUserMessage(text);
+          .processUserMessage(text, traceId: tid);
 
       _messages = List.from(_messages)
         ..add(
@@ -50,13 +69,17 @@ class ChatCubit extends Cubit<ChatState> {
             suggestedActions: actions.isEmpty ? null : actions,
           ),
         );
-      emit(ChatLoaded(_messages, updatedAt: DateTime.now()));
+      _logState(ChatLoaded(_messages, updatedAt: DateTime.now()), traceId: tid);
 
       // [Fix: Double Truth]
       // If the AI performed actions, force the TaskCubit (Single Source of Truth) to reload.
       // This ensures the UI reflects the actual DB state, not just the AI's claim.
       if (actions.isNotEmpty) {
-        print("ChatCubit: AI performed actions. Triggering TaskCubit reload.");
+        AvenueLogger.log(
+          event: 'CHAT_RELOAD_TRIGGERED',
+          layer: LoggerLayer.UI,
+          traceId: tid,
+        );
         taskCubit?.loadTasks(force: true);
         // Also trigger future tasks reload if we are potentially affecting them
         // taskCubit?.loadFutureTasks(); // Optimistically calling loadTasks handles local date usually
@@ -75,15 +98,28 @@ class ChatCubit extends Cubit<ChatState> {
       // Update session state with new messages
       sessionCubit?.updateMessages(_messages);
     } catch (e) {
-      print('Cubit Error: $e');
+      AvenueLogger.log(
+        event: 'CHAT_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.UI,
+        traceId: tid,
+        payload: e.toString(),
+      );
       _messages = List.from(_messages)
         ..add(ChatMessage(text: "[Error] $e", isUser: false));
-      emit(ChatLoaded(_messages, updatedAt: DateTime.now()));
+      _logState(ChatLoaded(_messages, updatedAt: DateTime.now()), traceId: tid);
     }
   }
 
   // Execute actions when user confirms
   void confirmAllActions(int messageIndex) async {
+    final tid = const Uuid().v4().substring(0, 8);
+    AvenueLogger.log(
+      event: 'UI_CONFIRM_CLICKED',
+      layer: LoggerLayer.UI,
+      traceId: tid,
+      payload: {'messageIndex': messageIndex},
+    );
     if (messageIndex < 0 || messageIndex >= _messages.length) return;
 
     final msg = _messages[messageIndex];
@@ -93,18 +129,24 @@ class ChatCubit extends Cubit<ChatState> {
     // 1. OPTIMISTIC UPDATE: Mark as executed immediately to provide instant UI feedback
     final updatedMsg = msg.copyWith(isExecuted: true);
     _messages[messageIndex] = updatedMsg;
-    emit(ChatLoaded(List.from(_messages), updatedAt: DateTime.now()));
+    _logState(
+      ChatLoaded(List.from(_messages), updatedAt: DateTime.now()),
+      traceId: tid,
+    );
 
     // Update session state immediately so the "isExecuted" state persists locally
     sessionCubit?.updateMessages(_messages);
 
-    print(
-      'ChatCubit: Starting execution for message $messageIndex. TaskCubit: ${taskCubit.hashCode}',
+    AvenueLogger.log(
+      event: 'CHAT_EXECUTION_STARTED',
+      layer: LoggerLayer.UI,
+      traceId: tid,
+      payload: {'messageIndex': messageIndex},
     );
 
     // 2. Execute each action
     for (final action in msg.suggestedActions!) {
-      await _executeAction(action);
+      await _executeAction(action, traceId: tid);
     }
 
     // 3. Force Global UI Reload
@@ -119,13 +161,16 @@ class ChatCubit extends Cubit<ChatState> {
       }
     }
 
-    print(
-      'ChatCubit: Execution finished. Triggering TaskCubit reload for date: $reloadDate',
+    AvenueLogger.log(
+      event: 'CHAT_EXECUTION_FINISHED',
+      layer: LoggerLayer.UI,
+      traceId: tid,
+      payload: {'reloadDate': reloadDate.toString()},
     );
     await taskCubit?.loadTasks(date: reloadDate, force: true);
   }
 
-  Future<void> _executeAction(AiAction action) async {
+  Future<void> _executeAction(AiAction action, {String? traceId}) async {
     try {
       if (action is CreateTaskAction) {
         final date = action.date;
@@ -150,10 +195,13 @@ class ChatCubit extends Cubit<ChatState> {
           isDeleted: false,
           serverUpdatedAt: DateTime.now(),
         );
-        print(
-          'ChatCubit: Executing addTask for ${task.name} at ${task.startTime} - ${task.endTime}',
+        AvenueLogger.log(
+          event: 'CHAT_EXECUTE_ADD_TASK',
+          layer: LoggerLayer.UI,
+          traceId: traceId,
+          payload: {'name': task.name},
         );
-        await taskCubit!.addTask(task);
+        await taskCubit!.addTask(task, traceId: traceId);
       } else if (action is UpdateTaskAction) {
         // For update, we need the existing task ideally to merge,
         // but TaskCubit.updateTask might handle merge or we send what we have.
@@ -181,33 +229,42 @@ class ChatCubit extends Cubit<ChatState> {
 
         final repo = taskCubit!.repository;
         final result = await repo.getTaskById(action.id);
-        result.fold((l) => print('Task not found'), (existing) async {
-          if (existing == null) return;
-          final updated = existing.copyWith(
-            name: action.name,
-            completed: action.isDone,
-            // Partial updates for time/date logic
-            taskDate: action.date ?? existing.taskDate,
-            startTime: action.startTime != null
-                ? _parseRelativeTime(
-                    action.date ?? existing.taskDate,
-                    action.startTime,
-                  )
-                : existing.startTime,
-            endTime: action.endTime != null
-                ? _parseRelativeTime(
-                    action.date ?? existing.taskDate,
-                    action.endTime,
-                  )
-                : existing.endTime,
-            importanceType: action.importance ?? existing.importanceType,
-            desc: action.note ?? existing.desc,
-            serverUpdatedAt: DateTime.now(),
-          );
-          await taskCubit!.updateTask(updated);
-        });
+        result.fold(
+          (l) => AvenueLogger.log(
+            event: 'CHAT_EXECUTE_ERROR',
+            level: LoggerLevel.WARN,
+            layer: LoggerLayer.UI,
+            traceId: traceId,
+            payload: 'Task not found',
+          ),
+          (existing) async {
+            if (existing == null) return;
+            final updated = existing.copyWith(
+              name: action.name,
+              completed: action.isDone,
+              // Partial updates for time/date logic
+              taskDate: action.date ?? existing.taskDate,
+              startTime: action.startTime != null
+                  ? _parseRelativeTime(
+                      action.date ?? existing.taskDate,
+                      action.startTime,
+                    )
+                  : existing.startTime,
+              endTime: action.endTime != null
+                  ? _parseRelativeTime(
+                      action.date ?? existing.taskDate,
+                      action.endTime,
+                    )
+                  : existing.endTime,
+              importanceType: action.importance ?? existing.importanceType,
+              desc: action.note ?? existing.desc,
+              serverUpdatedAt: DateTime.now(),
+            );
+            await taskCubit!.updateTask(updated, traceId: traceId);
+          },
+        );
       } else if (action is DeleteTaskAction) {
-        await taskCubit!.deleteTask(action.id);
+        await taskCubit!.deleteTask(action.id, traceId: traceId);
       } else if (action is CreateDefaultTaskAction) {
         final task = DefaultTaskModel(
           id: const Uuid().v4(),
@@ -220,34 +277,54 @@ class ChatCubit extends Cubit<ChatState> {
           desc: action.note ?? '',
           serverUpdatedAt: DateTime.now(),
         );
-        await taskCubit!.addDefaultTask(task);
+        await taskCubit!.addDefaultTask(task, traceId: traceId);
       } else if (action is UpdateDefaultTaskAction) {
         final repo = taskCubit!.repository;
         final result = await repo.getDefaultTaskById(action.id);
-        result.fold((l) => print('Default Task not found'), (existing) async {
-          if (existing == null) return;
-          final updated = existing.copyWith(
-            name: action.name ?? existing.name,
-            startTime: action.startTime != null
-                ? _parseTimeOfDay(action.startTime!)
-                : existing.startTime,
-            endTime: action.endTime != null
-                ? _parseTimeOfDay(action.endTime!)
-                : existing.endTime,
-            weekdays: action.weekdays ?? existing.weekdays,
-            importanceType: action.importance ?? existing.importanceType,
-            desc: action.note ?? existing.desc,
-            serverUpdatedAt: DateTime.now(),
-          );
-          await taskCubit!.updateDefaultTask(updated);
-        });
+        result.fold(
+          (l) => AvenueLogger.log(
+            event: 'CHAT_EXECUTE_ERROR',
+            level: LoggerLevel.WARN,
+            layer: LoggerLayer.UI,
+            traceId: traceId,
+            payload: 'Default Task not found',
+          ),
+          (existing) async {
+            if (existing == null) return;
+            final updated = existing.copyWith(
+              name: action.name ?? existing.name,
+              startTime: action.startTime != null
+                  ? _parseTimeOfDay(action.startTime!)
+                  : existing.startTime,
+              endTime: action.endTime != null
+                  ? _parseTimeOfDay(action.endTime!)
+                  : existing.endTime,
+              weekdays: action.weekdays ?? existing.weekdays,
+              importanceType: action.importance ?? existing.importanceType,
+              desc: action.note ?? existing.desc,
+              serverUpdatedAt: DateTime.now(),
+            );
+            await taskCubit!.updateDefaultTask(updated);
+          },
+        );
       } else if (action is DeleteDefaultTaskAction) {
         await taskCubit!.deleteDefaultTask(action.id);
       } else if (action is UnknownAction) {
-        print('ChatCubit: Skipping unknown action: ${action.rawResponse}');
+        AvenueLogger.log(
+          event: 'CHAT_EXECUTE_SKIPPED',
+          layer: LoggerLayer.UI,
+          traceId: traceId,
+          payload: action.rawResponse,
+        );
       }
     } catch (e) {
-      print('Error executing confirmed action: $e');
+      AvenueLogger.log(
+        event: 'CHAT_EXECUTE_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.UI,
+        traceId: traceId,
+        payload: e.toString(),
+      );
     }
   }
 
@@ -353,13 +430,13 @@ class ChatCubit extends Cubit<ChatState> {
     }).toList();
 
     aiOrchestrator.loadHistory(history);
-    emit(ChatLoaded(_messages, updatedAt: DateTime.now()));
+    _logState(ChatLoaded(_messages, updatedAt: DateTime.now()));
   }
 
   // Reset for new chat
   void reset() {
     _messages = [];
     aiOrchestrator.clearHistory();
-    emit(ChatLoaded(_messages, updatedAt: DateTime.now()));
+    _logState(ChatLoaded(_messages, updatedAt: DateTime.now()));
   }
 }

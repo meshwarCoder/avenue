@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import '../../core/utils/observability.dart';
 import 'package:path/path.dart';
 
 class DatabaseService {
@@ -85,7 +86,12 @@ class DatabaseService {
         await db.execute('ALTER TABLE tasks DROP COLUMN embedding');
         await db.execute('ALTER TABLE default_tasks DROP COLUMN embedding');
       } catch (e) {
-        print('Warning: Could not drop embedding column: $e');
+        AvenueLogger.log(
+          event: 'DB_MAINTENANCE_WARN',
+          level: LoggerLevel.WARN,
+          layer: LoggerLayer.DB,
+          payload: 'Could not drop embedding column: $e',
+        );
       }
     }
   }
@@ -156,6 +162,10 @@ class DatabaseService {
         whereArgs: ['last_sync_timestamp'],
       );
     });
-    print('Local user data cleared.');
+    AvenueLogger.log(
+      event: 'DB_MAINTENANCE_SUCCESS',
+      layer: LoggerLayer.DB,
+      payload: 'Local user data cleared.',
+    );
   }
 }

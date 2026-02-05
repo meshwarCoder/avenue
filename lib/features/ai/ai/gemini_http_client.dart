@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import '../../../core/utils/observability.dart';
 
 class GeminiHttpClient {
   final String apiKey;
@@ -14,7 +15,21 @@ class GeminiHttpClient {
     required List<Map<String, dynamic>> history,
     String? userMessage,
     List<Map<String, dynamic>>? tools,
+    String? traceId,
   }) async {
+    AvenueLogger.log(
+      event: 'AI_SYSTEM_PROMPT',
+      layer: LoggerLayer.AI,
+      traceId: traceId,
+      payload: systemPrompt,
+    );
+    AvenueLogger.log(
+      event: 'AI_HISTORY_WINDOW',
+      layer: LoggerLayer.AI,
+      traceId: traceId,
+      payload: history,
+    );
+
     final client = HttpClient();
     try {
       final url = Uri.parse('$baseUrl/$model:generateContent?key=$apiKey');
@@ -46,6 +61,13 @@ class GeminiHttpClient {
         },
       };
 
+      AvenueLogger.log(
+        event: 'AI_PAYLOAD_SENT',
+        layer: LoggerLayer.AI,
+        traceId: traceId,
+        payload: v1betaBody,
+      );
+
       request.add(utf8.encode(jsonEncode(v1betaBody)));
 
       final response = await request.close();
@@ -75,8 +97,22 @@ class GeminiHttpClient {
           throw Exception('Gemini response missing "parts". Content: $content');
         }
 
+        AvenueLogger.log(
+          event: 'AI_RESPONSE_RECEIVED',
+          layer: LoggerLayer.AI,
+          traceId: traceId,
+          payload: content,
+        );
+
         return content;
       } catch (e) {
+        AvenueLogger.log(
+          event: 'AI_ERROR',
+          layer: LoggerLayer.AI,
+          level: LoggerLevel.ERROR,
+          traceId: traceId,
+          payload: e.toString(),
+        );
         throw Exception('Unexpected response format: ${e.toString()}');
       }
     } finally {

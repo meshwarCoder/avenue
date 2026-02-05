@@ -3,6 +3,7 @@ import '../../domain/repo/auth_repository.dart';
 import 'auth_state.dart';
 import '../../../../core/services/device_service.dart';
 import '../../../../core/services/database_service.dart';
+import '../../../../core/utils/observability.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository repository;
@@ -48,8 +49,16 @@ class AuthCubit extends Cubit<AuthState> {
         timezoneOffset,
       );
       profileResult.fold(
-        (failure) => print('Failed to update profile: ${failure.message}'),
-        (_) => print('Profile updated successfully'),
+        (failure) => AvenueLogger.log(
+          event: 'AUTH_PROFILE_FAILED',
+          level: LoggerLevel.WARN,
+          layer: LoggerLayer.STATE,
+          payload: failure.message,
+        ),
+        (_) => AvenueLogger.log(
+          event: 'AUTH_PROFILE_SUCCESS',
+          layer: LoggerLayer.STATE,
+        ),
       );
 
       // 2. Track Device (Add if new)
@@ -57,16 +66,28 @@ class AuthCubit extends Cubit<AuthState> {
 
       bool deviceExists = false;
       deviceExistsResult.fold(
-        (failure) => print('Failed to check device: ${failure.message}'),
+        (failure) => AvenueLogger.log(
+          event: 'AUTH_DEVICE_CHECK_FAILED',
+          level: LoggerLevel.WARN,
+          layer: LoggerLayer.STATE,
+          payload: failure.message,
+        ),
         (exists) => deviceExists = exists,
       );
 
       if (!deviceExists) {
         final deviceResult = await repository.createDeviceRecord(deviceId);
         deviceResult.fold(
-          (failure) =>
-              print('Failed to create device record: ${failure.message}'),
-          (_) => print('Device record created successfully'),
+          (failure) => AvenueLogger.log(
+            event: 'AUTH_DEVICE_CREATE_FAILED',
+            level: LoggerLevel.WARN,
+            layer: LoggerLayer.STATE,
+            payload: failure.message,
+          ),
+          (_) => AvenueLogger.log(
+            event: 'AUTH_DEVICE_SUCCESS',
+            layer: LoggerLayer.STATE,
+          ),
         );
       } else {
         await repository.updateDeviceSyncTimestamp(deviceId);
@@ -74,7 +95,12 @@ class AuthCubit extends Cubit<AuthState> {
 
       emit(Authenticated(userId));
     } catch (e) {
-      print('Auth success handler error: $e');
+      AvenueLogger.log(
+        event: 'AUTH_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.STATE,
+        payload: e.toString(),
+      );
       // If we crashed but we AR authenticated, we should still emit Authenticated
       // but safely.
       final userId = repository.currentUserId;

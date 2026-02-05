@@ -7,6 +7,7 @@ import 'database_service.dart';
 import 'embedding_service.dart';
 import '../../features/auth/domain/repo/auth_repository.dart';
 import 'device_service.dart';
+import '../utils/observability.dart';
 
 class SyncService {
   final DatabaseService databaseService;
@@ -38,19 +39,31 @@ class SyncService {
   Future<void> sync() async {
     try {
       if (!await _hasInternet()) {
-        print("SyncService: No internet connection. Skipping sync.");
+        AvenueLogger.log(
+          event: 'SYNC_SKIPPED',
+          layer: LoggerLayer.SYNC,
+          payload: 'No internet',
+        );
         return;
       }
 
       if (_isSyncing) {
-        print("SyncService: Sync already in progress. Skipping.");
+        AvenueLogger.log(
+          event: 'SYNC_SKIPPED',
+          layer: LoggerLayer.SYNC,
+          payload: 'Already in progress',
+        );
         return;
       }
       _isSyncing = true;
 
       final user = supabase.auth.currentUser;
       if (user == null) {
-        print("SyncService: No user logged in. Skipping sync.");
+        AvenueLogger.log(
+          event: 'SYNC_SKIPPED',
+          layer: LoggerLayer.SYNC,
+          payload: 'No user',
+        );
         return;
       }
 
@@ -69,12 +82,23 @@ class SyncService {
           ? DateTime.parse(lastSyncStr).toUtc()
           : DateTime.fromMillisecondsSinceEpoch(0).toUtc();
 
-      print(
-        "SyncService: Starting optimized sync for user $userId. Last sync: $lastSync",
+      AvenueLogger.log(
+        event: 'SYNC_STARTED',
+        layer: LoggerLayer.SYNC,
+        payload: {'userId': userId, 'lastSync': lastSync.toIso8601String()},
       );
 
       // --- 1. SYNC TASKS ---
       // 1.1 Pull remote changes (Remote -> Local)
+      AvenueLogger.log(
+        event: 'DB_READ',
+        layer: LoggerLayer.SYNC,
+        payload: {
+          'source': 'SUPABASE',
+          'entity': 'tasks',
+          'lastSync': lastSync.toIso8601String(),
+        },
+      );
       final remoteTasksData = await supabase
           .from('tasks')
           .select()
@@ -139,13 +163,27 @@ class SyncService {
           try {
             embedding = await embeddingService.generateEmbedding(text);
           } catch (e) {
-            print("SyncService: Embedding generation failed: $e");
+            AvenueLogger.log(
+              event: 'SYNC_EMBEDDING_FAILED',
+              level: LoggerLevel.WARN,
+              layer: LoggerLayer.SYNC,
+              payload: e.toString(),
+            );
           }
           tasksToPush.add(
             task.copyWith(embedding: embedding).toSupabaseJson(userId),
           );
         }
 
+        AvenueLogger.log(
+          event: 'DB_UPSERT',
+          layer: LoggerLayer.SYNC,
+          payload: {
+            'source': 'SUPABASE',
+            'entity': 'tasks',
+            'count': tasksToPush.length,
+          },
+        );
         await supabase.from('tasks').upsert(tasksToPush);
 
         // Clear is_dirty for pushed tasks
@@ -219,7 +257,12 @@ class SyncService {
           try {
             embedding = await embeddingService.generateEmbedding(text);
           } catch (e) {
-            print("SyncService: Embedding generation failed for default: $e");
+            AvenueLogger.log(
+              event: 'SYNC_EMBEDDING_FAILED',
+              level: LoggerLevel.WARN,
+              layer: LoggerLayer.SYNC,
+              payload: e.toString(),
+            );
           }
           defaultsToPush.add(
             task.copyWith(embedding: embedding).toSupabaseJson(userId),
@@ -250,14 +293,30 @@ class SyncService {
         final deviceId = await deviceService.getDeviceId();
         await authRepository.updateDeviceSyncTimestamp(deviceId);
       } catch (e) {
-        print("SyncService: Failed to update device activity: $e");
+        AvenueLogger.log(
+          event: 'SYNC_DEVICE_UPDATE_FAILED',
+          level: LoggerLevel.WARN,
+          layer: LoggerLayer.SYNC,
+          payload: e.toString(),
+        );
       }
 
-      print(
-        "SyncService: Sync completed. Pulled Tasks: $pulledTasksCount, Pulled Defaults: $pulledDefaultCount, Pushed Tasks: ${localDirtyTasks.length}",
+      AvenueLogger.log(
+        event: 'SYNC_COMPLETED',
+        layer: LoggerLayer.SYNC,
+        payload: {
+          'pulledTasks': pulledTasksCount,
+          'pulledDefaults': pulledDefaultCount,
+          'pushedTasks': localDirtyTasks.length,
+        },
       );
     } catch (e) {
-      print("SyncService: Error during sync: $e");
+      AvenueLogger.log(
+        event: 'SYNC_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.SYNC,
+        payload: e.toString(),
+      );
       rethrow;
     } finally {
       _isSyncing = false;
@@ -274,8 +333,22 @@ class SyncService {
       final startStr = start.toIso8601String().split('T')[0];
       final endStr = end.toIso8601String().split('T')[0];
 
-      print("SyncService: Fetching tasks from $startStr to $endStr");
+      AvenueLogger.log(
+        event: 'SYNC_FETCH_RANGE',
+        layer: LoggerLayer.SYNC,
+        payload: {'start': startStr, 'end': endStr},
+      );
 
+      AvenueLogger.log(
+        event: 'DB_READ',
+        layer: LoggerLayer.SYNC,
+        payload: {
+          'source': 'SUPABASE',
+          'entity': 'tasks_range',
+          'start': startStr,
+          'end': endStr,
+        },
+      );
       final response = await supabase
           .from('tasks')
           .select()
@@ -295,7 +368,12 @@ class SyncService {
         );
       }
     } catch (e) {
-      print("SyncService: Error fetching history: $e");
+      AvenueLogger.log(
+        event: 'SYNC_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.SYNC,
+        payload: e.toString(),
+      );
       rethrow;
     }
   }

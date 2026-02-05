@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import '../utils/observability.dart';
 
 class DeviceService {
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
@@ -31,7 +32,12 @@ class DeviceService {
         }
       }
     } catch (e) {
-      debugPrint('Error getting device ID: $e');
+      AvenueLogger.log(
+        event: 'DEVICE_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.SYNC,
+        payload: e.toString(),
+      );
       // Fallback or rethrow depending on requirements.
       // For now, returning a timestamp based ID as fallback to allow non-blocking flow,
       // though persistent ID is preferred.

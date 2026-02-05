@@ -11,6 +11,7 @@ import 'task_state.dart';
 
 import '../../../../core/services/sync_service.dart';
 import '../../../../core/utils/calendar_utils.dart';
+import '../../../../core/utils/observability.dart';
 
 class TaskCubit extends Cubit<TaskState> {
   final ScheduleRepository repository;
@@ -20,6 +21,7 @@ class TaskCubit extends Cubit<TaskState> {
 
   TaskCubit({required this.repository, required this.syncService})
     : super(TaskInitial()) {
+    AvenueLogger.log(event: 'STATE_TASK_INITIALIZED', layer: LoggerLayer.STATE);
     _selectedDate = CalendarUtils.normalize(_selectedDate);
     // Removed loadTasks(); Views will trigger it with their specific dates
     syncTasks(); // Sync once on app start
@@ -30,23 +32,41 @@ class TaskCubit extends Cubit<TaskState> {
     ) {
       // connectivity_plus 6.x returns a List<ConnectivityResult>
       if (results.any((result) => result != ConnectivityResult.none)) {
-        print("TaskCubit: Internet restored. Triggering auto-sync.");
+        AvenueLogger.log(
+          event: 'CONNECTIVITY_RESTORED',
+          layer: LoggerLayer.SYNC,
+        );
         syncTasks();
       }
     });
   }
 
+  void _logState(TaskState state, {String? traceId}) {
+    AvenueLogger.log(
+      event: 'STATE_TASKS_UPDATED',
+      layer: LoggerLayer.STATE,
+      traceId: traceId,
+      payload: {'state': state.runtimeType.toString()},
+    );
+    emit(state);
+  }
+
   Future<void> loadDateBounds() async {
     final result = await repository.getDateBounds();
     result.fold(
-      (failure) => print("Failed to load date bounds: ${failure.message}"),
+      (failure) => AvenueLogger.log(
+        event: 'DB_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.DB,
+        payload: 'Failed to load date bounds: ${failure.message}',
+      ),
       (bounds) {
         final currentState = state;
         final first = bounds['first'];
         final last = bounds['last'];
 
         if (currentState is TaskLoaded) {
-          emit(
+          _logState(
             TaskLoaded(
               currentState.tasks,
               selectedDate: currentState.selectedDate!,
@@ -55,7 +75,7 @@ class TaskCubit extends Cubit<TaskState> {
             ),
           );
         } else if (currentState is TaskLoading) {
-          emit(
+          _logState(
             TaskLoading(
               selectedDate: currentState.selectedDate,
               firstTaskDate: first,
@@ -63,7 +83,7 @@ class TaskCubit extends Cubit<TaskState> {
             ),
           );
         } else if (currentState is TaskError) {
-          emit(
+          _logState(
             TaskError(
               currentState.message,
               selectedDate: currentState.selectedDate,
@@ -91,7 +111,12 @@ class TaskCubit extends Cubit<TaskState> {
         await loadTasks(date: _selectedDate);
       }
     } catch (e) {
-      print("TaskCubit: Background sync failed: $e");
+      AvenueLogger.log(
+        event: 'SYNC_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.SYNC,
+        payload: 'Background sync failed: $e',
+      );
     }
   }
 
@@ -100,12 +125,20 @@ class TaskCubit extends Cubit<TaskState> {
 
     // Prevent redundant loads if already on this date
     if (!force && state is TaskLoaded && _selectedDate == targetDate) {
-      print("TaskCubit: Already loaded for $targetDate, skipping.");
+      AvenueLogger.log(
+        event: 'STATE_LOAD_SKIPPED',
+        layer: LoggerLayer.STATE,
+        payload: targetDate.toIso8601String(),
+      );
       return;
     }
 
     _selectedDate = targetDate;
-    print("TaskCubit: Loading tasks for $targetDate");
+    AvenueLogger.log(
+      event: 'STATE_LOAD_STARTED',
+      layer: LoggerLayer.STATE,
+      payload: targetDate.toIso8601String(),
+    );
 
     emit(
       TaskLoading(
@@ -130,8 +163,13 @@ class TaskCubit extends Cubit<TaskState> {
 
     result.fold(
       (failure) {
-        print("TaskCubit: Load failed for $targetDate: ${failure.message}");
-        emit(
+        AvenueLogger.log(
+          event: 'STATE_LOAD_FAILED',
+          level: LoggerLevel.ERROR,
+          layer: LoggerLayer.STATE,
+          payload: 'Load failed for $targetDate: ${failure.message}',
+        );
+        _logState(
           TaskError(
             failure.message,
             selectedDate: targetDate,
@@ -141,8 +179,13 @@ class TaskCubit extends Cubit<TaskState> {
         );
       },
       (tasks) {
-        print(
-          "TaskCubit: Successfully loaded ${tasks.length} tasks for $targetDate",
+        AvenueLogger.log(
+          event: 'STATE_LOAD_COMPLETED',
+          layer: LoggerLayer.STATE,
+          payload: {
+            'count': tasks.length,
+            'date': targetDate.toIso8601String(),
+          },
         );
         final List<TaskModel> allTasks = List.from(tasks);
 
@@ -191,7 +234,7 @@ class TaskCubit extends Cubit<TaskState> {
           return a.startTime!.compareTo(b.startTime!);
         });
 
-        emit(
+        _logState(
           TaskLoaded(
             allTasks,
             selectedDate: targetDate,
@@ -205,7 +248,7 @@ class TaskCubit extends Cubit<TaskState> {
   }
 
   Future<void> loadFutureTasks() async {
-    emit(
+    _logState(
       TaskLoading(
         firstTaskDate: state.firstTaskDate,
         lastTaskDate: state.lastTaskDate,
@@ -215,14 +258,14 @@ class TaskCubit extends Cubit<TaskState> {
     final futureThreshold = DateTime.now().add(const Duration(days: 7));
     final result = await repository.getFutureTasks(futureThreshold);
     result.fold(
-      (failure) => emit(
+      (failure) => _logState(
         TaskError(
           failure.message,
           firstTaskDate: state.firstTaskDate,
           lastTaskDate: state.lastTaskDate,
         ),
       ),
-      (tasks) => emit(
+      (tasks) => _logState(
         FutureTasksLoaded(
           tasks,
           firstTaskDate: state.firstTaskDate,
@@ -232,16 +275,17 @@ class TaskCubit extends Cubit<TaskState> {
     );
   }
 
-  Future<void> addDefaultTask(DefaultTaskModel task) async {
-    final result = await repository.addDefaultTask(task);
+  Future<void> addDefaultTask(DefaultTaskModel task, {String? traceId}) async {
+    final result = await repository.addDefaultTask(task, traceId: traceId);
     result.fold(
-      (failure) => emit(
+      (failure) => _logState(
         TaskError(
           failure.message,
           selectedDate: _selectedDate,
           firstTaskDate: state.firstTaskDate,
           lastTaskDate: state.lastTaskDate,
         ),
+        traceId: traceId,
       ),
       (_) {
         if (state is FutureTasksLoaded) {
@@ -253,26 +297,28 @@ class TaskCubit extends Cubit<TaskState> {
     );
   }
 
-  Future<void> addTask(TaskModel task) async {
+  Future<void> addTask(TaskModel task, {String? traceId}) async {
     // 1. Emit loading immediately to signal the UI that work has started
-    emit(
+    _logState(
       TaskLoading(
         selectedDate: _selectedDate,
         firstTaskDate: state.firstTaskDate,
         lastTaskDate: state.lastTaskDate,
       ),
+      traceId: traceId,
     );
 
-    final result = await repository.addTask(task);
+    final result = await repository.addTask(task, traceId: traceId);
 
     result.fold(
-      (failure) => emit(
+      (failure) => _logState(
         TaskError(
           failure.message,
           selectedDate: _selectedDate,
           firstTaskDate: state.firstTaskDate,
           lastTaskDate: state.lastTaskDate,
         ),
+        traceId: traceId,
       ),
       (_) {
         if (state is FutureTasksLoaded) {
@@ -285,17 +331,18 @@ class TaskCubit extends Cubit<TaskState> {
     );
   }
 
-  Future<void> updateTask(TaskModel task) async {
-    final result = await repository.updateTask(task);
+  Future<void> updateTask(TaskModel task, {String? traceId}) async {
+    final result = await repository.updateTask(task, traceId: traceId);
 
     result.fold(
-      (failure) => emit(
+      (failure) => _logState(
         TaskError(
           failure.message,
           selectedDate: _selectedDate,
           firstTaskDate: state.firstTaskDate,
           lastTaskDate: state.lastTaskDate,
         ),
+        traceId: traceId,
       ),
       (_) {
         if (state is FutureTasksLoaded) {
@@ -308,12 +355,14 @@ class TaskCubit extends Cubit<TaskState> {
     );
   }
 
-  Future<void> deleteTask(String id) async {
-    final result = await repository.deleteTask(id);
+  Future<void> deleteTask(String id, {String? traceId}) async {
+    final result = await repository.deleteTask(id, traceId: traceId);
 
     result.fold(
-      (failure) =>
-          emit(TaskError(failure.message, selectedDate: _selectedDate)),
+      (failure) => _logState(
+        TaskError(failure.message, selectedDate: _selectedDate),
+        traceId: traceId,
+      ),
       (_) {
         if (state is FutureTasksLoaded) {
           loadFutureTasks();
@@ -340,10 +389,14 @@ class TaskCubit extends Cubit<TaskState> {
       (failure) async {
         // If failed because not found, create it as a new task (Crystallization)
         if (failure.message.toLowerCase().contains('not found')) {
-          print("Crystallizing default task: ${task.name}");
+          AvenueLogger.log(
+            event: 'STATE_CRYSTALLIZE_TASK',
+            layer: LoggerLayer.STATE,
+            payload: task.name,
+          );
           await addTask(task.copyWith(completed: true));
         } else {
-          emit(
+          _logState(
             TaskError(
               failure.message,
               selectedDate: _selectedDate,
@@ -379,7 +432,7 @@ class TaskCubit extends Cubit<TaskState> {
     final result = await repository.deleteDefaultTask(defaultTaskId);
     result.fold(
       (failure) =>
-          emit(TaskError(failure.message, selectedDate: _selectedDate)),
+          _logState(TaskError(failure.message, selectedDate: _selectedDate)),
       (_) {
         loadTasks(force: true);
         syncTasks();
@@ -401,7 +454,7 @@ class TaskCubit extends Cubit<TaskState> {
     final defaultTasksResult = await repository.getDefaultTasks();
     await defaultTasksResult.fold(
       (failure) async =>
-          emit(TaskError(failure.message, selectedDate: _selectedDate)),
+          _logState(TaskError(failure.message, selectedDate: _selectedDate)),
       (defaultTasks) async {
         final task = defaultTasks.firstWhereOrNull(
           (t) => t.id == defaultTaskId,
@@ -421,8 +474,9 @@ class TaskCubit extends Cubit<TaskState> {
           final updatedTask = task.copyWith(hideOn: updatedHideOn);
           final result = await repository.updateDefaultTask(updatedTask);
           result.fold(
-            (failure) =>
-                emit(TaskError(failure.message, selectedDate: _selectedDate)),
+            (failure) => _logState(
+              TaskError(failure.message, selectedDate: _selectedDate),
+            ),
             (_) {
               loadTasks(force: true);
               syncTasks();
@@ -439,7 +493,7 @@ class TaskCubit extends Cubit<TaskState> {
     final result = await repository.updateDefaultTask(task);
     result.fold(
       (failure) =>
-          emit(TaskError(failure.message, selectedDate: _selectedDate)),
+          _logState(TaskError(failure.message, selectedDate: _selectedDate)),
       (_) {
         loadTasks(force: true);
         syncTasks();
@@ -451,7 +505,7 @@ class TaskCubit extends Cubit<TaskState> {
     final result = await repository.deleteDefaultTask(id);
     result.fold(
       (failure) =>
-          emit(TaskError(failure.message, selectedDate: _selectedDate)),
+          _logState(TaskError(failure.message, selectedDate: _selectedDate)),
       (_) {
         loadTasks(force: true);
         syncTasks();

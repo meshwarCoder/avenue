@@ -10,6 +10,7 @@ import '../widgets/task_card.dart';
 import '../../../../core/widgets/avenue_loading.dart';
 import '../../../../core/utils/task_utils.dart';
 import '../../../../core/utils/calendar_utils.dart';
+import '../../../../core/utils/observability.dart';
 
 class HomeView extends StatefulWidget {
   final DateTime? selectedDate;
@@ -29,7 +30,11 @@ class _HomeViewState extends State<HomeView> {
     _date = DateTime(_date.year, _date.month, _date.day);
 
     final cubit = context.read<TaskCubit>();
-    print('HomeView: initState. TaskCubit: ${cubit.hashCode}');
+    AvenueLogger.log(
+      event: 'UI_INIT_STATE',
+      layer: LoggerLayer.UI,
+      payload: 'HomeView',
+    );
     cubit.loadTasks(date: _date);
   }
 

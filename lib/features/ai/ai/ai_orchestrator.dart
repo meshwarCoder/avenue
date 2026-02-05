@@ -4,6 +4,7 @@ import 'ai_prompt_builder.dart';
 import 'ai_response_parser.dart';
 import 'ai_repository.dart';
 import '../../../core/services/embedding_service.dart';
+import '../../../core/utils/observability.dart';
 
 class AiOrchestrator {
   final AiRepository _repository;
@@ -18,8 +19,9 @@ class AiOrchestrator {
        );
 
   Future<(String, List<AiAction>, String?)> processUserMessage(
-    String message,
-  ) async {
+    String message, {
+    String? traceId,
+  }) async {
     // 1. Clear Instructions
     final systemPrompt = AiPromptBuilder.buildSystemPrompt();
 
@@ -27,6 +29,7 @@ class AiOrchestrator {
     final responsePayload = await _repository.processUserMessage(
       userMessage: message,
       systemPrompt: systemPrompt,
+      traceId: traceId,
     );
 
     // 3. Extract Text Response
@@ -37,7 +40,12 @@ class AiOrchestrator {
     );
     final responseText = textPart['text'] as String;
 
-    print('[AI][Final] $responseText');
+    AvenueLogger.log(
+      event: 'AI_FINAL_RESPONSE',
+      layer: LoggerLayer.AI,
+      traceId: traceId,
+      payload: responseText,
+    );
 
     // 4. Parse Response for UI metadata (Title, etc)
     final (msg, actions, suggestedTitle) = AiResponseParser.parse(responseText);

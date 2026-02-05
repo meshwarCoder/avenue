@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'ai_action_models.dart';
+import '../../../core/utils/observability.dart';
 
 class AiResponseParser {
   static (String message, List<AiAction> actions, String? suggestedTitle) parse(
@@ -53,21 +54,36 @@ class AiResponseParser {
               }
               return AiAction.fromJson(map);
             } catch (e) {
-              print('Error parsing single action: $e');
+              AvenueLogger.log(
+                event: 'AI_PARSE_ERROR',
+                level: LoggerLevel.WARN,
+                layer: LoggerLayer.AI,
+                payload: 'Single action parse error: $e',
+              );
               return const AiAction.unknown(
                 rawResponse: 'Invalid action format',
               );
             }
           }).toList();
         } catch (e) {
-          print('Error parsing actions list: $e');
+          AvenueLogger.log(
+            event: 'AI_PARSE_ERROR',
+            level: LoggerLevel.WARN,
+            layer: LoggerLayer.AI,
+            payload: 'Actions list parse error: $e',
+          );
         }
 
         return (message, actions, suggestedTitle);
       }
     } catch (e) {
-      print('Error parsing AI response: $e');
-      print('Raw response was: $response');
+      AvenueLogger.log(
+        event: 'AI_PARSE_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.AI,
+        payload: {'error': e.toString(), 'rawResponse': response},
+      );
+      return (response, [], null);
     }
 
     // Default: return the whole response as a message with no actions

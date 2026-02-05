@@ -13,6 +13,7 @@ import 'package:sqlite3/open.dart';
 import 'package:avenue/core/utils/constants.dart';
 import 'package:avenue/features/schdules/domain/repo/schedule_repository.dart';
 import 'package:avenue/core/logic/theme_cubit.dart';
+import 'package:avenue/core/utils/observability.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,9 +39,18 @@ void main() async {
   try {
     final retentionDate = DateTime.now().subtract(const Duration(days: 7));
     await sl<ScheduleRepository>().deleteTasksBefore(retentionDate);
-    print("Pruned local tasks older than $retentionDate");
+    AvenueLogger.log(
+      event: 'SYNC_MAINTENANCE_SUCCESS',
+      layer: LoggerLayer.SYNC,
+      payload: 'Pruned local tasks older than $retentionDate',
+    );
   } catch (e) {
-    print("Failed to prune old tasks: $e");
+    AvenueLogger.log(
+      event: 'SYNC_MAINTENANCE_FAILED',
+      level: LoggerLevel.ERROR,
+      layer: LoggerLayer.SYNC,
+      payload: e.toString(),
+    );
   }
 
   runApp(const Line());

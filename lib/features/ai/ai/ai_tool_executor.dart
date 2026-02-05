@@ -1,5 +1,6 @@
 import 'package:avenue/features/schdules/domain/repo/schedule_repository.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/utils/observability.dart';
 
 class AiToolExecutor {
   final ScheduleRepository _repository;
@@ -10,7 +11,11 @@ class AiToolExecutor {
     String name,
     Map<String, dynamic> args,
   ) async {
-    print('[AI][ToolCall] $name $args');
+    AvenueLogger.log(
+      event: 'AI_TOOL_CALL',
+      layer: LoggerLayer.AI,
+      payload: {'tool': name, 'args': args},
+    );
 
     try {
       switch (name) {
@@ -36,7 +41,12 @@ class AiToolExecutor {
           return {'error': 'Tool not found: $name'};
       }
     } catch (e) {
-      print('[AI][ToolError] $name: $e');
+      AvenueLogger.log(
+        event: 'AI_TOOL_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.AI,
+        payload: {'tool': name, 'error': e.toString()},
+      );
       return {'error': e.toString()};
     }
   }
@@ -54,7 +64,11 @@ class AiToolExecutor {
         : await _repository.getTasksByDate(start);
 
     return result.fold((f) => {'error': f.message}, (tasks) {
-      print('[AI][ToolResult] getTasks count: ${tasks.length}');
+      AvenueLogger.log(
+        event: 'AI_TOOL_RESULT',
+        layer: LoggerLayer.AI,
+        payload: {'tool': 'getTasks', 'count': tasks.length},
+      );
       return {'tasks': tasks.map((t) => t.toMap()).toList()};
     });
   }
@@ -65,7 +79,11 @@ class AiToolExecutor {
     final query = args['query'] as String;
     final result = await _repository.searchTasks(query);
     return result.fold((f) => {'error': f.message}, (tasks) {
-      print('[AI][ToolResult] searchTasks count: ${tasks.length}');
+      AvenueLogger.log(
+        event: 'AI_TOOL_RESULT',
+        layer: LoggerLayer.AI,
+        payload: {'tool': 'searchTasks', 'count': tasks.length},
+      );
       return {'tasks': tasks.map((t) => t.toMap()).toList()};
     });
   }
@@ -76,7 +94,11 @@ class AiToolExecutor {
     final query = args['query'] as String;
     final result = await _repository.searchDefaultTasks(query);
     return result.fold((f) => {'error': f.message}, (tasks) {
-      print('[AI][ToolResult] searchDefaultTasks count: ${tasks.length}');
+      AvenueLogger.log(
+        event: 'AI_TOOL_RESULT',
+        layer: LoggerLayer.AI,
+        payload: {'tool': 'searchDefaultTasks', 'count': tasks.length},
+      );
       return {'tasks': tasks.map((t) => t.toMap()).toList()};
     });
   }
@@ -85,7 +107,11 @@ class AiToolExecutor {
     // [Draft Mode] Generate ID but do not save to DB yet.
     // The UI will confirm and execute.
     final id = const Uuid().v4();
-    print('[AI][Draft] addTask proposed: $id');
+    AvenueLogger.log(
+      event: 'AI_DRAFT_ACTION',
+      layer: LoggerLayer.AI,
+      payload: {'action': 'addTask', 'id': id},
+    );
     return {
       'success': true,
       'taskId': id,
@@ -99,7 +125,11 @@ class AiToolExecutor {
   ) async {
     // [Draft Mode]
     final id = const Uuid().v4();
-    print('[AI][Draft] addDefaultTask proposed: $id');
+    AvenueLogger.log(
+      event: 'AI_DRAFT_ACTION',
+      layer: LoggerLayer.AI,
+      payload: {'action': 'addDefaultTask', 'id': id},
+    );
     return {
       'success': true,
       'defaultTaskId': id,

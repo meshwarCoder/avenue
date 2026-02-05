@@ -18,17 +18,17 @@ abstract class ScheduleRepository {
   /// Add a new task
   /// Returns [Right(void)] on success
   /// Returns [Left(Failure)] on error
-  Future<Either<Failure, void>> addTask(TaskModel task);
+  Future<Either<Failure, void>> addTask(TaskModel task, {String? traceId});
 
   /// Update an existing task
   /// Returns [Right(void)] on success
   /// Returns [Left(Failure)] on error
-  Future<Either<Failure, void>> updateTask(TaskModel task);
+  Future<Either<Failure, void>> updateTask(TaskModel task, {String? traceId});
 
   /// Delete a task by ID
   /// Returns [Right(void)] on success
   /// Returns [Left(Failure)] on error
-  Future<Either<Failure, void>> deleteTask(String id);
+  Future<Either<Failure, void>> deleteTask(String id, {String? traceId});
 
   /// Get a task by ID
   Future<Either<Failure, TaskModel?>> getTaskById(String id);
@@ -39,7 +39,10 @@ abstract class ScheduleRepository {
   Future<Either<Failure, void>> toggleTaskDone(String id);
 
   /// Add a new default task
-  Future<Either<Failure, void>> addDefaultTask(DefaultTaskModel task);
+  Future<Either<Failure, void>> addDefaultTask(
+    DefaultTaskModel task, {
+    String? traceId,
+  });
 
   /// Get all default tasks
   Future<Either<Failure, List<DefaultTaskModel>>> getDefaultTasks();

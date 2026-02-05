@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/chat_model.dart';
 import '../models/chat_message_model.dart';
+import '../../../../core/utils/observability.dart';
 
 class ChatRepository {
   final SupabaseClient _supabase;
@@ -23,8 +24,19 @@ class ChatRepository {
           .single();
 
       final chatId = response['id'] as String;
+      AvenueLogger.log(
+        event: 'DB_CREATE',
+        layer: LoggerLayer.DB,
+        payload: {'entity': 'chat', 'id': chatId, 'userId': userId},
+      );
       return chatId;
     } catch (e) {
+      AvenueLogger.log(
+        event: 'DB_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.DB,
+        payload: 'createChat failed: $e',
+      );
       rethrow;
     }
   }
@@ -97,7 +109,11 @@ class ChatRepository {
 
   // Delete a chat and its messages
   Future<void> deleteChat(String chatId) async {
-    print('ChatRepository: Deleting chat $chatId');
+    AvenueLogger.log(
+      event: 'DB_DELETE',
+      layer: LoggerLayer.DB,
+      payload: {'entity': 'chat', 'id': chatId},
+    );
 
     try {
       // Delete messages first (due to foreign key constraint)
@@ -106,11 +122,18 @@ class ChatRepository {
       // Then delete the chat
       await _supabase.from('chats').delete().eq('id', chatId);
 
-      print('ChatRepository: Chat deleted successfully');
-    } catch (e, stackTrace) {
-      print('ChatRepository.deleteChat failed!');
-      print('Error: $e');
-      print('Stack trace: $stackTrace');
+      AvenueLogger.log(
+        event: 'DB_RESULT',
+        layer: LoggerLayer.DB,
+        payload: 'Chat deleted successfully',
+      );
+    } catch (e) {
+      AvenueLogger.log(
+        event: 'DB_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.DB,
+        payload: 'deleteChat failed: $e',
+      );
       rethrow;
     }
   }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import '../utils/observability.dart';
 
 class EmbeddingService {
   final String _apiKey;
@@ -42,7 +43,12 @@ class EmbeddingService {
       final List<dynamic> values = json['embedding']['values'];
       return values.map((e) => (e as num).toDouble()).toList();
     } catch (e) {
-      print('Failed to generate embedding: $e');
+      AvenueLogger.log(
+        event: 'EMBEDDING_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.SYNC,
+        payload: e.toString(),
+      );
       rethrow;
     } finally {
       client.close();

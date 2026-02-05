@@ -2,17 +2,31 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../schdules/data/models/task_model.dart';
 import '../../domain/repo/weekly_repository.dart';
 import 'weekly_state.dart';
+import '../../../../core/utils/observability.dart';
 
 class WeeklyCubit extends Cubit<WeeklyState> {
   final WeeklyRepository repository;
 
   WeeklyCubit({required this.repository}) : super(const WeeklyInitial());
 
+  void _logState(WeeklyState state) {
+    AvenueLogger.log(
+      event: 'STATE_WEEKLY_UPDATED',
+      layer: LoggerLayer.STATE,
+      payload: {'state': state.runtimeType.toString()},
+    );
+    emit(state);
+  }
+
   Future<void> loadDateBounds() async {
     final result = await repository.getDateBounds();
     result.fold(
-      (failure) => print(
-        "Failed to load date bounds in WeeklyCubit: ${failure.message}",
+      (failure) => AvenueLogger.log(
+        event: 'DB_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.DB,
+        payload:
+            'Failed to load date bounds in WeeklyCubit: ${failure.message}',
       ),
       (bounds) {
         final first = bounds['first'];
@@ -20,7 +34,7 @@ class WeeklyCubit extends Cubit<WeeklyState> {
         final currentState = state;
 
         if (currentState is WeeklyLoaded) {
-          emit(
+          _logState(
             WeeklyLoaded(
               currentState.tasks,
               mondayDate: currentState.mondayDate,
@@ -29,9 +43,9 @@ class WeeklyCubit extends Cubit<WeeklyState> {
             ),
           );
         } else if (currentState is WeeklyLoading) {
-          emit(WeeklyLoading(firstTaskDate: first, lastTaskDate: last));
+          _logState(WeeklyLoading(firstTaskDate: first, lastTaskDate: last));
         } else if (currentState is WeeklyError) {
-          emit(
+          _logState(
             WeeklyError(
               currentState.message,
               firstTaskDate: first,
@@ -39,14 +53,14 @@ class WeeklyCubit extends Cubit<WeeklyState> {
             ),
           );
         } else {
-          emit(WeeklyInitial(firstTaskDate: first, lastTaskDate: last));
+          _logState(WeeklyInitial(firstTaskDate: first, lastTaskDate: last));
         }
       },
     );
   }
 
   Future<void> loadWeeklyTasks(DateTime monday) async {
-    emit(
+    _logState(
       WeeklyLoading(
         firstTaskDate: state.firstTaskDate,
         lastTaskDate: state.lastTaskDate,
@@ -59,7 +73,7 @@ class WeeklyCubit extends Cubit<WeeklyState> {
     // we skip the range fetch but still allow recurring tasks logic if needed.
     // However, usually recurring tasks don't exist in the far past either.
     if (state.firstTaskDate != null && sunday.isBefore(state.firstTaskDate!)) {
-      emit(
+      _logState(
         WeeklyLoaded(
           [],
           mondayDate: monday,
@@ -77,7 +91,7 @@ class WeeklyCubit extends Cubit<WeeklyState> {
     final defaultTasksResult = await repository.getDefaultTasks();
 
     result.fold(
-      (failure) => emit(
+      (failure) => _logState(
         WeeklyError(
           failure.message,
           firstTaskDate: state.firstTaskDate,
@@ -126,7 +140,7 @@ class WeeklyCubit extends Cubit<WeeklyState> {
           }
         });
 
-        emit(
+        _logState(
           WeeklyLoaded(
             allTasks,
             mondayDate: monday,

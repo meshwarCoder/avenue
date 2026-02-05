@@ -2,6 +2,8 @@ import 'gemini_http_client.dart';
 import 'ai_tools.dart';
 import 'ai_tool_executor.dart';
 import '../../schdules/domain/repo/schedule_repository.dart';
+import '../../../core/utils/observability.dart';
+import 'package:uuid/uuid.dart';
 
 class AiRepository {
   final GeminiHttpClient _client;
@@ -19,7 +21,9 @@ class AiRepository {
   Future<Map<String, dynamic>> processUserMessage({
     required String userMessage,
     required String systemPrompt,
+    String? traceId,
   }) async {
+    final tid = traceId ?? const Uuid().v4().substring(0, 8);
     // 0. Add User Message to History FIRST
     _history.add({
       'role': 'user',
@@ -34,6 +38,7 @@ class AiRepository {
       history: _getRecentHistory(),
       userMessage: null, // User message is already in history
       tools: AiTools.declarations,
+      traceId: tid,
     );
 
     // 2. Loop until no more function calls or max iterations reached
@@ -54,7 +59,19 @@ class AiRepository {
         final args = functionCall['args'] as Map<String, dynamic>? ?? {};
 
         // Execute Tool
+        AvenueLogger.log(
+          event: 'AI_TOOL_CALL',
+          layer: LoggerLayer.AI,
+          traceId: tid,
+          payload: {'tool': toolName, 'args': args},
+        );
         final result = await _executor.execute(toolName, args);
+        AvenueLogger.log(
+          event: 'AI_TOOL_RESULT',
+          layer: LoggerLayer.AI,
+          traceId: tid,
+          payload: {'tool': toolName, 'result': result},
+        );
 
         toolResults.add({
           'functionResponse': {
@@ -74,6 +91,7 @@ class AiRepository {
         history: _getRecentHistory(),
         userMessage: null,
         tools: AiTools.declarations,
+        traceId: tid,
       );
 
       iterations++;

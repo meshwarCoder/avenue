@@ -94,7 +94,7 @@ class WeeklyTaskItem extends StatelessWidget {
                     ),
                 ],
               ),
-              if (finalHeight > 25)
+              if (finalHeight >= 32)
                 Text(
                   '${localStart.hour.toString().padLeft(2, '0')}:${localStart.minute.toString().padLeft(2, '0')}',
                   style: TextStyle(
