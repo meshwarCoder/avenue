@@ -85,8 +85,12 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Left(ServerFailure('User not logged in'));
       }
 
-      final device = DeviceModel(userId: userId, deviceId: deviceId);
-      await supabase.from('devices').insert(device.toSupabaseJson());
+      final device = DeviceModel(
+        id: deviceId,
+        userId: userId,
+        deviceId: deviceId,
+      );
+      await supabase.from('devices').upsert(device.toSupabaseJson());
 
       return const Right(null);
     } catch (e) {
@@ -105,6 +109,7 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       final profile = ProfileModel(
+        id: userId,
         userId: userId,
         timezoneOffset: timezoneOffset,
       );
