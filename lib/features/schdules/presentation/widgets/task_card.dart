@@ -20,6 +20,8 @@ class TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isPast = _isPastDate(task.taskDate);
+    final isMissed = isPast && !task.completed;
     final onSurface = theme.colorScheme.onSurface;
     final secondaryText = onSurface.withOpacity(0.6);
 
@@ -28,24 +30,28 @@ class TaskCard extends StatelessWidget {
       onLongPress: onLongPress,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 200),
-        opacity: task.completed ? 0.7 : 1.0,
+        opacity: task.completed ? 0.9 : 1.0,
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           height: height,
           decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(12),
+            color: task.completed
+                ? Colors.green.withOpacity(0.08)
+                : (isMissed ? Colors.red.withOpacity(0.08) : theme.cardColor),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: task.completed
                   ? Colors.green.withOpacity(0.3)
-                  : theme.dividerColor.withOpacity(0.05),
-              width: 1,
+                  : (isMissed
+                        ? Colors.red.withOpacity(0.3)
+                        : theme.dividerColor.withOpacity(0.05)),
+              width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -56,8 +62,10 @@ class TaskCard extends StatelessWidget {
                 children: [
                   // Left accent bar
                   Container(
-                    width: 4,
-                    color: task.completed ? Colors.grey : task.color,
+                    width: 5,
+                    color: task.completed
+                        ? Colors.green
+                        : (isMissed ? Colors.redAccent : task.color),
                   ),
                   Expanded(
                     child: LayoutBuilder(
@@ -69,86 +77,107 @@ class TaskCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Header: Category and Importance
+                              // Header: Category, Importance Dot, and Status Icon
                               Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Flexible(
-                                    child: _buildBadge(
-                                      context,
-                                      task.category,
-                                      task.color,
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        Flexible(
+                                          fit: FlexFit.loose,
+                                          child: _buildBadge(
+                                            context,
+                                            task.category,
+                                            task.completed
+                                                ? Colors.green
+                                                : (isMissed
+                                                      ? Colors.redAccent
+                                                      : task.color),
+                                          ),
+                                        ),
+                                        if (task.importanceType != null) ...[
+                                          const SizedBox(width: 8),
+                                          _buildImportanceDot(
+                                            task.importanceType!,
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ),
-                                  if (task.importanceType != null &&
-                                      !isCompact) ...[
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: _buildBadge(
-                                        context,
-                                        task.importanceType!,
-                                        _getImportanceColor(
-                                          task.importanceType!,
-                                        ),
-                                        isOutline: true,
-                                      ),
-                                    ),
-                                  ],
-                                  const Spacer(flex: 1),
+                                  const SizedBox(width: 8),
                                   if (task.completed)
                                     const Icon(
-                                      Icons.check_circle,
+                                      Icons.check_circle_rounded,
                                       color: Colors.green,
-                                      size: 16,
+                                      size: 18,
+                                    )
+                                  else if (isMissed)
+                                    const Icon(
+                                      Icons.error_outline_rounded,
+                                      color: Colors.redAccent,
+                                      size: 18,
                                     ),
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              // Title
-                              Text(
-                                task.name,
-                                style: TextStyle(
-                                  fontSize: isCompact ? 14 : 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: onSurface,
-                                  decoration: task.completed
-                                      ? TextDecoration.lineThrough
-                                      : null,
+                              // Content: Title and Description (Flexible)
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      task.name,
+                                      style: TextStyle(
+                                        fontSize: isCompact ? 14 : 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.colorScheme.onSurface,
+                                        decoration: task.completed
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (task.desc != null &&
+                                        task.desc!.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Flexible(
+                                        fit: FlexFit.loose,
+                                        child: Text(
+                                          task.desc!,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: theme.colorScheme.onSurface
+                                                .withOpacity(0.5),
+                                            height: 1.3,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                              // Description (if not compact)
-                              if (!isCompact &&
-                                  task.desc != null &&
-                                  task.desc!.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  task.desc!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: secondaryText,
-                                    height: 1.3,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                              const Spacer(),
+                              const SizedBox(height: 4),
                               // Footer: Time and Type
                               Row(
                                 children: [
                                   Icon(
                                     Icons.access_time,
-                                    size: 12,
+                                    size: 11,
                                     color: secondaryText,
                                   ),
                                   const SizedBox(width: 4),
                                   Flexible(
-                                    flex: 2,
+                                    flex: 3,
                                     child: Text(
                                       '${_formatTime(task.startTimeOfDay)} - ${_formatTime(task.endTimeOfDay)}',
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: 10,
                                         color: secondaryText,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -158,7 +187,7 @@ class TaskCard extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 8),
                                   Flexible(
-                                    flex: 3,
+                                    flex: 2,
                                     child: _buildTypeIndicator(
                                       context,
                                       task.oneTime,
@@ -212,13 +241,18 @@ class TaskCard extends StatelessWidget {
 
   Widget _buildTypeIndicator(BuildContext context, bool isOneTime) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final color = isDark
+        ? Colors.white.withOpacity(0.9)
+        : theme.colorScheme.primary.withOpacity(0.7);
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           isOneTime ? Icons.calendar_today : Icons.repeat,
           size: 10,
-          color: theme.colorScheme.primary.withOpacity(0.6),
+          color: color,
         ),
         const SizedBox(width: 4),
         Flexible(
@@ -227,7 +261,7 @@ class TaskCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w700,
-              color: theme.colorScheme.primary.withOpacity(0.6),
+              color: color,
               letterSpacing: 0.3,
             ),
             maxLines: 1,
@@ -238,14 +272,38 @@ class TaskCard extends StatelessWidget {
     );
   }
 
+  Widget _buildImportanceDot(String importance) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: _getImportanceColor(importance),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: _getImportanceColor(importance).withOpacity(0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _isPastDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return date.isBefore(today);
+  }
+
   Color _getImportanceColor(String importance) {
     switch (importance.toLowerCase()) {
       case 'high':
-        return Colors.redAccent;
+        return Colors.red;
       case 'medium':
-        return Colors.orangeAccent;
+        return Colors.yellow[700]!;
       case 'low':
-        return Colors.blueAccent;
+        return Colors.green;
       default:
         return Colors.grey;
     }
