@@ -62,6 +62,12 @@ sealed class AiAction with _$AiAction {
   const factory AiAction.deleteDefaultTask({required String id}) =
       DeleteDefaultTaskAction;
 
+  @FreezedUnionValue('skipHabitInstance')
+  const factory AiAction.skipHabitInstance({
+    required String id,
+    required DateTime date,
+  }) = SkipHabitInstanceAction;
+
   @FreezedUnionValue('unknown')
   const factory AiAction.unknown({required String rawResponse}) = UnknownAction;
 

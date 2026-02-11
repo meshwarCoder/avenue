@@ -309,6 +309,39 @@ class ChatCubit extends Cubit<ChatState> {
         );
       } else if (action is DeleteDefaultTaskAction) {
         await taskCubit!.deleteDefaultTask(action.id);
+      } else if (action is SkipHabitInstanceAction) {
+        final repo = taskCubit!.repository;
+        final result = await repo.getDefaultTaskById(action.id);
+        result.fold(
+          (l) => AvenueLogger.log(
+            event: 'CHAT_EXECUTE_ERROR',
+            level: LoggerLevel.WARN,
+            layer: LoggerLayer.UI,
+            traceId: traceId,
+            payload: 'Habit not found for skipping',
+          ),
+          (existing) async {
+            if (existing == null) return;
+            // Add date to hideOn if not already there
+            final normalizedDate = DateTime(
+              action.date.year,
+              action.date.month,
+              action.date.day,
+            );
+            if (!existing.hideOn.any(
+              (d) =>
+                  d.year == normalizedDate.year &&
+                  d.month == normalizedDate.month &&
+                  d.day == normalizedDate.day,
+            )) {
+              final updated = existing.copyWith(
+                hideOn: [...existing.hideOn, normalizedDate],
+                serverUpdatedAt: DateTime.now(),
+              );
+              await taskCubit!.updateDefaultTask(updated);
+            }
+          },
+        );
       } else if (action is UnknownAction) {
         AvenueLogger.log(
           event: 'CHAT_EXECUTE_SKIPPED',

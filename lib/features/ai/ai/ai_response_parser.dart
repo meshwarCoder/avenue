@@ -51,6 +51,8 @@ class AiResponseParser {
               // Model now expects 'createTask', 'updateTask', 'deleteTask'
               if (map['type'] == 'addTask') {
                 map['type'] = 'createTask';
+              } else if (map['type'] == 'addDefaultTask') {
+                map['type'] = 'createDefaultTask';
               }
               return AiAction.fromJson(map);
             } catch (e) {

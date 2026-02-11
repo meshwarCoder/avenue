@@ -145,6 +145,22 @@ Map<String, dynamic> _$DeleteDefaultTaskActionToJson(
   DeleteDefaultTaskAction instance,
 ) => <String, dynamic>{'id': instance.id, 'type': instance.$type};
 
+SkipHabitInstanceAction _$SkipHabitInstanceActionFromJson(
+  Map<String, dynamic> json,
+) => SkipHabitInstanceAction(
+  id: json['id'] as String,
+  date: DateTime.parse(json['date'] as String),
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$SkipHabitInstanceActionToJson(
+  SkipHabitInstanceAction instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'date': instance.date.toIso8601String(),
+  'type': instance.$type,
+};
+
 UnknownAction _$UnknownActionFromJson(Map<String, dynamic> json) =>
     UnknownAction(
       rawResponse: json['rawResponse'] as String,

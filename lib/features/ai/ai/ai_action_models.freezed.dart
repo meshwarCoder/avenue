@@ -43,6 +43,10 @@ AiAction _$AiActionFromJson(
           return DeleteDefaultTaskAction.fromJson(
             json
           );
+                case 'skipHabitInstance':
+          return SkipHabitInstanceAction.fromJson(
+            json
+          );
                 case 'unknown':
           return UnknownAction.fromJson(
             json
@@ -105,7 +109,7 @@ extension AiActionPatterns on AiAction {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CreateTaskAction value)?  createTask,TResult Function( UpdateTaskAction value)?  updateTask,TResult Function( DeleteTaskAction value)?  deleteTask,TResult Function( UpdateSettingsAction value)?  updateSettings,TResult Function( CreateDefaultTaskAction value)?  createDefaultTask,TResult Function( UpdateDefaultTaskAction value)?  updateDefaultTask,TResult Function( DeleteDefaultTaskAction value)?  deleteDefaultTask,TResult Function( UnknownAction value)?  unknown,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CreateTaskAction value)?  createTask,TResult Function( UpdateTaskAction value)?  updateTask,TResult Function( DeleteTaskAction value)?  deleteTask,TResult Function( UpdateSettingsAction value)?  updateSettings,TResult Function( CreateDefaultTaskAction value)?  createDefaultTask,TResult Function( UpdateDefaultTaskAction value)?  updateDefaultTask,TResult Function( DeleteDefaultTaskAction value)?  deleteDefaultTask,TResult Function( SkipHabitInstanceAction value)?  skipHabitInstance,TResult Function( UnknownAction value)?  unknown,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case CreateTaskAction() when createTask != null:
@@ -115,7 +119,8 @@ return deleteTask(_that);case UpdateSettingsAction() when updateSettings != null
 return updateSettings(_that);case CreateDefaultTaskAction() when createDefaultTask != null:
 return createDefaultTask(_that);case UpdateDefaultTaskAction() when updateDefaultTask != null:
 return updateDefaultTask(_that);case DeleteDefaultTaskAction() when deleteDefaultTask != null:
-return deleteDefaultTask(_that);case UnknownAction() when unknown != null:
+return deleteDefaultTask(_that);case SkipHabitInstanceAction() when skipHabitInstance != null:
+return skipHabitInstance(_that);case UnknownAction() when unknown != null:
 return unknown(_that);case _:
   return orElse();
 
@@ -134,7 +139,7 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CreateTaskAction value)  createTask,required TResult Function( UpdateTaskAction value)  updateTask,required TResult Function( DeleteTaskAction value)  deleteTask,required TResult Function( UpdateSettingsAction value)  updateSettings,required TResult Function( CreateDefaultTaskAction value)  createDefaultTask,required TResult Function( UpdateDefaultTaskAction value)  updateDefaultTask,required TResult Function( DeleteDefaultTaskAction value)  deleteDefaultTask,required TResult Function( UnknownAction value)  unknown,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CreateTaskAction value)  createTask,required TResult Function( UpdateTaskAction value)  updateTask,required TResult Function( DeleteTaskAction value)  deleteTask,required TResult Function( UpdateSettingsAction value)  updateSettings,required TResult Function( CreateDefaultTaskAction value)  createDefaultTask,required TResult Function( UpdateDefaultTaskAction value)  updateDefaultTask,required TResult Function( DeleteDefaultTaskAction value)  deleteDefaultTask,required TResult Function( SkipHabitInstanceAction value)  skipHabitInstance,required TResult Function( UnknownAction value)  unknown,}){
 final _that = this;
 switch (_that) {
 case CreateTaskAction():
@@ -144,7 +149,8 @@ return deleteTask(_that);case UpdateSettingsAction():
 return updateSettings(_that);case CreateDefaultTaskAction():
 return createDefaultTask(_that);case UpdateDefaultTaskAction():
 return updateDefaultTask(_that);case DeleteDefaultTaskAction():
-return deleteDefaultTask(_that);case UnknownAction():
+return deleteDefaultTask(_that);case SkipHabitInstanceAction():
+return skipHabitInstance(_that);case UnknownAction():
 return unknown(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -159,7 +165,7 @@ return unknown(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CreateTaskAction value)?  createTask,TResult? Function( UpdateTaskAction value)?  updateTask,TResult? Function( DeleteTaskAction value)?  deleteTask,TResult? Function( UpdateSettingsAction value)?  updateSettings,TResult? Function( CreateDefaultTaskAction value)?  createDefaultTask,TResult? Function( UpdateDefaultTaskAction value)?  updateDefaultTask,TResult? Function( DeleteDefaultTaskAction value)?  deleteDefaultTask,TResult? Function( UnknownAction value)?  unknown,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CreateTaskAction value)?  createTask,TResult? Function( UpdateTaskAction value)?  updateTask,TResult? Function( DeleteTaskAction value)?  deleteTask,TResult? Function( UpdateSettingsAction value)?  updateSettings,TResult? Function( CreateDefaultTaskAction value)?  createDefaultTask,TResult? Function( UpdateDefaultTaskAction value)?  updateDefaultTask,TResult? Function( DeleteDefaultTaskAction value)?  deleteDefaultTask,TResult? Function( SkipHabitInstanceAction value)?  skipHabitInstance,TResult? Function( UnknownAction value)?  unknown,}){
 final _that = this;
 switch (_that) {
 case CreateTaskAction() when createTask != null:
@@ -169,7 +175,8 @@ return deleteTask(_that);case UpdateSettingsAction() when updateSettings != null
 return updateSettings(_that);case CreateDefaultTaskAction() when createDefaultTask != null:
 return createDefaultTask(_that);case UpdateDefaultTaskAction() when updateDefaultTask != null:
 return updateDefaultTask(_that);case DeleteDefaultTaskAction() when deleteDefaultTask != null:
-return deleteDefaultTask(_that);case UnknownAction() when unknown != null:
+return deleteDefaultTask(_that);case SkipHabitInstanceAction() when skipHabitInstance != null:
+return skipHabitInstance(_that);case UnknownAction() when unknown != null:
 return unknown(_that);case _:
   return null;
 
@@ -187,7 +194,7 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String name,  DateTime date,  String? startTime,  String? endTime,  String importance,  String? note)?  createTask,TResult Function( String id,  String? name,  DateTime? date,  String? startTime,  String? endTime,  String? importance,  String? note,  bool? isDone)?  updateTask,TResult Function( String id)?  deleteTask,TResult Function( String? theme,  String? language,  bool? notificationsEnabled)?  updateSettings,TResult Function( String name,  List<int> weekdays,  String startTime,  String endTime,  String importance,  String? note)?  createDefaultTask,TResult Function( String id,  String? name,  List<int>? weekdays,  String? startTime,  String? endTime,  String? importance,  String? note)?  updateDefaultTask,TResult Function( String id)?  deleteDefaultTask,TResult Function( String rawResponse)?  unknown,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String name,  DateTime date,  String? startTime,  String? endTime,  String importance,  String? note)?  createTask,TResult Function( String id,  String? name,  DateTime? date,  String? startTime,  String? endTime,  String? importance,  String? note,  bool? isDone)?  updateTask,TResult Function( String id)?  deleteTask,TResult Function( String? theme,  String? language,  bool? notificationsEnabled)?  updateSettings,TResult Function( String name,  List<int> weekdays,  String startTime,  String endTime,  String importance,  String? note)?  createDefaultTask,TResult Function( String id,  String? name,  List<int>? weekdays,  String? startTime,  String? endTime,  String? importance,  String? note)?  updateDefaultTask,TResult Function( String id)?  deleteDefaultTask,TResult Function( String id,  DateTime date)?  skipHabitInstance,TResult Function( String rawResponse)?  unknown,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CreateTaskAction() when createTask != null:
 return createTask(_that.name,_that.date,_that.startTime,_that.endTime,_that.importance,_that.note);case UpdateTaskAction() when updateTask != null:
@@ -196,7 +203,8 @@ return deleteTask(_that.id);case UpdateSettingsAction() when updateSettings != n
 return updateSettings(_that.theme,_that.language,_that.notificationsEnabled);case CreateDefaultTaskAction() when createDefaultTask != null:
 return createDefaultTask(_that.name,_that.weekdays,_that.startTime,_that.endTime,_that.importance,_that.note);case UpdateDefaultTaskAction() when updateDefaultTask != null:
 return updateDefaultTask(_that.id,_that.name,_that.weekdays,_that.startTime,_that.endTime,_that.importance,_that.note);case DeleteDefaultTaskAction() when deleteDefaultTask != null:
-return deleteDefaultTask(_that.id);case UnknownAction() when unknown != null:
+return deleteDefaultTask(_that.id);case SkipHabitInstanceAction() when skipHabitInstance != null:
+return skipHabitInstance(_that.id,_that.date);case UnknownAction() when unknown != null:
 return unknown(_that.rawResponse);case _:
   return orElse();
 
@@ -215,7 +223,7 @@ return unknown(_that.rawResponse);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String name,  DateTime date,  String? startTime,  String? endTime,  String importance,  String? note)  createTask,required TResult Function( String id,  String? name,  DateTime? date,  String? startTime,  String? endTime,  String? importance,  String? note,  bool? isDone)  updateTask,required TResult Function( String id)  deleteTask,required TResult Function( String? theme,  String? language,  bool? notificationsEnabled)  updateSettings,required TResult Function( String name,  List<int> weekdays,  String startTime,  String endTime,  String importance,  String? note)  createDefaultTask,required TResult Function( String id,  String? name,  List<int>? weekdays,  String? startTime,  String? endTime,  String? importance,  String? note)  updateDefaultTask,required TResult Function( String id)  deleteDefaultTask,required TResult Function( String rawResponse)  unknown,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String name,  DateTime date,  String? startTime,  String? endTime,  String importance,  String? note)  createTask,required TResult Function( String id,  String? name,  DateTime? date,  String? startTime,  String? endTime,  String? importance,  String? note,  bool? isDone)  updateTask,required TResult Function( String id)  deleteTask,required TResult Function( String? theme,  String? language,  bool? notificationsEnabled)  updateSettings,required TResult Function( String name,  List<int> weekdays,  String startTime,  String endTime,  String importance,  String? note)  createDefaultTask,required TResult Function( String id,  String? name,  List<int>? weekdays,  String? startTime,  String? endTime,  String? importance,  String? note)  updateDefaultTask,required TResult Function( String id)  deleteDefaultTask,required TResult Function( String id,  DateTime date)  skipHabitInstance,required TResult Function( String rawResponse)  unknown,}) {final _that = this;
 switch (_that) {
 case CreateTaskAction():
 return createTask(_that.name,_that.date,_that.startTime,_that.endTime,_that.importance,_that.note);case UpdateTaskAction():
@@ -224,7 +232,8 @@ return deleteTask(_that.id);case UpdateSettingsAction():
 return updateSettings(_that.theme,_that.language,_that.notificationsEnabled);case CreateDefaultTaskAction():
 return createDefaultTask(_that.name,_that.weekdays,_that.startTime,_that.endTime,_that.importance,_that.note);case UpdateDefaultTaskAction():
 return updateDefaultTask(_that.id,_that.name,_that.weekdays,_that.startTime,_that.endTime,_that.importance,_that.note);case DeleteDefaultTaskAction():
-return deleteDefaultTask(_that.id);case UnknownAction():
+return deleteDefaultTask(_that.id);case SkipHabitInstanceAction():
+return skipHabitInstance(_that.id,_that.date);case UnknownAction():
 return unknown(_that.rawResponse);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -239,7 +248,7 @@ return unknown(_that.rawResponse);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String name,  DateTime date,  String? startTime,  String? endTime,  String importance,  String? note)?  createTask,TResult? Function( String id,  String? name,  DateTime? date,  String? startTime,  String? endTime,  String? importance,  String? note,  bool? isDone)?  updateTask,TResult? Function( String id)?  deleteTask,TResult? Function( String? theme,  String? language,  bool? notificationsEnabled)?  updateSettings,TResult? Function( String name,  List<int> weekdays,  String startTime,  String endTime,  String importance,  String? note)?  createDefaultTask,TResult? Function( String id,  String? name,  List<int>? weekdays,  String? startTime,  String? endTime,  String? importance,  String? note)?  updateDefaultTask,TResult? Function( String id)?  deleteDefaultTask,TResult? Function( String rawResponse)?  unknown,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String name,  DateTime date,  String? startTime,  String? endTime,  String importance,  String? note)?  createTask,TResult? Function( String id,  String? name,  DateTime? date,  String? startTime,  String? endTime,  String? importance,  String? note,  bool? isDone)?  updateTask,TResult? Function( String id)?  deleteTask,TResult? Function( String? theme,  String? language,  bool? notificationsEnabled)?  updateSettings,TResult? Function( String name,  List<int> weekdays,  String startTime,  String endTime,  String importance,  String? note)?  createDefaultTask,TResult? Function( String id,  String? name,  List<int>? weekdays,  String? startTime,  String? endTime,  String? importance,  String? note)?  updateDefaultTask,TResult? Function( String id)?  deleteDefaultTask,TResult? Function( String id,  DateTime date)?  skipHabitInstance,TResult? Function( String rawResponse)?  unknown,}) {final _that = this;
 switch (_that) {
 case CreateTaskAction() when createTask != null:
 return createTask(_that.name,_that.date,_that.startTime,_that.endTime,_that.importance,_that.note);case UpdateTaskAction() when updateTask != null:
@@ -248,7 +257,8 @@ return deleteTask(_that.id);case UpdateSettingsAction() when updateSettings != n
 return updateSettings(_that.theme,_that.language,_that.notificationsEnabled);case CreateDefaultTaskAction() when createDefaultTask != null:
 return createDefaultTask(_that.name,_that.weekdays,_that.startTime,_that.endTime,_that.importance,_that.note);case UpdateDefaultTaskAction() when updateDefaultTask != null:
 return updateDefaultTask(_that.id,_that.name,_that.weekdays,_that.startTime,_that.endTime,_that.importance,_that.note);case DeleteDefaultTaskAction() when deleteDefaultTask != null:
-return deleteDefaultTask(_that.id);case UnknownAction() when unknown != null:
+return deleteDefaultTask(_that.id);case SkipHabitInstanceAction() when skipHabitInstance != null:
+return skipHabitInstance(_that.id,_that.date);case UnknownAction() when unknown != null:
 return unknown(_that.rawResponse);case _:
   return null;
 
@@ -827,6 +837,81 @@ class _$DeleteDefaultTaskActionCopyWithImpl<$Res>
   return _then(DeleteDefaultTaskAction(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class SkipHabitInstanceAction implements AiAction {
+  const SkipHabitInstanceAction({required this.id, required this.date, final  String? $type}): $type = $type ?? 'skipHabitInstance';
+  factory SkipHabitInstanceAction.fromJson(Map<String, dynamic> json) => _$SkipHabitInstanceActionFromJson(json);
+
+ final  String id;
+ final  DateTime date;
+
+@JsonKey(name: 'type')
+final String $type;
+
+
+/// Create a copy of AiAction
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SkipHabitInstanceActionCopyWith<SkipHabitInstanceAction> get copyWith => _$SkipHabitInstanceActionCopyWithImpl<SkipHabitInstanceAction>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SkipHabitInstanceActionToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SkipHabitInstanceAction&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,date);
+
+@override
+String toString() {
+  return 'AiAction.skipHabitInstance(id: $id, date: $date)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SkipHabitInstanceActionCopyWith<$Res> implements $AiActionCopyWith<$Res> {
+  factory $SkipHabitInstanceActionCopyWith(SkipHabitInstanceAction value, $Res Function(SkipHabitInstanceAction) _then) = _$SkipHabitInstanceActionCopyWithImpl;
+@useResult
+$Res call({
+ String id, DateTime date
+});
+
+
+
+
+}
+/// @nodoc
+class _$SkipHabitInstanceActionCopyWithImpl<$Res>
+    implements $SkipHabitInstanceActionCopyWith<$Res> {
+  _$SkipHabitInstanceActionCopyWithImpl(this._self, this._then);
+
+  final SkipHabitInstanceAction _self;
+  final $Res Function(SkipHabitInstanceAction) _then;
+
+/// Create a copy of AiAction
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? date = null,}) {
+  return _then(SkipHabitInstanceAction(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
+as DateTime,
   ));
 }
 

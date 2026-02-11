@@ -1,9 +1,9 @@
 class AiTools {
   static List<Map<String, dynamic>> get declarations => [
     {
-      'name': 'getTasks',
+      'name': 'getSchedule',
       'description':
-          'Fetch tasks for a specific date or date range. Use this for specific schedule questions (e.g., "What do I have today?", "Show me tomorrow").',
+          'Fetch schedule for a specific date or date range. This is the PRIMARY tool for all time-based questions. Returns both normal tasks and recurring habits/default tasks by default. Past dates only return normal tasks.',
       'parameters': {
         'type': 'OBJECT',
         'properties': {
@@ -15,14 +15,20 @@ class AiTools {
             'type': 'STRING',
             'description': 'Optional end date for ranges in YYYY-MM-DD format.',
           },
+          'type': {
+            'type': 'STRING',
+            'enum': ['all', 'task', 'default'],
+            'description':
+                'Filter by type: "all" (default), "task" (non-recurring), or "default" (habits/recurring).',
+          },
         },
         'required': ['startDate'],
       },
     },
     {
-      'name': 'searchTasks',
+      'name': 'searchSchedule',
       'description':
-          'Semantic search for tasks by topic or meaning. Use this when the user asks about a specific activity (e.g., "Do I have gym?", "When did I study?").',
+          'Semantic search for tasks or habits by topic, name, or meaning. Use this when the user asks about a specific activity without specifying a date.',
       'parameters': {
         'type': 'OBJECT',
         'properties': {
@@ -30,24 +36,19 @@ class AiTools {
             'type': 'STRING',
             'description': 'The search query or topic.',
           },
-        },
-        'required': ['query'],
-      },
-    },
-    {
-      'name': 'searchDefaultTasks',
-      'description': 'Search within recurring (default) tasks/habits.',
-      'parameters': {
-        'type': 'OBJECT',
-        'properties': {
-          'query': {'type': 'STRING', 'description': 'The search query.'},
+          'type': {
+            'type': 'STRING',
+            'enum': ['all', 'task', 'default'],
+            'description':
+                'Filter by type: "all" (default), "task" (non-recurring), or "default" (habits/recurring).',
+          },
         },
         'required': ['query'],
       },
     },
     {
       'name': 'addTask',
-      'description': 'Create a new task on a specific date.',
+      'description': 'Create a new one-time task on a specific date.',
       'parameters': {
         'type': 'OBJECT',
         'properties': {

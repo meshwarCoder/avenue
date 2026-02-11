@@ -4,7 +4,7 @@ import '../utils/observability.dart';
 
 class EmbeddingService {
   final String _apiKey;
-  final String _model = 'text-embedding-004';
+  final String _model = 'text-embedding-004'; // Corrected version for v1beta
   final String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models';
 

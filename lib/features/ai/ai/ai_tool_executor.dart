@@ -1,6 +1,7 @@
-import 'package:avenue/features/schdules/domain/repo/schedule_repository.dart';
 import 'package:uuid/uuid.dart';
-import '../../../core/utils/observability.dart';
+import '../../../../core/utils/observability.dart';
+import '../../schdules/data/models/task_model.dart';
+import '../../schdules/domain/repo/schedule_repository.dart';
 
 class AiToolExecutor {
   final ScheduleRepository _repository;
@@ -19,12 +20,10 @@ class AiToolExecutor {
 
     try {
       switch (name) {
-        case 'getTasks':
-          return await _handleGetTasks(args);
-        case 'searchTasks':
-          return await _handleSearchTasks(args);
-        case 'searchDefaultTasks':
-          return await _handleSearchDefaultTasks(args);
+        case 'getSchedule':
+          return await _handleGetSchedule(args);
+        case 'searchSchedule':
+          return await _handleSearchSchedule(args);
         case 'addTask':
           return await _handleAddTask(args);
         case 'addDefaultTask':
@@ -51,56 +50,187 @@ class AiToolExecutor {
     }
   }
 
-  Future<Map<String, dynamic>> _handleGetTasks(
+  Future<Map<String, dynamic>> _handleGetSchedule(
     Map<String, dynamic> args,
   ) async {
     final start = DateTime.parse(args['startDate'] as String);
     final end = args['endDate'] != null
         ? DateTime.parse(args['endDate'] as String)
         : null;
+    final type = args['type'] as String? ?? 'all';
 
-    final result = end != null
-        ? await _repository.getTasksByDateRange(start, end)
-        : await _repository.getTasksByDate(start);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
-    return result.fold((f) => {'error': f.message}, (tasks) {
-      AvenueLogger.log(
-        event: 'AI_TOOL_RESULT',
-        layer: LoggerLayer.AI,
-        payload: {'tool': 'getTasks', 'count': tasks.length},
+    final List<Map<String, dynamic>> allResults = [];
+
+    // 1. Fetch One-Time/Instantiated Tasks
+    if (type == 'all' || type == 'task') {
+      final taskResult = end != null
+          ? await _repository.getTasksByDateRange(start, end)
+          : await _repository.getTasksByDate(start);
+
+      taskResult.fold((f) => null, (tasks) {
+        allResults.addAll(
+          tasks.map((t) {
+            final map = t.toMap();
+            map['source'] = 'task';
+            // Format for AI
+            map['date'] = t.taskDate.toIso8601String().split('T')[0];
+            map['startTime'] = t.startTime != null
+                ? '${t.startTime!.hour.toString().padLeft(2, '0')}:${t.startTime!.minute.toString().padLeft(2, '0')}'
+                : null;
+            map['endTime'] = t.endTime != null
+                ? '${t.endTime!.hour.toString().padLeft(2, '0')}:${t.endTime!.minute.toString().padLeft(2, '0')}'
+                : null;
+            return map;
+          }),
+        );
+      });
+    }
+
+    // 2. Fetch Recurring Habits (Only for Today or Future)
+    if (type == 'all' || type == 'default') {
+      final effectiveStart = start.isBefore(today) ? today : start;
+      final effectiveEnd = end ?? start;
+
+      if (!effectiveEnd.isBefore(today)) {
+        final defaultResult = await _repository.getDefaultTasks();
+        defaultResult.fold((f) => null, (defaults) {
+          // Iterate through range
+          for (
+            int i = 0;
+            i <= effectiveEnd.difference(effectiveStart).inDays;
+            i++
+          ) {
+            final currentDate = effectiveStart.add(Duration(days: i));
+            final weekday = currentDate.weekday;
+            final dateStr = currentDate.toIso8601String().split('T')[0];
+
+            for (final habit in defaults) {
+              if (habit.weekdays.contains(weekday)) {
+                final predictableId = TaskModel.generatePredictableId(
+                  habit.id,
+                  currentDate,
+                );
+
+                // Suppression Logic: If already exists in one-time tasks (crystallized), skip.
+                if (allResults.any((t) => t['id'] == predictableId)) {
+                  continue;
+                }
+
+                // Check if hidden on this date
+                final isHidden = habit.hideOn.any(
+                  (h) =>
+                      h.year == currentDate.year &&
+                      h.month == currentDate.month &&
+                      h.day == currentDate.day,
+                );
+
+                if (!isHidden) {
+                  allResults.add({
+                    'id': predictableId,
+                    'name': habit.name,
+                    'desc': habit.desc,
+                    'date': dateStr,
+                    'startTime':
+                        '${habit.startTime.hour.toString().padLeft(2, '0')}:${habit.startTime.minute.toString().padLeft(2, '0')}',
+                    'endTime':
+                        '${habit.endTime.hour.toString().padLeft(2, '0')}:${habit.endTime.minute.toString().padLeft(2, '0')}',
+                    'source': 'default',
+                    'category': habit.category,
+                    'importance_type': habit.importanceType,
+                    'default_task_id': habit.id,
+                  });
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Sort by Date and then by StartTime
+    allResults.sort((a, b) {
+      final dateComp = (a['date'] as String).compareTo(b['date'] as String);
+      if (dateComp != 0) return dateComp;
+      return (a['startTime'] as String? ?? '00:00').compareTo(
+        b['startTime'] as String? ?? '00:00',
       );
-      return {'tasks': tasks.map((t) => t.toMap()).toList()};
     });
+
+    AvenueLogger.log(
+      event: 'AI_TOOL_RESULT',
+      layer: LoggerLayer.AI,
+      payload: {'tool': 'getSchedule', 'count': allResults.length},
+    );
+
+    return {'tasks': allResults};
   }
 
-  Future<Map<String, dynamic>> _handleSearchTasks(
+  Future<Map<String, dynamic>> _handleSearchSchedule(
     Map<String, dynamic> args,
   ) async {
     final query = args['query'] as String;
-    final result = await _repository.searchTasks(query);
-    return result.fold((f) => {'error': f.message}, (tasks) {
-      AvenueLogger.log(
-        event: 'AI_TOOL_RESULT',
-        layer: LoggerLayer.AI,
-        payload: {'tool': 'searchTasks', 'count': tasks.length},
-      );
-      return {'tasks': tasks.map((t) => t.toMap()).toList()};
-    });
-  }
+    final type = args['type'] as String? ?? 'all';
+    final List<Map<String, dynamic>> allResults = [];
 
-  Future<Map<String, dynamic>> _handleSearchDefaultTasks(
-    Map<String, dynamic> args,
-  ) async {
-    final query = args['query'] as String;
-    final result = await _repository.searchDefaultTasks(query);
-    return result.fold((f) => {'error': f.message}, (tasks) {
-      AvenueLogger.log(
-        event: 'AI_TOOL_RESULT',
-        layer: LoggerLayer.AI,
-        payload: {'tool': 'searchDefaultTasks', 'count': tasks.length},
+    if (type == 'all' || type == 'task') {
+      final result = await _repository.searchTasks(query);
+      result.fold((f) => null, (tasks) {
+        allResults.addAll(
+          tasks.map((t) {
+            final map = t.toMap();
+            map['source'] = 'task';
+            map['date'] = t.taskDate.toIso8601String().split('T')[0];
+            map['startTime'] = t.startTime != null
+                ? '${t.startTime!.hour.toString().padLeft(2, '0')}:${t.startTime!.minute.toString().padLeft(2, '0')}'
+                : null;
+            map['endTime'] = t.endTime != null
+                ? '${t.endTime!.hour.toString().padLeft(2, '0')}:${t.endTime!.minute.toString().padLeft(2, '0')}'
+                : null;
+            return map;
+          }),
+        );
+      });
+    }
+
+    if (type == 'all' || type == 'default') {
+      final result = await _repository.searchDefaultTasks(query);
+      result.fold((f) => null, (defaults) {
+        allResults.addAll(
+          defaults.map((d) {
+            final map = d.toMap();
+            map['source'] = 'default';
+            map['date'] = 'Recurring'; // Stabilize sorting
+            map['startTime'] =
+                '${d.startTime.hour.toString().padLeft(2, '0')}:${d.startTime.minute.toString().padLeft(2, '0')}';
+            map['endTime'] =
+                '${d.endTime.hour.toString().padLeft(2, '0')}:${d.endTime.minute.toString().padLeft(2, '0')}';
+            return map;
+          }),
+        );
+      });
+    }
+
+    // Sort by Date and then by StartTime
+    allResults.sort((a, b) {
+      final dateA = a['date'] as String? ?? '';
+      final dateB = b['date'] as String? ?? '';
+      final dateComp = dateA.compareTo(dateB);
+      if (dateComp != 0) return dateComp;
+      return (a['startTime'] as String? ?? '00:00').compareTo(
+        b['startTime'] as String? ?? '00:00',
       );
-      return {'tasks': tasks.map((t) => t.toMap()).toList()};
     });
+
+    AvenueLogger.log(
+      event: 'AI_TOOL_RESULT',
+      layer: LoggerLayer.AI,
+      payload: {'tool': 'searchSchedule', 'count': allResults.length},
+    );
+
+    return {'tasks': allResults};
   }
 
   Future<Map<String, dynamic>> _handleAddTask(Map<String, dynamic> args) async {

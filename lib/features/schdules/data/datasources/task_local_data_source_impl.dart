@@ -131,7 +131,11 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
   Future<TaskModel?> getTaskById(String id) async {
     try {
       final db = await databaseService.database;
-      final maps = await db.query('tasks', where: 'id = ?', whereArgs: [id]);
+      final maps = await db.query(
+        'tasks',
+        where: 'id = ? AND is_deleted = 0',
+        whereArgs: [id],
+      );
 
       if (maps.isNotEmpty) {
         return TaskModel.fromMap(maps.first);
@@ -294,7 +298,7 @@ class TaskLocalDataSourceImpl implements TaskLocalDataSource {
       final db = await databaseService.database;
       final maps = await db.query(
         'default_tasks',
-        where: 'id = ?',
+        where: 'id = ? AND is_deleted = 0',
         whereArgs: [id],
       );
 
