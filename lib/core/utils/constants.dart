@@ -18,11 +18,19 @@ class AppColors {
   static const Color salmonPink = Color(0xFFF1AA9B);
 
   // Category Colors
-  static const Color categoryWork = Color(0xFF48426D);
-  static const Color categoryPersonal = Color(0xFFF0C38E);
-  static const Color categoryHealth = Color(0xFFF1AA9B);
-  static const Color categoryMeeting = Color(0xFF312C51);
-  static const Color categoryOther = Color(0xFF9E9E9E);
+  static const Color categoryWork = Color(0xFF00796B); // Deep Teal
+  static const Color categoryMeeting = Color(0xFF1976D2); // Rich Blue
+  static const Color categoryPersonal = Color(0xFF3F51B5); // Indigo
+  static const Color categoryHealth = Color(0xFFE64A19); // Vibrant Orange
+  static const Color categoryOther = Color(0xFF546E7A); // Slate Grey
+
+  static const List<String> taskCategories = [
+    'Work',
+    'Meeting',
+    'Personal',
+    'Health',
+    'Other',
+  ];
 
   // Backgrounds
   static const Color lightBg = Color(0xFFF5F5F7);

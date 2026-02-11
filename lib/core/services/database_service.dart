@@ -39,7 +39,6 @@ class DatabaseService {
           start_time TEXT NOT NULL,
           end_time TEXT NOT NULL,
           category TEXT NOT NULL,
-          color_value INTEGER NOT NULL,
           weekdays TEXT NOT NULL,
           importance_type TEXT,
           server_updated_at TEXT NOT NULL DEFAULT '', 
@@ -142,13 +141,6 @@ class DatabaseService {
         value TEXT
       )
     ''');
-
-    Future<void> close() async {
-      final db = _database;
-      if (db != null) {
-        await db.close();
-      }
-    }
   }
 
   Future<void> clearUserData() async {

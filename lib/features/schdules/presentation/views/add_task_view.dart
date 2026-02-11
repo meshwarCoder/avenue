@@ -232,13 +232,13 @@ class _AddTaskViewState extends State<AddTaskView> {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    gradient: const LinearGradient(
-                      colors: [
-                        AppColors.deepPurple,
-                        Color(
-                          0xFF6A4FC2,
-                        ), // Slightly lighter purple for gradient
-                      ],
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [
+                              theme.colorScheme.primary,
+                              theme.colorScheme.secondary,
+                            ]
+                          : [AppColors.deepPurple, const Color(0xFF6A4FC2)],
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -278,6 +278,7 @@ class _AddTaskViewState extends State<AddTaskView> {
   }
 
   Widget _buildFieldLabel(String text, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, left: 4),
       child: Text(
@@ -285,7 +286,7 @@ class _AddTaskViewState extends State<AddTaskView> {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: theme.colorScheme.primary,
+          color: isDark ? Colors.white70 : theme.colorScheme.primary,
           letterSpacing: 0.5,
         ),
       ),
@@ -300,7 +301,6 @@ class _AddTaskViewState extends State<AddTaskView> {
     int maxLines = 1,
     String? Function(String?)? validator,
   }) {
-    final isDark = theme.brightness == Brightness.dark;
     return TextFormField(
       controller: controller,
       validator: validator,
@@ -314,11 +314,11 @@ class _AddTaskViewState extends State<AddTaskView> {
         ),
         prefixIcon: Icon(
           icon,
-          color: AppColors.slatePurple.withOpacity(0.5),
+          color: theme.colorScheme.primary.withOpacity(0.7),
           size: 22,
         ),
         filled: true,
-        fillColor: (isDark ? Colors.white : Colors.black).withOpacity(0.03),
+        fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -329,6 +329,8 @@ class _AddTaskViewState extends State<AddTaskView> {
   }
 
   Widget _buildTypeToggle(String label, bool isSelected, VoidCallback onTap) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -336,8 +338,8 @@ class _AddTaskViewState extends State<AddTaskView> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.deepPurple
-              : Colors.grey.withOpacity(0.05),
+              ? (isDark ? theme.colorScheme.primary : AppColors.deepPurple)
+              : theme.colorScheme.surfaceVariant.withOpacity(0.4),
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.center,
@@ -345,8 +347,8 @@ class _AddTaskViewState extends State<AddTaskView> {
           label,
           style: TextStyle(
             color: isSelected
-                ? Colors.white
-                : AppColors.slatePurple.withOpacity(0.6),
+                ? (isDark ? theme.colorScheme.onPrimary : Colors.white)
+                : theme.colorScheme.onSurface.withOpacity(0.6),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -443,17 +445,24 @@ class _AddTaskViewState extends State<AddTaskView> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isSelected
-                  ? AppColors.salmonPink
-                  : Theme.of(context).colorScheme.surface.withOpacity(0.5),
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(
+                      context,
+                    ).colorScheme.surfaceVariant.withOpacity(0.5),
               border: isSelected
-                  ? Border.all(color: AppColors.salmonPink, width: 2)
+                  ? Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 2,
+                    )
                   : null,
             ),
             alignment: Alignment.center,
             child: Text(
               days[index],
               style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.slatePurple,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -476,14 +485,19 @@ class _AddTaskViewState extends State<AddTaskView> {
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: AppColors.slatePurple, fontSize: 13),
-        prefixIcon: const Icon(
+        labelStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          fontSize: 13,
+        ),
+        prefixIcon: Icon(
           Icons.access_time_rounded,
           size: 20,
-          color: AppColors.salmonPink,
+          color: Theme.of(context).colorScheme.primary,
         ),
         filled: true,
-        fillColor: Colors.grey.withOpacity(0.05),
+        fillColor: Theme.of(
+          context,
+        ).colorScheme.surfaceVariant.withOpacity(0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -511,7 +525,9 @@ class _AddTaskViewState extends State<AddTaskView> {
   }
 
   Widget _buildCategorySelector() {
-    final categories = ['Work', 'Meeting', 'Personal', 'Health', 'Other'];
+    final categories = AppColors.taskCategories;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return SizedBox(
       height: 44,
       child: ListView.separated(
@@ -536,7 +552,9 @@ class _AddTaskViewState extends State<AddTaskView> {
               child: Text(
                 category,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : color.withOpacity(0.8),
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? Colors.white70 : color.withOpacity(0.8)),
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -556,7 +574,7 @@ class _AddTaskViewState extends State<AddTaskView> {
         final isSelected = _selectedImportance == level;
         final color = level == 'High'
             ? Colors.redAccent
-            : (level == 'Medium' ? AppColors.creamTan : Colors.green);
+            : (level == 'Medium' ? Colors.orangeAccent : Colors.green);
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(right: level == 'High' ? 0 : 8),

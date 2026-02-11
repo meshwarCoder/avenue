@@ -53,55 +53,72 @@ class WeeklyTaskItem extends StatelessWidget {
         child: Container(
           width: (dayWidth / maxColumns) - 4,
           height: finalHeight,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           decoration: BoxDecoration(
             color: task.completed
-                ? Colors.grey.withOpacity(0.2)
-                : task.color.withOpacity(0.8),
-            borderRadius: BorderRadius.circular(6),
+                ? Colors.green.withOpacity(0.15)
+                : (_isMissed(task)
+                      ? Colors.red.withOpacity(0.15)
+                      : task.color.withOpacity(0.8)),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: task.completed ? Colors.grey.withOpacity(0.5) : task.color,
-              width: task.completed ? 1.0 : 0.5,
+              color: task.completed
+                  ? Colors.green.withOpacity(0.5)
+                  : (_isMissed(task)
+                        ? Colors.red.withOpacity(0.5)
+                        : task.color),
+              width: 1.0,
             ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
                       task.name,
                       style: TextStyle(
-                        color: task.completed ? Colors.grey[600] : Colors.white,
+                        color: task.completed
+                            ? Colors.green[900]
+                            : (_isMissed(task)
+                                  ? Colors.red[900]
+                                  : Colors.white),
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         decoration: task.completed
                             ? TextDecoration.lineThrough
                             : null,
-                        decorationColor: Colors.grey[700],
                       ),
-                      maxLines: 1,
+                      maxLines: height < 40 ? 1 : 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  if (task.completed)
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.white,
-                      size: 8,
-                    ),
-                ],
-              ),
-              if (finalHeight >= 32)
-                Text(
-                  '${localStart.hour.toString().padLeft(2, '0')}:${localStart.minute.toString().padLeft(2, '0')}',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 8,
-                  ),
+                  ],
                 ),
+              ),
+              if (height > 45) ...[
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildImportanceDot(task.importanceType ?? 'Low'),
+                    if (task.completed)
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.green,
+                        size: 10,
+                      )
+                    else if (_isMissed(task))
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: Colors.red,
+                        size: 10,
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -217,5 +234,35 @@ class WeeklyTaskItem extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildImportanceDot(String importance) {
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: _getImportanceColor(importance),
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+
+  Color _getImportanceColor(String importance) {
+    switch (importance.toLowerCase()) {
+      case 'high':
+        return Colors.red;
+      case 'medium':
+        return Colors.yellow[700]!;
+      case 'low':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  bool _isMissed(TaskModel task) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return task.taskDate.isBefore(today) && !task.completed;
   }
 }

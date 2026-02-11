@@ -60,23 +60,8 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 onPressed: () => Navigator.pop(context),
               )
-            : IconButton(
-                icon: const Icon(Icons.sync_rounded),
-                onPressed: () => context.read<TaskCubit>().syncTasks(),
-              ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.timeline_rounded),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TimelineView(selectedDate: _date),
-                ),
-              );
-            },
-          ),
-        ],
+            : null,
+        actions: const [],
       ),
       body: BlocBuilder<TaskCubit, TaskState>(
         builder: (context, state) {
@@ -104,10 +89,15 @@ class _HomeViewState extends State<HomeView> {
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 SliverToBoxAdapter(
-                  child: _buildSummaryCard(
-                    tasks.length,
-                    completedTasks,
-                    pendingTasks,
+                  child: Column(
+                    children: [
+                      _buildSummaryCard(
+                        tasks.length,
+                        completedTasks,
+                        pendingTasks,
+                      ),
+                      _buildTimelineButton(),
+                    ],
                   ),
                 ),
                 if (tasks.isEmpty)
@@ -138,7 +128,7 @@ class _HomeViewState extends State<HomeView> {
                           padding: const EdgeInsets.only(bottom: 16),
                           child: TaskCard(
                             task: task,
-                            height: 100,
+                            height: 125,
                             onTap: isPast
                                 ? null
                                 : () async {
@@ -186,8 +176,9 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildSummaryCard(int total, int completed, int pending) {
+    final isPast = _isPastDate(_date);
     return Container(
-      margin: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -203,12 +194,18 @@ class _HomeViewState extends State<HomeView> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildSummaryItem("Total", total.toString(), AppColors.slatePurple),
+          _buildSummaryItem(
+            "Total",
+            total.toString(),
+            Theme.of(context).brightness == Brightness.dark
+                ? Theme.of(context).colorScheme.primary
+                : AppColors.slatePurple,
+          ),
           _buildSummaryItem("Done", completed.toString(), Colors.green),
           _buildSummaryItem(
-            "Pending",
+            isPast ? "Missed" : "Pending",
             pending.toString(),
-            AppColors.salmonPink,
+            isPast ? Colors.redAccent : AppColors.salmonPink,
           ),
         ],
       ),
@@ -235,6 +232,64 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTimelineButton() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final color = isDark ? theme.colorScheme.primary : AppColors.deepPurple;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TimelineView(selectedDate: _date),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          decoration: BoxDecoration(
+            color: color.withOpacity(isDark ? 0.15 : 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: color.withOpacity(isDark ? 0.3 : 0.1),
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.timeline_rounded,
+                color: isDark ? Colors.white : color,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                "View Timeline",
+                style: TextStyle(
+                  color: isDark ? Colors.white : color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: (isDark ? Colors.white : color).withOpacity(0.5),
+                size: 14,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
