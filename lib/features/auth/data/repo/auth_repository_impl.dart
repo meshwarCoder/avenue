@@ -169,4 +169,31 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, bool>> signInWithGoogle() async {
+    try {
+      final res = await supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'com.example.line://login-callback',
+      );
+      return Right(res);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Stream<AuthEvent> get authEvents {
+    return supabase.auth.onAuthStateChange.map((data) {
+      switch (data.event) {
+        case AuthChangeEvent.signedIn:
+          return AuthEvent.signedIn;
+        case AuthChangeEvent.signedOut:
+          return AuthEvent.signedOut;
+        default:
+          return AuthEvent.unknown;
+      }
+    });
+  }
 }

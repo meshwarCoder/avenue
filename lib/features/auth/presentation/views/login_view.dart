@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../../../../core/utils/constants.dart';
+import '../widgets/social_login_row.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -149,7 +150,8 @@ class _LoginViewState extends State<LoginView> {
                         BlocBuilder<AuthCubit, AuthState>(
                           builder: (context, state) {
                             return ElevatedButton(
-                              onPressed: state is AuthLoading
+                              onPressed:
+                                  (state is AuthLoading && !state.isGoogle)
                                   ? null
                                   : () {
                                       if (_formKey.currentState!.validate()) {
@@ -171,7 +173,7 @@ class _LoginViewState extends State<LoginView> {
                                 ),
                                 elevation: 0,
                               ),
-                              child: state is AuthLoading
+                              child: (state is AuthLoading && !state.isGoogle)
                                   ? const SizedBox(
                                       height: 24,
                                       width: 24,
@@ -193,6 +195,42 @@ class _LoginViewState extends State<LoginView> {
                             );
                           },
                         ),
+
+                        const SizedBox(height: 24),
+
+                        // Divider
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Text(
+                                "OR",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.6),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Social Login Row (Google, Apple, Facebook)
+                        const SocialLoginRow(),
 
                         const SizedBox(height: 24),
 

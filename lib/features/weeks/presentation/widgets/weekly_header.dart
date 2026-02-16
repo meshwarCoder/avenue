@@ -6,11 +6,13 @@ class WeeklyHeader extends StatelessWidget {
   final DateTime? firstTaskDate;
   final DateTime? lastTaskDate;
   final Function(DateTime) onWeekChanged;
+  final int weekStartDay;
 
   const WeeklyHeader({
     super.key,
     required this.currentMonday,
     required this.onWeekChanged,
+    required this.weekStartDay,
     this.firstTaskDate,
     this.lastTaskDate,
   });
@@ -19,8 +21,11 @@ class WeeklyHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final curSunday = currentMonday.add(const Duration(days: 6));
     final theme = Theme.of(context);
-    final onSurface = theme.colorScheme.onBackground;
-    final today = CalendarUtils.getStartOfWeek(DateTime.now());
+    final onSurface = theme.colorScheme.onSurface;
+    final today = CalendarUtils.getStartOfWeek(
+      DateTime.now(),
+      startOfWeek: weekStartDay,
+    );
 
     final isPast = currentMonday.isBefore(today);
     final isFuture = currentMonday.isAfter(today);

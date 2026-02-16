@@ -90,6 +90,7 @@ class _WeeklyCalendarPageState extends State<WeeklyCalendarPage> {
                           currentMonday: _currentMonday,
                           firstTaskDate: state.firstTaskDate,
                           lastTaskDate: state.lastTaskDate,
+                          weekStartDay: settingsState.weekStartDay,
                           onWeekChanged: (newMonday) {
                             setState(() {
                               _currentMonday = newMonday;

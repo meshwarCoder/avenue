@@ -21,4 +21,10 @@ abstract class AuthRepository {
   Future<Either<Failure, void>> createOrUpdateProfile(int timezoneOffset);
   Future<Either<Failure, bool>> deviceExists(String deviceId);
   Future<Either<Failure, void>> updateDeviceSyncTimestamp(String deviceId);
+
+  // Google Sign In & Reactive Auth
+  Future<Either<Failure, bool>> signInWithGoogle();
+  Stream<AuthEvent> get authEvents;
 }
+
+enum AuthEvent { signedIn, signedOut, unknown }
