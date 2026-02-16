@@ -1,10 +1,15 @@
 import 'package:intl/intl.dart';
 
 class CalendarUtils {
-  /// Returns the Monday of the week for the given [date].
-  /// Week starts on Monday (1).
-  static DateTime getStartOfWeek(DateTime date) {
-    return normalize(date).subtract(Duration(days: date.weekday - 1));
+  /// Returns the start of the week for the given [date].
+  /// Default week starts on Monday (1).
+  static DateTime getStartOfWeek(
+    DateTime date, {
+    int startOfWeek = DateTime.monday,
+  }) {
+    final normalizedDate = normalize(date);
+    int daysToSubtract = (normalizedDate.weekday - startOfWeek + 7) % 7;
+    return normalizedDate.subtract(Duration(days: daysToSubtract));
   }
 
   /// Returns the date at 00:00:00 local time.

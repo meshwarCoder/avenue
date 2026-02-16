@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../schdules/data/models/task_model.dart';
 import '../../../schdules/presentation/views/add_task_view.dart';
 import '../cubit/weekly_state.dart';
 import 'weekly_task_item.dart';
 import '../../../../core/utils/task_utils.dart';
+import '../../../../core/utils/time_utils.dart';
+import '../../../settings/presentation/cubit/settings_cubit.dart';
 
 class WeeklyGrid extends StatelessWidget {
   final List<DateTime> days;
@@ -38,21 +41,24 @@ class WeeklyGrid extends StatelessWidget {
   }
 
   Widget _buildTimeColumn(BuildContext context) {
+    final is24Hour = context.read<SettingsCubit>().state.is24HourFormat;
     return SizedBox(
       width: 60.0,
       child: Column(
         children: List.generate(24, (index) {
+          final timeOfDay = TimeOfDay(hour: index, minute: 0);
+          final timeText = TimeUtils.formatTime(timeOfDay, is24Hour);
           return SizedBox(
             height: 60.0,
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 30.0),
                 child: Text(
-                  '${index.toString().padLeft(2, '0')}:00',
+                  timeText,
                   style: TextStyle(
                     color: Theme.of(
                       context,
-                    ).colorScheme.onBackground.withOpacity(0.5),
+                    ).colorScheme.onSurface.withOpacity(0.5),
                     fontSize: 10,
                   ),
                 ),

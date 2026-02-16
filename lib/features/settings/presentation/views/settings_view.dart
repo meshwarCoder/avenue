@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:avenue/core/logic/theme_cubit.dart';
 import 'package:avenue/core/utils/constants.dart';
 import 'package:avenue/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:avenue/features/settings/presentation/cubit/settings_cubit.dart';
+import 'package:avenue/features/settings/presentation/cubit/settings_state.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -29,6 +31,28 @@ class SettingsView extends StatelessWidget {
             title: "Theme Mode",
             subtitle: _getThemeModeName(context.watch<ThemeCubit>().state),
             onTap: () => _showThemePicker(context),
+          ),
+          BlocBuilder<SettingsCubit, SettingsState>(
+            builder: (context, state) {
+              return Column(
+                children: [
+                  _buildSettingItem(
+                    context,
+                    icon: Icons.calendar_today_rounded,
+                    title: "Start of the Week",
+                    subtitle: _getDayName(state.weekStartDay),
+                    onTap: () => _showWeekStartPicker(context),
+                  ),
+                  _buildSettingItem(
+                    context,
+                    icon: Icons.access_time_rounded,
+                    title: "Time System",
+                    subtitle: state.is24HourFormat ? "24-Hour" : "12-Hour",
+                    onTap: () => _showTimeFormatPicker(context),
+                  ),
+                ],
+              );
+            },
           ),
           _buildSettingItem(
             context,
@@ -147,6 +171,7 @@ class SettingsView extends StatelessWidget {
     String? subtitle,
     required VoidCallback onTap,
     Color? titleColor,
+    Widget? trailing,
   }) {
     final theme = Theme.of(context);
     return Card(
@@ -167,7 +192,7 @@ class SettingsView extends StatelessWidget {
           ),
         ),
         subtitle: subtitle != null ? Text(subtitle) : null,
-        trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+        trailing: trailing ?? const Icon(Icons.chevron_right_rounded, size: 20),
         onTap: onTap,
       ),
     );
@@ -259,6 +284,148 @@ class SettingsView extends StatelessWidget {
       onTap: () {
         cubit.setThemeMode(mode);
         Navigator.pop(context);
+      },
+    );
+  }
+
+  String _getDayName(int day) {
+    switch (day) {
+      case DateTime.saturday:
+        return 'Saturday';
+      case DateTime.sunday:
+        return 'Sunday';
+      case DateTime.monday:
+        return 'Monday';
+      case DateTime.tuesday:
+        return 'Tuesday';
+      case DateTime.wednesday:
+        return 'Wednesday';
+      case DateTime.thursday:
+        return 'Thursday';
+      case DateTime.friday:
+        return 'Friday';
+
+      default:
+        return 'Saturday';
+    }
+  }
+
+  void _showWeekStartPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        final settingsCubit = context.read<SettingsCubit>();
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Select Start of Week",
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                for (int day = 1; day <= 7; day++)
+                  ListTile(
+                    title: Text(
+                      _getDayName(day),
+                      style: TextStyle(
+                        fontWeight: settingsCubit.state.weekStartDay == day
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: settingsCubit.state.weekStartDay == day
+                            ? AppColors.deepPurple
+                            : null,
+                      ),
+                    ),
+                    trailing: settingsCubit.state.weekStartDay == day
+                        ? const Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.deepPurple,
+                          )
+                        : null,
+                    onTap: () {
+                      settingsCubit.updateWeekStartDay(day);
+                      Navigator.pop(context);
+                    },
+                  ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showTimeFormatPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        final settingsCubit = context.read<SettingsCubit>();
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Select Time Format",
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: const Icon(Icons.access_time_rounded),
+                  title: const Text(
+                    "12-Hour",
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  subtitle: const Text("1:00 PM, 12:00 AM"),
+                  trailing: !settingsCubit.state.is24HourFormat
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: AppColors.deepPurple,
+                        )
+                      : null,
+                  onTap: () {
+                    settingsCubit.updateTimeFormat(false);
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.schedule_rounded),
+                  title: const Text(
+                    "24-Hour",
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  subtitle: const Text("13:00, 24:00"),
+                  trailing: settingsCubit.state.is24HourFormat
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: AppColors.deepPurple,
+                        )
+                      : null,
+                  onTap: () {
+                    settingsCubit.updateTimeFormat(true);
+                    Navigator.pop(context);
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
       },
     );
   }

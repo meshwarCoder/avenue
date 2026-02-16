@@ -22,6 +22,9 @@ import '../../features/auth/domain/repo/auth_repository.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
 import '../logic/theme_cubit.dart';
 import '../../features/ai/data/repositories/chat_repository.dart';
+import '../../features/settings/data/settings_repository.dart';
+import '../../features/settings/presentation/cubit/settings_cubit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final sl = GetIt.instance;
 
@@ -31,6 +34,10 @@ Future<void> initializeDependencies() async {
     url: dotenv.env['SUPABASE_URL'] ?? '',
     anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
+
+  // External
+  final sharedPreferences = await SharedPreferences.getInstance();
+  sl.registerLazySingleton(() => sharedPreferences);
 
   // Register DatabaseService
   final databaseService = DatabaseService();
@@ -70,6 +77,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<WeeklyRepository>(
     () => WeeklyRepositoryImpl(localDataSource: sl()),
   );
+  sl.registerLazySingleton<SettingsRepository>(() => SettingsRepository(sl()));
 
   // Cubits (Factory - new instance each time)
   sl.registerLazySingleton(
@@ -81,15 +89,16 @@ Future<void> initializeDependencies() async {
   );
   sl.registerFactory(() => WeeklyCubit(repository: sl()));
   sl.registerLazySingleton(() => ThemeCubit());
+  sl.registerLazySingleton(() => SettingsCubit(sl()));
 
   // AI Chat
   sl.registerLazySingleton<EmbeddingService>(
-    () => EmbeddingService(apiKey: dotenv.env['GEMINI_API_KEY'] ?? ''),
+    () => EmbeddingService(apiKey: dotenv.env['OPENROUTER_API_KEY'] ?? ''),
   );
 
   sl.registerFactory<AiOrchestrator>(
     () => AiOrchestrator(
-      apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
+      apiKey: dotenv.env['OPENROUTER_API_KEY'] ?? '',
       scheduleRepository: sl(),
       embeddingService: sl(),
     ),

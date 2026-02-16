@@ -5,18 +5,18 @@ class AiTools {
       'description':
           'Fetch schedule for a specific date or date range. This is the PRIMARY tool for all time-based questions. Returns both normal tasks and recurring habits/default tasks by default. Past dates only return normal tasks.',
       'parameters': {
-        'type': 'OBJECT',
+        'type': 'object',
         'properties': {
           'startDate': {
-            'type': 'STRING',
+            'type': 'string',
             'description': 'The start date in YYYY-MM-DD format.',
           },
           'endDate': {
-            'type': 'STRING',
+            'type': 'string',
             'description': 'Optional end date for ranges in YYYY-MM-DD format.',
           },
           'type': {
-            'type': 'STRING',
+            'type': 'string',
             'enum': ['all', 'task', 'default'],
             'description':
                 'Filter by type: "all" (default), "task" (non-recurring), or "default" (habits/recurring).',
@@ -30,14 +30,14 @@ class AiTools {
       'description':
           'Semantic search for tasks or habits by topic, name, or meaning. Use this when the user asks about a specific activity without specifying a date.',
       'parameters': {
-        'type': 'OBJECT',
+        'type': 'object',
         'properties': {
           'query': {
-            'type': 'STRING',
+            'type': 'string',
             'description': 'The search query or topic.',
           },
           'type': {
-            'type': 'STRING',
+            'type': 'string',
             'enum': ['all', 'task', 'default'],
             'description':
                 'Filter by type: "all" (default), "task" (non-recurring), or "default" (habits/recurring).',
@@ -51,52 +51,52 @@ class AiTools {
       'description':
           'Unified tool to create or update one-time tasks and recurring habits. Use this for ALL modifications to the schedule.',
       'parameters': {
-        'type': 'OBJECT',
+        'type': 'object',
         'properties': {
           'action': {
-            'type': 'STRING',
+            'type': 'string',
             'enum': ['create', 'update'],
             'description':
                 'Whether to create a new entry or update an existing one.',
           },
           'type': {
-            'type': 'STRING',
+            'type': 'string',
             'enum': ['task', 'default'],
             'description':
                 '"task" for one-time entries, "default" for recurring habits.',
           },
           'id': {
-            'type': 'STRING',
+            'type': 'string',
             'description': 'Required ONLY for "update" action.',
           },
-          'name': {'type': 'STRING'},
+          'name': {'type': 'string'},
           'date': {
-            'type': 'STRING',
+            'type': 'string',
             'description': 'YYYY-MM-DD (Required for type="task").',
           },
           'startTime': {
-            'type': 'STRING',
+            'type': 'string',
             'description': 'HH:mm (Required for create).',
           },
-          'endTime': {'type': 'STRING', 'description': 'HH:mm.'},
+          'endTime': {'type': 'string', 'description': 'HH:mm.'},
           'weekdays': {
-            'type': 'ARRAY',
-            'items': {'type': 'INTEGER'},
+            'type': 'array',
+            'items': {'type': 'integer'},
             'description':
                 '1=Mon, 7=Sun (Required for create where type="default").',
           },
           'importance': {
-            'type': 'STRING',
+            'type': 'string',
             'enum': ['Low', 'Medium', 'High'],
           },
-          'note': {'type': 'STRING'},
+          'note': {'type': 'string'},
           'category': {
-            'type': 'STRING',
+            'type': 'string',
             'enum': ['Work', 'Meeting', 'Personal', 'Health', 'Other'],
           },
-          'isDone': {'type': 'BOOLEAN', 'description': 'Only for type="task".'},
+          'isDone': {'type': 'boolean', 'description': 'Only for type="task".'},
           'isDeleted': {
-            'type': 'BOOLEAN',
+            'type': 'boolean',
             'description': 'Set to true to delete the task or habit.',
           },
         },

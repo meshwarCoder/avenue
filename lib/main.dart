@@ -12,6 +12,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqlite3/open.dart';
 import 'package:avenue/core/utils/constants.dart';
 import 'package:avenue/core/logic/theme_cubit.dart';
+import 'package:avenue/features/settings/presentation/cubit/settings_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +47,7 @@ class Avenue extends StatelessWidget {
         BlocProvider(create: (context) => sl<AuthCubit>()),
         BlocProvider(create: (context) => sl<TaskCubit>()),
         BlocProvider(create: (context) => sl<ThemeCubit>()),
+        BlocProvider(create: (context) => sl<SettingsCubit>()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         builder: (context, themeMode) {

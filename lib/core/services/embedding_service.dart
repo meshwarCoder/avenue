@@ -4,9 +4,9 @@ import '../utils/observability.dart';
 
 class EmbeddingService {
   final String _apiKey;
-  final String _model = 'text-embedding-004'; // Corrected version for v1beta
-  final String _baseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models';
+  // Using a Google model via OpenRouter to maintain 768 dimensions if possible
+  final String _model = 'google/gemini-embedding-001';
+  final String _baseUrl = 'https://openrouter.ai/api/v1/embeddings';
 
   EmbeddingService({required String apiKey}) : _apiKey = apiKey;
 
@@ -17,31 +17,43 @@ class EmbeddingService {
 
     final client = HttpClient();
     try {
-      final url = Uri.parse('$_baseUrl/$_model:embedContent?key=$_apiKey');
+      final url = Uri.parse(_baseUrl);
       final request = await client.postUrl(url);
       request.headers.set('Content-Type', 'application/json');
+      request.headers.set('Authorization', 'Bearer $_apiKey');
+      request.headers.set('HTTP-Referer', 'https://avenue-app.com');
+      request.headers.set('X-Title', 'Avenue');
 
-      final body = {
-        'content': {
-          'parts': [
-            {'text': text},
-          ],
-        },
-      };
+      final body = {'model': _model, 'input': text};
 
       request.add(utf8.encode(jsonEncode(body)));
       final response = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();
 
       if (response.statusCode != 200) {
-        throw Exception(
-          'Embedding API Error: ${response.statusCode} - $responseBody',
+        AvenueLogger.log(
+          event: 'EMBEDDING_ERROR',
+          level: LoggerLevel.ERROR,
+          layer: LoggerLayer.SYNC,
+          payload:
+              'OpenRouter Embedding Error: ${response.statusCode} - $responseBody',
         );
+        return [];
       }
 
-      final json = jsonDecode(responseBody);
-      final List<dynamic> values = json['embedding']['values'];
-      return values.map((e) => (e as num).toDouble()).toList();
+      final json = jsonDecode(responseBody) as Map<String, dynamic>;
+      // OpenAI format: { data: [ { embedding: [...] } ] }
+      if (json.containsKey('data')) {
+        final data = json['data'] as List;
+        if (data.isNotEmpty) {
+          final first = data[0];
+          final embedding = List<double>.from(first['embedding']);
+          return embedding;
+        }
+      }
+
+      // Fallback or error
+      return [];
     } catch (e) {
       AvenueLogger.log(
         event: 'EMBEDDING_ERROR',
@@ -49,7 +61,8 @@ class EmbeddingService {
         layer: LoggerLayer.SYNC,
         payload: e.toString(),
       );
-      rethrow;
+      // Don't rethrow to avoid crashing UI, just return empty for sync skip
+      return [];
     } finally {
       client.close();
     }

@@ -11,6 +11,8 @@ import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
 import '../../data/models/task_model.dart';
 import 'package:avenue/core/utils/constants.dart';
+import 'package:avenue/features/settings/presentation/cubit/settings_cubit.dart';
+import 'package:avenue/core/utils/time_utils.dart';
 
 class TimelineView extends StatefulWidget {
   final DateTime selectedDate;
@@ -140,6 +142,10 @@ class TimelineLayout extends StatelessWidget {
                 endHour: endHour,
                 hourHeight: hourHeight,
                 theme: theme,
+                is24HourFormat: context
+                    .read<SettingsCubit>()
+                    .state
+                    .is24HourFormat,
               ),
             ),
           ),
@@ -199,7 +205,7 @@ class TimelineLayout extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    _formatTime(task.startTimeOfDay!),
+                    _formatTime(context, task.startTimeOfDay!),
                     style: TextStyle(
                       color: task.color,
                       fontSize: 10,
@@ -221,7 +227,7 @@ class TimelineLayout extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    _formatTime(task.endTimeOfDay!),
+                    _formatTime(context, task.endTimeOfDay!),
                     style: TextStyle(
                       color: task.color,
                       fontSize: 10,
@@ -417,10 +423,9 @@ class TimelineLayout extends StatelessWidget {
 
   double _timeToDouble(TimeOfDay time) => time.hour + (time.minute / 60.0);
 
-  String _formatTime(TimeOfDay time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+  String _formatTime(BuildContext context, TimeOfDay time) {
+    final is24Hour = context.read<SettingsCubit>().state.is24HourFormat;
+    return TimeUtils.formatTime(time, is24Hour);
   }
 
   double _calculateTopOffset(TimeOfDay time, double startHour) {
@@ -438,12 +443,14 @@ class TimeColumnPainter extends CustomPainter {
   final double endHour;
   final double hourHeight;
   final ThemeData theme;
+  final bool is24HourFormat;
 
   TimeColumnPainter({
     required this.startHour,
     required this.endHour,
     required this.hourHeight,
     required this.theme,
+    required this.is24HourFormat,
   });
 
   @override
@@ -474,11 +481,12 @@ class TimeColumnPainter extends CustomPainter {
 
       canvas.drawCircle(Offset(size.width - 10, y), 3, dotPaint);
 
-      final timeText = '${hour.toString().padLeft(2, '0')}:00';
+      final timeOfDay = TimeOfDay(hour: hour, minute: 0);
+      final timeText = TimeUtils.formatTime(timeOfDay, is24HourFormat);
       textPainter.text = TextSpan(
         text: timeText,
         style: TextStyle(
-          color: theme.colorScheme.onBackground.withOpacity(0.4),
+          color: theme.colorScheme.onSurface.withOpacity(0.4),
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),

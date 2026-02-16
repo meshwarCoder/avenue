@@ -29,7 +29,12 @@ class WeeklyTaskItem extends StatelessWidget {
     final localEnd = task.endTime!.toLocal();
 
     final startHour = localStart.hour + (localStart.minute / 60.0);
-    final endHour = localEnd.hour + (localEnd.minute / 60.0);
+    var endHour = localEnd.hour + (localEnd.minute / 60.0);
+
+    // Handle spanning to next day (e.g., 23:00 -> 00:00 becomes 23.0 -> 24.0)
+    if (endHour < startHour) {
+      endHour += 24.0;
+    }
 
     // Calc positioning based on 0-24 grid
     final top = (startHour) * 60.0;
@@ -70,57 +75,61 @@ class WeeklyTaskItem extends StatelessWidget {
               width: 1.0,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
+          child: finalHeight < 18
+              ? null
+              : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      task.name,
-                      style: TextStyle(
-                        color: task.completed
-                            ? Colors.green[900]
-                            : (_isMissed(task)
-                                  ? Colors.red[900]
-                                  : Colors.white),
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        decoration: task.completed
-                            ? TextDecoration.lineThrough
-                            : null,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              task.name,
+                              style: TextStyle(
+                                color: task.completed
+                                    ? Colors.green[900]
+                                    : (_isMissed(task)
+                                          ? Colors.red[900]
+                                          : Colors.white),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                decoration: task.completed
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                      maxLines: height < 40 ? 1 : 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
-              ),
-              if (height > 45) ...[
-                const SizedBox(height: 2),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildImportanceDot(task.importanceType ?? 'Low'),
-                    if (task.completed)
-                      const Icon(
-                        Icons.check_circle_rounded,
-                        color: Colors.green,
-                        size: 10,
-                      )
-                    else if (_isMissed(task))
-                      const Icon(
-                        Icons.error_outline_rounded,
-                        color: Colors.red,
-                        size: 10,
+                    if (height > 45) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildImportanceDot(task.importanceType ?? 'Low'),
+                          if (task.completed)
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.green,
+                              size: 10,
+                            )
+                          else if (_isMissed(task))
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              color: Colors.red,
+                              size: 10,
+                            ),
+                        ],
                       ),
+                    ],
                   ],
                 ),
-              ],
-            ],
-          ),
         ),
       ),
     );

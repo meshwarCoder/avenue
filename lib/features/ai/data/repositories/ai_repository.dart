@@ -1,10 +1,10 @@
-import 'package:avenue/features/ai/ai/gemini_http_client.dart';
 import 'package:avenue/features/ai/ai/ai_tools.dart';
 import 'package:avenue/features/ai/ai/ai_tool_executor.dart';
+import 'package:avenue/features/ai/ai/open_router_http_client.dart';
 import 'package:avenue/features/schdules/domain/repo/schedule_repository.dart';
 
 class AiRepository {
-  final GeminiHttpClient _client;
+  final OpenRouterHttpClient _client;
   final AiToolExecutor _executor;
   final List<Map<String, dynamic>> _history = [];
   static const int _maxHistoryMessages = 15;
@@ -13,7 +13,7 @@ class AiRepository {
   AiRepository({
     required String apiKey,
     required ScheduleRepository scheduleRepository,
-  }) : _client = GeminiHttpClient(apiKey: apiKey, model: 'gemini-flash-latest'),
+  }) : _client = OpenRouterHttpClient(apiKey: apiKey),
        _executor = AiToolExecutor(scheduleRepository);
 
   Future<Map<String, dynamic>> processUserMessage({

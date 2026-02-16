@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/models/task_model.dart';
+import 'package:avenue/core/utils/time_utils.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:avenue/features/settings/presentation/cubit/settings_cubit.dart';
 
 class TaskCard extends StatelessWidget {
   final TaskModel task;
@@ -175,7 +178,7 @@ class TaskCard extends StatelessWidget {
                                   Flexible(
                                     flex: 3,
                                     child: Text(
-                                      '${_formatTime(task.startTimeOfDay)} - ${_formatTime(task.endTimeOfDay)}',
+                                      '${_formatTime(context, task.startTimeOfDay)} - ${_formatTime(context, task.endTimeOfDay)}',
                                       style: TextStyle(
                                         fontSize: 10,
                                         color: secondaryText,
@@ -309,10 +312,9 @@ class TaskCard extends StatelessWidget {
     }
   }
 
-  String _formatTime(TimeOfDay? time) {
+  String _formatTime(BuildContext context, TimeOfDay? time) {
     if (time == null) return '--:--';
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    final is24Hour = context.read<SettingsCubit>().state.is24HourFormat;
+    return TimeUtils.formatTime(time, is24Hour);
   }
 }
