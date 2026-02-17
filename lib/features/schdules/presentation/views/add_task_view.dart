@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:avenue/core/utils/constants.dart';
@@ -43,6 +44,9 @@ class _AddTaskViewState extends State<AddTaskView> {
   bool _isRecurring = false;
   final List<int> _selectedWeekdays = [];
   DateTime? _selectedDate;
+  final ScrollController _categoryScrollController = ScrollController();
+  bool _showLeftIndicator = false;
+  bool _showRightIndicator = false;
 
   @override
   void initState() {
@@ -56,15 +60,42 @@ class _AddTaskViewState extends State<AddTaskView> {
     _endTime = task?.endTimeOfDay ?? widget.initialEndTime;
     _selectedDate = task?.taskDate ?? widget.initialDate ?? DateTime.now();
 
-    String formatTime(TimeOfDay? time) {
-      if (time == null) return '';
-      final hour = time.hour.toString().padLeft(2, '0');
-      final minute = time.minute.toString().padLeft(2, '0');
-      return '$hour:$minute';
-    }
+    _startTimeController = TextEditingController(text: _formatTime(_startTime));
+    _endTimeController = TextEditingController(text: _formatTime(_endTime));
 
-    _startTimeController = TextEditingController(text: formatTime(_startTime));
-    _endTimeController = TextEditingController(text: formatTime(_endTime));
+    _categoryScrollController.addListener(_updateScrollIndicators);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateScrollIndicators();
+    });
+  }
+
+  void _updateScrollIndicators() {
+    if (!_categoryScrollController.hasClients) return;
+    final maxScroll = _categoryScrollController.position.maxScrollExtent;
+    final currentScroll = _categoryScrollController.offset;
+
+    setState(() {
+      _showLeftIndicator = currentScroll > 5;
+      _showRightIndicator = maxScroll > 0 && currentScroll < maxScroll - 5;
+    });
+  }
+
+  String _formatTime(TimeOfDay? time) {
+    if (time == null) return '';
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  @override
+  void dispose() {
+    _categoryScrollController.removeListener(_updateScrollIndicators);
+    _categoryScrollController.dispose();
+    _titleController.dispose();
+    _descController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
+    super.dispose();
   }
 
   final List<String> _importanceLevels = ['Low', 'Medium', 'High'];
@@ -86,7 +117,7 @@ class _AddTaskViewState extends State<AddTaskView> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -106,7 +137,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.3),
+                    color: Colors.grey.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -123,7 +154,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Colors.grey.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -242,7 +273,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.deepPurple.withOpacity(0.3),
+                        color: AppColors.deepPurple.withValues(alpha: 0.3),
                         blurRadius: 15,
                         offset: const Offset(0, 6),
                       ),
@@ -309,16 +340,18 @@ class _AddTaskViewState extends State<AddTaskView> {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(
-          color: theme.colorScheme.onSurface.withOpacity(0.3),
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
           fontSize: 15,
         ),
         prefixIcon: Icon(
           icon,
-          color: theme.colorScheme.primary.withOpacity(0.7),
+          color: theme.colorScheme.primary.withValues(alpha: 0.7),
           size: 22,
         ),
         filled: true,
-        fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.3,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -339,7 +372,9 @@ class _AddTaskViewState extends State<AddTaskView> {
         decoration: BoxDecoration(
           color: isSelected
               ? (isDark ? theme.colorScheme.primary : AppColors.deepPurple)
-              : theme.colorScheme.surfaceVariant.withOpacity(0.4),
+              : theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.4,
+                ),
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.center,
@@ -347,8 +382,8 @@ class _AddTaskViewState extends State<AddTaskView> {
           label,
           style: TextStyle(
             color: isSelected
-                ? (isDark ? theme.colorScheme.onPrimary : Colors.white)
-                : theme.colorScheme.onSurface.withOpacity(0.6),
+                ? Colors.white
+                : theme.colorScheme.onSurface.withValues(alpha: 0.6),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -365,13 +400,22 @@ class _AddTaskViewState extends State<AddTaskView> {
           firstDate: CalendarUtils.normalize(DateTime.now()),
           lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
           builder: (context, child) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
             return Theme(
               data: Theme.of(context).copyWith(
-                colorScheme: const ColorScheme.light(
-                  primary: AppColors.deepPurple,
-                  onPrimary: Colors.white,
-                  onSurface: AppColors.deepPurple,
-                ),
+                colorScheme: isDark
+                    ? const ColorScheme.dark(
+                        primary: AppColors.slatePurple,
+                        onPrimary: Colors.white,
+                        onSurface: Colors.white,
+                        surface: AppColors.darkBg,
+                      )
+                    : const ColorScheme.light(
+                        primary: AppColors.deepPurple,
+                        onPrimary: Colors.white,
+                        onSurface: AppColors.deepPurple,
+                        surface: AppColors.lightBg,
+                      ),
               ),
               child: child!,
             );
@@ -382,14 +426,14 @@ class _AddTaskViewState extends State<AddTaskView> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
             const Icon(
               Icons.today_rounded,
-              color: AppColors.creamTan,
+              color: AppColors.slatePurple,
               size: 22,
             ),
             const SizedBox(width: 12),
@@ -423,7 +467,7 @@ class _AddTaskViewState extends State<AddTaskView> {
   ][month - 1];
 
   Widget _buildWeekdaySelector() {
-    final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(7, (index) {
@@ -446,9 +490,8 @@ class _AddTaskViewState extends State<AddTaskView> {
               shape: BoxShape.circle,
               color: isSelected
                   ? Theme.of(context).colorScheme.primary
-                  : Theme.of(
-                      context,
-                    ).colorScheme.surfaceVariant.withOpacity(0.5),
+                  : Theme.of(context).colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
               border: isSelected
                   ? Border.all(
                       color: Theme.of(context).colorScheme.primary,
@@ -461,9 +504,10 @@ class _AddTaskViewState extends State<AddTaskView> {
               days[index],
               style: TextStyle(
                 color: isSelected
-                    ? Theme.of(context).colorScheme.onPrimary
+                    ? Colors.white
                     : Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
+                fontSize: 8,
               ),
             ),
           ),
@@ -486,7 +530,7 @@ class _AddTaskViewState extends State<AddTaskView> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
           fontSize: 13,
         ),
         prefixIcon: Icon(
@@ -497,7 +541,7 @@ class _AddTaskViewState extends State<AddTaskView> {
         filled: true,
         fillColor: Theme.of(
           context,
-        ).colorScheme.surfaceVariant.withOpacity(0.3),
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -510,6 +554,64 @@ class _AddTaskViewState extends State<AddTaskView> {
     final time = await showTimePicker(
       context: context,
       initialTime: (isStart ? _startTime : _endTime) ?? TimeOfDay.now(),
+      builder: (context, child) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final primaryColor = isDark
+            ? AppColors.slatePurple
+            : AppColors.deepPurple;
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: AppColors.slatePurple,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.white,
+                    surface: AppColors.darkBg,
+                  )
+                : const ColorScheme.light(
+                    primary: AppColors.deepPurple,
+                    onPrimary: Colors.white,
+                    onSurface: AppColors.deepPurple,
+                    surface: AppColors.lightBg,
+                  ),
+            timePickerTheme: TimePickerThemeData(
+              dayPeriodBorderSide: BorderSide(color: primaryColor, width: 1.5),
+              dayPeriodColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) return primaryColor;
+                return Colors.transparent;
+              }),
+              dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) return Colors.white;
+                return primaryColor;
+              }),
+              dayPeriodShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              hourMinuteColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected))
+                  return primaryColor.withValues(alpha: 0.2);
+                return isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.05);
+              }),
+              hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) return primaryColor;
+                return isDark ? Colors.white70 : Colors.black87;
+              }),
+              dialHandColor: primaryColor,
+              dialBackgroundColor: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.03),
+              dialTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) return Colors.white;
+                return isDark ? Colors.white : Colors.black87;
+              }),
+              entryModeIconColor: primaryColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (time != null) {
       setState(() {
@@ -526,44 +628,128 @@ class _AddTaskViewState extends State<AddTaskView> {
 
   Widget _buildCategorySelector() {
     final categories = AppColors.taskCategories;
+
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final bgColor = theme.scaffoldBackgroundColor;
+
     return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          final isSelected = _selectedCategory == category;
-          final color = _getCategoryColor(category);
-          return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = category),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: isSelected ? color : color.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: isSelected ? Border.all(color: color, width: 2) : null,
+      height: 48, // Slightly taller for better touch targets
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollUpdateNotification ||
+              notification is ScrollMetricsNotification) {
+            _updateScrollIndicators();
+          }
+          return false;
+        },
+        child: Stack(
+          children: [
+            ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                dragDevices: {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.mouse,
+                  PointerDeviceKind.trackpad,
+                  PointerDeviceKind.stylus,
+                },
               ),
-              alignment: Alignment.center,
-              child: Text(
-                category,
-                style: TextStyle(
-                  color: isSelected
-                      ? Colors.white
-                      : (isDark ? Colors.white70 : color.withOpacity(0.8)),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
+              child: ListView.separated(
+                controller: _categoryScrollController,
+                scrollDirection: Axis.horizontal,
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                itemCount: categories.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final category = categories[index];
+                  final isSelected = _selectedCategory == category;
+                  final color = _getCategoryColor(category);
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedCategory = category),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      margin: const EdgeInsets.symmetric(vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? color
+                            : color.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(14),
+                        border: isSelected
+                            ? Border.all(color: color, width: 2)
+                            : null,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        category,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : (isDark
+                                    ? Colors.white70
+                                    : color.withValues(alpha: 0.8)),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-          );
-        },
+            if (_showLeftIndicator)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 60,
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          bgColor,
+                          bgColor.withValues(alpha: 0.9),
+                          bgColor.withValues(alpha: 0),
+                        ],
+                        stops: const [0.0, 0.3, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (_showRightIndicator)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: 60,
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerRight,
+                        end: Alignment.centerLeft,
+                        colors: [
+                          bgColor,
+                          bgColor.withValues(alpha: 0.9),
+                          bgColor.withValues(alpha: 0),
+                        ],
+                        stops: const [0.0, 0.3, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -585,8 +771,10 @@ class _AddTaskViewState extends State<AddTaskView> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? color.withOpacity(0.2)
-                      : Theme.of(context).colorScheme.surface.withOpacity(0.5),
+                      ? color.withValues(alpha: 0.2)
+                      : Theme.of(
+                          context,
+                        ).colorScheme.surface.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(12),
                   border: isSelected
                       ? Border.all(color: color, width: 2)

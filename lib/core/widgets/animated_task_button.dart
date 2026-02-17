@@ -58,14 +58,14 @@ class _AnimatedTaskButtonState extends State<AnimatedTaskButton>
                 gradient: LinearGradient(
                   colors: [
                     AppColors.deepPurple,
-                    AppColors.slatePurple.withOpacity(0.9),
+                    AppColors.slatePurple.withValues(alpha: 0.9),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.deepPurple.withOpacity(0.4),
+                    color: AppColors.deepPurple.withValues(alpha: 0.4),
                     blurRadius: 15,
                     spreadRadius: 1,
                     offset: const Offset(0, 4),
