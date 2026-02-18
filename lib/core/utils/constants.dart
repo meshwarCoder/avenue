@@ -22,6 +22,9 @@ class AppColors {
   static const Color categoryMeeting = Color(0xFF1976D2); // Rich Blue
   static const Color categoryPersonal = Color(0xFF3F51B5); // Indigo
   static const Color categoryHealth = Color(0xFFE64A19); // Vibrant Orange
+  static const Color categoryStudy = Color(0xFF673AB7); // Deep Purple
+  static const Color categoryFinance = Color(0xFF2E7D32); // Success Green
+  static const Color categorySocial = Color(0xFFC2185B); // Pink
   static const Color categoryOther = Color(0xFF546E7A); // Slate Grey
 
   static const List<String> taskCategories = [
@@ -29,6 +32,9 @@ class AppColors {
     'Meeting',
     'Personal',
     'Health',
+    'Study',
+    'Finance',
+    'Social',
     'Other',
   ];
 
@@ -50,6 +56,12 @@ class AppColors {
         return categoryHealth;
       case 'meeting':
         return categoryMeeting;
+      case 'study':
+        return categoryStudy;
+      case 'finance':
+        return categoryFinance;
+      case 'social':
+        return categorySocial;
       case 'other':
       default:
         return categoryOther;
