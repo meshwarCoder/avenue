@@ -26,6 +26,7 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
 
       // Load user's chats (don't create a new one)
       final chats = await _repository.getUserChats(_userId);
+      if (isClosed) return;
       AvenueLogger.log(
         event: 'CHAT_SESSION_LOADED',
         layer: LoggerLayer.UI,
@@ -36,6 +37,7 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
 
       emit(ChatSessionLoaded(currentChatId: '', messages: [], chatList: chats));
     } catch (e) {
+      if (isClosed) return;
       AvenueLogger.log(
         event: 'CHAT_SESSION_ERROR',
         level: LoggerLevel.ERROR,
@@ -57,6 +59,7 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
       try {
         AvenueLogger.log(event: 'CHAT_CREATE_START', layer: LoggerLayer.UI);
         final chatId = await _repository.createChat(_userId);
+        if (isClosed) return;
         AvenueLogger.log(
           event: 'CHAT_CREATE_SUCCESS',
           layer: LoggerLayer.UI,
@@ -64,8 +67,10 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
         );
 
         final chats = await _repository.getUserChats(_userId);
+        if (isClosed) return;
         emit(currentState.copyWith(currentChatId: chatId, chatList: chats));
       } catch (e) {
+        if (isClosed) return;
         AvenueLogger.log(
           event: 'CHAT_CREATE_ERROR',
           level: LoggerLevel.ERROR,
@@ -83,6 +88,7 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
 
     try {
       final chats = await _repository.getUserChats(_userId);
+      if (isClosed) return;
 
       if (state is ChatSessionLoaded) {
         final currentState = state as ChatSessionLoaded;
@@ -105,6 +111,7 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
 
       // Load messages for this chat
       final messageModels = await _repository.getChatMessages(chatId);
+      if (isClosed) return;
 
       // Convert to ChatMessage
       final messages = messageModels.map((m) {
@@ -113,6 +120,7 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
 
       // Load chats
       final chats = await _repository.getUserChats(_userId);
+      if (isClosed) return;
 
       emit(
         ChatSessionLoaded(
@@ -122,6 +130,7 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
         ),
       );
     } catch (e) {
+      if (isClosed) return;
       emit(ChatSessionError('Failed to switch chat: $e'));
     }
   }
@@ -141,10 +150,12 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
     try {
       // 1. Persist to Supabase first
       await _repository.updateChatTitle(chatId, newTitle);
+      if (isClosed) return;
 
       // 2. Refetch entire list from Supabase
       await loadChats();
     } catch (e) {
+      if (isClosed) return;
       // Ensure we have latest data on error too
       await loadChats();
     }
@@ -157,10 +168,12 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
     try {
       // 1. Persist to Supabase first
       await _repository.deleteChat(chatId);
+      if (isClosed) return;
       AvenueLogger.log(event: 'CHAT_DELETE_SUCCESS', layer: LoggerLayer.UI);
 
       // 2. Refetch and handle current chat state
       final chats = await _repository.getUserChats(_userId);
+      if (isClosed) return;
       final currentState = state as ChatSessionLoaded;
 
       if (currentState.currentChatId == chatId) {
@@ -175,6 +188,7 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
         emit(currentState.copyWith(chatList: chats));
       }
     } catch (e) {
+      if (isClosed) return;
       AvenueLogger.log(
         event: 'CHAT_DELETE_ERROR',
         level: LoggerLevel.ERROR,
@@ -243,8 +257,10 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
         role: role,
         content: content,
       );
+      if (isClosed) return;
       AvenueLogger.log(event: 'CHAT_SAVE_SUCCESS', layer: LoggerLayer.UI);
     } catch (e) {
+      if (isClosed) return;
       AvenueLogger.log(
         event: 'CHAT_SAVE_ERROR',
         level: LoggerLevel.ERROR,

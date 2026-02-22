@@ -17,7 +17,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 8, // Increment version
+      version: 9, // Increment version
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -93,6 +93,18 @@ class DatabaseService {
         );
       }
     }
+    if (oldVersion < 9) {
+      // Add notification granular controls
+      await db.execute(
+        'ALTER TABLE tasks ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 1',
+      );
+      await db.execute(
+        'ALTER TABLE tasks ADD COLUMN reminder_before_minutes INTEGER',
+      );
+      await db.execute(
+        'ALTER TABLE tasks ADD COLUMN completion_notification_enabled INTEGER NOT NULL DEFAULT 1',
+      );
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -112,7 +124,10 @@ class DatabaseService {
         server_updated_at TEXT NOT NULL,
         importance_type TEXT,
         is_dirty INTEGER NOT NULL DEFAULT 0,
-        default_task_id TEXT
+        default_task_id TEXT,
+        notifications_enabled INTEGER NOT NULL DEFAULT 1,
+        reminder_before_minutes INTEGER,
+        completion_notification_enabled INTEGER NOT NULL DEFAULT 1
       )
     ''');
     // Removed embedding column

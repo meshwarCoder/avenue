@@ -25,6 +25,7 @@ class ChatCubit extends Cubit<ChatState> {
   List<ChatMessage> _messages = [];
 
   void _logState(ChatState state, {String? traceId}) {
+    if (isClosed) return;
     AvenueLogger.log(
       event: 'STATE_CHAT_UPDATED',
       layer: LoggerLayer.STATE,

@@ -12,6 +12,8 @@ import 'package:avenue/features/schdules/presentation/views/add_task_view.dart';
 import '../core/widgets/animated_task_button.dart';
 import '../core/widgets/avenue_nav_bar.dart';
 
+import 'package:avenue/core/services/local_notification_service.dart';
+
 class Root extends StatefulWidget {
   const Root({super.key});
 
@@ -26,6 +28,8 @@ class _RootState extends State<Root> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    // Request notification permission on Android 13+
+    sl<LocalNotificationService>().requestPermissionIfNeeded();
   }
 
   late final PageController _pageController = PageController(

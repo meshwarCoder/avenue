@@ -13,6 +13,7 @@ import 'package:sqlite3/open.dart';
 import 'package:avenue/core/utils/constants.dart';
 import 'package:avenue/core/logic/theme_cubit.dart';
 import 'package:avenue/features/settings/presentation/cubit/settings_cubit.dart';
+import 'package:avenue/core/services/local_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +34,10 @@ void main() async {
 
   // Initialize all dependencies (Hive, repositories, etc.)
   await initializeDependencies();
+
+  // Initialize Local Notifications
+  // يجب تهيئة الإشعارات بعد DI عشان الـ service يكون متسجل
+  await sl<LocalNotificationService>().init();
 
   runApp(const Avenue());
 }

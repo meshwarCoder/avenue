@@ -10,6 +10,7 @@ class WeeklyCubit extends Cubit<WeeklyState> {
   WeeklyCubit({required this.repository}) : super(const WeeklyInitial());
 
   void _logState(WeeklyState state) {
+    if (isClosed) return;
     AvenueLogger.log(
       event: 'STATE_WEEKLY_UPDATED',
       layer: LoggerLayer.STATE,

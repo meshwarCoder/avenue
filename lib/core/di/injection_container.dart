@@ -11,6 +11,8 @@ import '../../features/weeks/domain/repo/weekly_repository.dart';
 import '../../features/weeks/data/repo/weekly_repo_impl.dart';
 import '../../features/weeks/presentation/cubit/weekly_cubit.dart';
 import '../services/device_service.dart';
+import '../services/local_notification_service.dart';
+import '../services/task_notification_manager.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -48,6 +50,12 @@ Future<void> initializeDependencies() async {
 
   // Services
   sl.registerLazySingleton<DeviceService>(() => DeviceService());
+  sl.registerLazySingleton<LocalNotificationService>(
+    () => LocalNotificationService.instance,
+  );
+  sl.registerLazySingleton<TaskNotificationManager>(
+    () => TaskNotificationManager(sl(), sl()),
+  );
   sl.registerLazySingleton<SyncService>(
     () => SyncService(
       databaseService: sl(),
@@ -55,6 +63,7 @@ Future<void> initializeDependencies() async {
       embeddingService: sl(),
       authRepository: sl(),
       deviceService: sl(),
+      notificationManager: sl(),
     ),
   );
 
@@ -85,10 +94,14 @@ Future<void> initializeDependencies() async {
         AuthCubit(repository: sl(), deviceService: sl(), databaseService: sl()),
   );
   sl.registerLazySingleton(
-    () => TaskCubit(repository: sl(), syncService: sl()),
+    () => TaskCubit(
+      repository: sl(),
+      syncService: sl(),
+      notificationManager: sl(),
+    ),
   );
   sl.registerFactory(() => WeeklyCubit(repository: sl()));
-  sl.registerLazySingleton(() => ThemeCubit());
+  sl.registerLazySingleton(() => ThemeCubit(sl()));
   sl.registerLazySingleton(() => SettingsCubit(sl()));
 
   // AI Chat

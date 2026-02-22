@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../features/settings/data/settings_repository.dart';
 
 class ThemeCubit extends Cubit<ThemeMode> {
-  ThemeCubit() : super(ThemeMode.system);
+  final SettingsRepository _repository;
 
-  void setThemeMode(ThemeMode mode) => emit(mode);
+  ThemeCubit(this._repository) : super(_repository.getThemeMode());
 
-  void toggleTheme() {
-    if (state == ThemeMode.light) {
-      emit(ThemeMode.dark);
-    } else {
-      emit(ThemeMode.light);
-    }
+  Future<void> setThemeMode(ThemeMode mode) async {
+    await _repository.setThemeMode(mode);
+    emit(mode);
+  }
+
+  Future<void> toggleTheme() async {
+    final newMode = state == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    await setThemeMode(newMode);
   }
 
   bool get isDark => state == ThemeMode.dark;

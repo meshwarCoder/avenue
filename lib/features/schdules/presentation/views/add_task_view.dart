@@ -48,6 +48,12 @@ class _AddTaskViewState extends State<AddTaskView> {
   bool _showLeftIndicator = false;
   bool _showRightIndicator = false;
 
+  // Notification States
+  late bool _notificationsEnabled;
+  late int? _reminderMinutes;
+  late bool _completionNotificationEnabled;
+  bool _reminderEnabled = false;
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +68,13 @@ class _AddTaskViewState extends State<AddTaskView> {
 
     _startTimeController = TextEditingController(text: _formatTime(_startTime));
     _endTimeController = TextEditingController(text: _formatTime(_endTime));
+
+    // Initialize Notification States
+    _notificationsEnabled = task?.notificationsEnabled ?? true;
+    _reminderMinutes = task?.reminderBeforeMinutes;
+    _reminderEnabled = _reminderMinutes != null;
+    _completionNotificationEnabled =
+        task?.completionNotificationEnabled ?? true;
 
     _categoryScrollController.addListener(_updateScrollIndicators);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -249,6 +262,9 @@ class _AddTaskViewState extends State<AddTaskView> {
               ),
               const SizedBox(height: 32),
 
+              _buildNotificationSection(theme),
+              const SizedBox(height: 32),
+
               _buildFieldLabel('Category', theme),
               _buildCategorySelector(),
               const SizedBox(height: 32),
@@ -349,9 +365,7 @@ class _AddTaskViewState extends State<AddTaskView> {
           size: 22,
         ),
         filled: true,
-        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.3,
-        ),
+        fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -372,9 +386,7 @@ class _AddTaskViewState extends State<AddTaskView> {
         decoration: BoxDecoration(
           color: isSelected
               ? (isDark ? theme.colorScheme.primary : AppColors.deepPurple)
-              : theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.4,
-                ),
+              : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.center,
@@ -490,8 +502,9 @@ class _AddTaskViewState extends State<AddTaskView> {
               shape: BoxShape.circle,
               color: isSelected
                   ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.5),
+                  : Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
               border: isSelected
                   ? Border.all(
                       color: Theme.of(context).colorScheme.primary,
@@ -541,7 +554,7 @@ class _AddTaskViewState extends State<AddTaskView> {
         filled: true,
         fillColor: Theme.of(
           context,
-        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -830,6 +843,11 @@ class _AddTaskViewState extends State<AddTaskView> {
           importanceType: _selectedImportance,
           oneTime: true,
           defaultTaskId: widget.task?.defaultTaskId,
+          notificationsEnabled: _notificationsEnabled,
+          reminderBeforeMinutes: _reminderEnabled
+              ? (_reminderMinutes ?? 10)
+              : null,
+          completionNotificationEnabled: _completionNotificationEnabled,
         );
         _saveSpecificTask(task);
       }
@@ -860,5 +878,191 @@ class _AddTaskViewState extends State<AddTaskView> {
 
   Color _getCategoryColor(String category) {
     return AppColors.getCategoryColor(category);
+  }
+
+  Widget _buildNotificationSection(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _notificationsEnabled
+                    ? Icons.notifications_active_rounded
+                    : Icons.notifications_off_rounded,
+                color: _notificationsEnabled
+                    ? theme.colorScheme.primary
+                    : Colors.grey,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "Task Notifications",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: _notificationsEnabled
+                        ? theme.colorScheme.onSurface
+                        : Colors.grey,
+                  ),
+                ),
+              ),
+              Switch.adaptive(
+                value: _notificationsEnabled,
+                activeColor: theme.colorScheme.primary,
+                onChanged: (val) => setState(() => _notificationsEnabled = val),
+              ),
+            ],
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: _notificationsEnabled
+                ? Column(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                        child: Divider(height: 1),
+                      ),
+                      // Main At Time notification (Fixed)
+                      _buildNotificationOption(
+                        title: "At start time",
+                        subtitle: "Notification at ${_formatTime(_startTime)}",
+                        icon: Icons.alarm_on_rounded,
+                        value: true,
+                        onChanged: (_) {},
+                        theme: theme,
+                        isFixed: true,
+                      ),
+                      // Reminder Option
+                      _buildNotificationOption(
+                        title: "Reminder before start",
+                        subtitle: _reminderEnabled
+                            ? "${_reminderMinutes ?? 10} minutes before"
+                            : "No early reminder",
+                        icon: Icons.timer_outlined,
+                        value: _reminderEnabled,
+                        onChanged: (val) => setState(() {
+                          _reminderEnabled = val;
+                          if (val && _reminderMinutes == null) {
+                            _reminderMinutes = 10;
+                          }
+                        }),
+                        theme: theme,
+                      ),
+                      if (_reminderEnabled)
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 48,
+                            right: 8,
+                            bottom: 12,
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              value: _reminderMinutes ?? 10,
+                              isExpanded: true,
+                              items: [5, 10, 15, 30, 60]
+                                  .map(
+                                    (m) => DropdownMenuItem(
+                                      value: m,
+                                      child: Text(
+                                        "$m Minutes before",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: theme.colorScheme.onSurface,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (val) =>
+                                  setState(() => _reminderMinutes = val),
+                            ),
+                          ),
+                        ),
+                      // Completion Option
+                      _buildNotificationOption(
+                        title: "Completion Alert",
+                        subtitle: "Encouraging notification on Done",
+                        icon: Icons.celebration_outlined,
+                        value: _completionNotificationEnabled,
+                        onChanged: (val) => setState(
+                          () => _completionNotificationEnabled = val,
+                        ),
+                        theme: theme,
+                      ),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationOption({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required ThemeData theme,
+    bool isFixed = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: isFixed
+                ? theme.colorScheme.primary
+                : theme.colorScheme.primary.withOpacity(0.7),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isFixed ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isFixed)
+            Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 22)
+          else
+            Checkbox(
+              value: value,
+              onChanged: (v) => onChanged(v ?? false),
+              activeColor: theme.colorScheme.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

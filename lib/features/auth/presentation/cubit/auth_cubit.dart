@@ -12,7 +12,6 @@ class AuthCubit extends Cubit<AuthState> {
   final DatabaseService databaseService;
 
   StreamSubscription? _authSubscription;
-  bool _isClosed = false;
 
   AuthCubit({
     required this.repository,
@@ -26,7 +25,7 @@ class AuthCubit extends Cubit<AuthState> {
   void _initAuthListener() {
     _authSubscription = repository.authEvents.listen(
       (event) {
-        if (_isClosed) return;
+        if (isClosed) return;
         if (event == AuthEvent.signedIn) {
           _handleAuthSuccess();
         } else if (event == AuthEvent.signedOut) {
@@ -34,7 +33,7 @@ class AuthCubit extends Cubit<AuthState> {
         }
       },
       onError: (error) {
-        if (_isClosed) return;
+        if (isClosed) return;
         AvenueLogger.log(
           event: 'AUTH_STREAM_ERROR',
           level: LoggerLevel.WARN,
@@ -61,13 +60,14 @@ class AuthCubit extends Cubit<AuthState> {
     // Sync profile and device info on every auth success (app start or login)
     if (state is Authenticated) return;
 
+    String? userId;
     try {
       if (!repository.isAuthenticated) {
         emit(Unauthenticated());
         return;
       }
 
-      final userId = repository.currentUserId;
+      userId = repository.currentUserId;
       if (userId == null) {
         emit(Unauthenticated());
         return;
@@ -134,7 +134,7 @@ class AuthCubit extends Cubit<AuthState> {
         payload: e.toString(),
       );
 
-      final userId = repository.currentUserId;
+      if (isClosed) return;
       if (userId != null) {
         emit(Authenticated(userId));
       } else {
@@ -146,6 +146,7 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> signUp({required String email, required String password}) async {
     emit(AuthLoading());
     final result = await repository.signUp(email: email, password: password);
+    if (isClosed) return;
     result.fold((failure) => emit(AuthError(failure.message)), (_) {
       // Success! We rely on _authSubscription to handle the rest.
       // However, if email confirmation is required, the listener might NOT fire 'signedIn' yet.
@@ -162,6 +163,7 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> signIn({required String email, required String password}) async {
     emit(AuthLoading());
     final result = await repository.signIn(email: email, password: password);
+    if (isClosed) return;
     result.fold((failure) => emit(AuthError(failure.message)), (_) {
       // Success! We rely on _authSubscription.
       if (!repository.isAuthenticated) {
@@ -177,11 +179,13 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> signInWithGoogle() async {
     emit(const AuthLoading(source: AuthLoadingSource.google));
     final result = await repository.signInWithGoogle();
+    if (isClosed) return;
     result.fold((failure) => emit(AuthError(failure.message)), (_) {
       // Success means the browser flow started.
       // We rely on _authSubscription.
       // Fallback: If no auth event received in 5s, reset to Unauthenticated
       Future.delayed(const Duration(seconds: 5), () {
+        if (isClosed) return;
         if (state is AuthLoading && !repository.isAuthenticated) {
           emit(Unauthenticated());
         }
@@ -192,11 +196,13 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> signInWithFacebook() async {
     emit(const AuthLoading(source: AuthLoadingSource.facebook));
     final result = await repository.signInWithFacebook();
+    if (isClosed) return;
     result.fold((failure) => emit(AuthError(failure.message)), (_) {
       // Success means the browser flow started.
       // We rely on _authSubscription.
       // Fallback: If no auth event received in 5s, reset to Unauthenticated
       Future.delayed(const Duration(seconds: 5), () {
+        if (isClosed) return;
         if (state is AuthLoading && !repository.isAuthenticated) {
           emit(Unauthenticated());
         }
@@ -207,6 +213,7 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> signOut() async {
     emit(const AuthLoading(source: AuthLoadingSource.other));
     final result = await repository.signOut();
+    if (isClosed) return;
     result.fold((failure) => emit(AuthError(failure.message)), (_) async {
       await databaseService.clearUserData();
       // Unauthenticated state will be emitted by listener
@@ -215,7 +222,6 @@ class AuthCubit extends Cubit<AuthState> {
 
   @override
   Future<void> close() {
-    _isClosed = true;
     _authSubscription?.cancel();
     return super.close();
   }

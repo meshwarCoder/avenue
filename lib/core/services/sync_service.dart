@@ -8,6 +8,7 @@ import 'embedding_service.dart';
 import '../../features/auth/domain/repo/auth_repository.dart';
 import 'device_service.dart';
 import '../utils/observability.dart';
+import 'task_notification_manager.dart';
 
 class SyncService {
   final DatabaseService databaseService;
@@ -15,6 +16,7 @@ class SyncService {
   final EmbeddingService embeddingService;
   final AuthRepository authRepository;
   final DeviceService deviceService;
+  final TaskNotificationManager notificationManager;
 
   static const String lastSyncKey = 'last_sync_timestamp';
   bool _isSyncing = false; // Add lock flag
@@ -25,6 +27,7 @@ class SyncService {
     required this.embeddingService,
     required this.authRepository,
     required this.deviceService,
+    required this.notificationManager,
   });
 
   Future<bool> _hasInternet() async {
@@ -130,6 +133,11 @@ class SyncService {
             remoteTask.copyWith(isDirty: false).toMap(),
             conflictAlgorithm: ConflictAlgorithm.replace,
           );
+          // New task from server: schedule notifications
+          await notificationManager.updateTaskNotificationIfNeeded(
+            null,
+            remoteTask,
+          );
           pulledTasksCount++;
         } else {
           final localTask = TaskModel.fromMap(localMaps.first);
@@ -140,6 +148,11 @@ class SyncService {
               remoteTask.copyWith(isDirty: false).toMap(),
               where: 'id = ?',
               whereArgs: [remoteTask.id],
+            );
+            // Updated task from server: check if notifications need updating
+            await notificationManager.updateTaskNotificationIfNeeded(
+              localTask,
+              remoteTask,
             );
             pulledTasksCount++;
           }

@@ -54,12 +54,30 @@ class SettingsView extends StatelessWidget {
               );
             },
           ),
-          _buildSettingItem(
-            context,
-            icon: Icons.notifications_none_rounded,
-            title: "Notifications",
-            subtitle: "On",
-            onTap: () {},
+          BlocBuilder<SettingsCubit, SettingsState>(
+            builder: (context, state) {
+              return Column(
+                children: [
+                  _buildSettingItem(
+                    context,
+                    icon: Icons.notifications_none_rounded,
+                    title: "Notifications",
+                    subtitle: state.notificationsEnabled ? "On" : "Off",
+                    trailing: Switch(
+                      value: state.notificationsEnabled,
+                      onChanged: (val) => context
+                          .read<SettingsCubit>()
+                          .updateNotificationsEnabled(val),
+                    ),
+                    onTap: () => context
+                        .read<SettingsCubit>()
+                        .updateNotificationsEnabled(
+                          !state.notificationsEnabled,
+                        ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 24),
           _buildSectionHeader(context, "Account"),

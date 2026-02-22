@@ -18,6 +18,9 @@ class TaskModel {
   final bool isDirty;
   final List<double>? embedding;
   final String? defaultTaskId;
+  final bool notificationsEnabled;
+  final int? reminderBeforeMinutes;
+  final bool completionNotificationEnabled;
 
   TaskModel({
     String? id,
@@ -35,6 +38,9 @@ class TaskModel {
     this.isDirty = false,
     this.embedding,
     this.defaultTaskId,
+    this.notificationsEnabled = true,
+    this.reminderBeforeMinutes,
+    this.completionNotificationEnabled = true,
   }) : id = id ?? const Uuid().v4(),
        oneTime = oneTime ?? true,
        isDeleted = isDeleted ?? false,
@@ -86,6 +92,10 @@ class TaskModel {
       isDirty: (map['is_dirty'] ?? 0) == 1,
       // embedding: not stored locally anymore
       defaultTaskId: map['default_task_id'],
+      notificationsEnabled: (map['notifications_enabled'] ?? 1) == 1,
+      reminderBeforeMinutes: map['reminder_before_minutes'],
+      completionNotificationEnabled:
+          (map['completion_notification_enabled'] ?? 1) == 1,
     );
   }
 
@@ -113,6 +123,9 @@ class TaskModel {
       'importance_type': importanceType,
       'embedding': embedding, // Supabase handles vector/array
       'default_task_id': defaultTaskId,
+      'notifications_enabled': notificationsEnabled,
+      'reminder_before_minutes': reminderBeforeMinutes,
+      'completion_notification_enabled': completionNotificationEnabled,
     };
   }
 
@@ -170,6 +183,10 @@ class TaskModel {
       importanceType: json['importance_type'],
       embedding: parsedEmbedding,
       defaultTaskId: json['default_task_id'],
+      notificationsEnabled: json['notifications_enabled'] ?? true,
+      reminderBeforeMinutes: json['reminder_before_minutes'],
+      completionNotificationEnabled:
+          json['completion_notification_enabled'] ?? true,
     );
   }
 
@@ -204,6 +221,9 @@ class TaskModel {
     bool oneTime = true,
     String? importanceType,
     String? defaultTaskId,
+    bool notificationsEnabled = true,
+    int? reminderBeforeMinutes,
+    bool completionNotificationEnabled = true,
   }) {
     final normalizedDate = DateTime(
       taskDate.year,
@@ -234,6 +254,9 @@ class TaskModel {
       oneTime: oneTime,
       importanceType: importanceType,
       defaultTaskId: defaultTaskId,
+      notificationsEnabled: notificationsEnabled,
+      reminderBeforeMinutes: reminderBeforeMinutes,
+      completionNotificationEnabled: completionNotificationEnabled,
     );
   }
 
@@ -252,6 +275,9 @@ class TaskModel {
     List<double>? embedding,
     bool? isDirty,
     String? defaultTaskId,
+    bool? notificationsEnabled,
+    int? reminderBeforeMinutes,
+    bool? completionNotificationEnabled,
   }) {
     return TaskModel(
       id: id,
@@ -269,6 +295,11 @@ class TaskModel {
       embedding: embedding ?? this.embedding,
       isDirty: isDirty ?? this.isDirty,
       defaultTaskId: defaultTaskId ?? this.defaultTaskId,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      reminderBeforeMinutes:
+          reminderBeforeMinutes ?? this.reminderBeforeMinutes,
+      completionNotificationEnabled:
+          completionNotificationEnabled ?? this.completionNotificationEnabled,
     );
   }
 
