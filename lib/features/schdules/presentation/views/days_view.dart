@@ -83,16 +83,10 @@ class _DaysViewState extends State<DaysView> {
               // 1. PAST DAYS (Top/Upwards)
               SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
-                  // Determine item count: 7 days + 1 button
                   final itemCount = 8;
                   if (index >= itemCount) return null;
 
-                  // Index 0 = Yesterday (closest to center)
-                  // Index 6 = 7 days ago
-                  // Index 7 = Past Tasks Button (furthest top)
-
                   if (index == itemCount - 1) {
-                    // The "View Older Weeks" button (at the very top of content)
                     if (!showPastButton) return const SizedBox.shrink();
 
                     return Padding(
@@ -157,8 +151,6 @@ class _DaysViewState extends State<DaysView> {
               SliverList(
                 key: centerKey,
                 delegate: SliverChildBuilderDelegate((context, index) {
-                  // Determine item count: Today + 6 future days + Future Button
-                  // Total 1 + 6 = 7 days visible initially + button = 8 items
                   final itemCount = 8;
                   if (index >= itemCount) return null;
 

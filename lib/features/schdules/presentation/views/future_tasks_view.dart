@@ -3,9 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
 import '../widgets/task_card.dart';
-import 'add_task_view.dart';
+import '../widgets/task_detail_sheet.dart';
 import '../../../../core/widgets/avenue_loading.dart';
-import '../../data/models/task_model.dart';
 
 class FutureTasksView extends StatefulWidget {
   const FutureTasksView({super.key});
@@ -62,7 +61,15 @@ class _FutureTasksViewState extends State<FutureTasksView> {
                     // Verify logic.
                   },
                   onLongPress: () {
-                    _showTaskOptions(context, task);
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => TaskDetailSheet(
+                        task: task,
+                        selectedDate: task.taskDate,
+                      ),
+                    );
                   },
                 );
               },
@@ -72,65 +79,6 @@ class _FutureTasksViewState extends State<FutureTasksView> {
           }
           return const Center(child: CircularProgressIndicator());
         },
-      ),
-    );
-  }
-
-  void _showTaskOptions(BuildContext context, TaskModel task) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.edit, color: Colors.blue),
-            title: const Text('Edit Task'),
-            onTap: () {
-              Navigator.pop(context);
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => AddTaskView(task: task),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete, color: Colors.red),
-            title: const Text('Delete Task'),
-            onTap: () {
-              Navigator.pop(context);
-              _showDeleteConfirmation(context, task);
-            },
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context, TaskModel task) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Task'),
-        content: const Text('Are you sure you want to delete this task?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<TaskCubit>().deleteTask(task.id);
-              Navigator.pop(context);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
       ),
     );
   }

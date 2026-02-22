@@ -41,31 +41,31 @@ class TaskCard extends StatelessWidget {
             color: task.completed
                 ? Colors.green.withOpacity(0.08)
                 : (isMissed ? Colors.red.withOpacity(0.08) : theme.cardColor),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: task.completed
-                  ? Colors.green.withOpacity(0.3)
+                  ? Colors.green.withOpacity(0.2)
                   : (isMissed
-                        ? Colors.red.withOpacity(0.3)
-                        : theme.dividerColor.withOpacity(0.05)),
-              width: 1.5,
+                        ? Colors.red.withOpacity(0.2)
+                        : theme.dividerColor.withOpacity(0.08)),
+              width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                color: Colors.black.withOpacity(isPast ? 0.02 : 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
             child: IntrinsicHeight(
               child: Row(
                 children: [
                   // Left accent bar
                   Container(
-                    width: 5,
+                    width: 6,
                     color: task.completed
                         ? Colors.green
                         : (isMissed ? Colors.redAccent : task.color),

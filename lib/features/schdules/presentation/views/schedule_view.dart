@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:avenue/core/utils/constants.dart';
-import 'package:avenue/features/schdules/data/models/task_model.dart';
-import 'package:avenue/features/schdules/presentation/views/add_task_view.dart';
 import 'package:avenue/features/schdules/presentation/views/timeline_view.dart';
 import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
 import '../widgets/task_card.dart';
 import '../../../../core/widgets/avenue_loading.dart';
-import '../../../../core/utils/task_utils.dart';
 import '../../../../core/utils/calendar_utils.dart';
 import '../../../../core/utils/observability.dart';
+import '../widgets/task_detail_sheet.dart';
 
 class HomeView extends StatefulWidget {
   final DateTime? selectedDate;
@@ -123,33 +121,29 @@ class _HomeViewState extends State<HomeView> {
                             height: 125,
                             onTap: isPast
                                 ? null
-                                : () async {
-                                    if (!TaskUtils.canCompleteTask(task)) {
-                                      TaskUtils.showBlockedActionMessage(
-                                        context,
-                                        "This task hasn't started yet!",
-                                      );
-                                      return;
-                                    }
-
-                                    final confirm = task.completed
-                                        ? await TaskUtils.confirmTaskUndo(
-                                            context,
-                                          )
-                                        : await TaskUtils.confirmTaskCompletion(
-                                            context,
-                                          );
-
-                                    if (confirm && context.mounted) {
-                                      context.read<TaskCubit>().toggleTaskDone(
-                                        task,
-                                      );
-                                    }
+                                : () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (context) => TaskDetailSheet(
+                                        task: task,
+                                        selectedDate: _date,
+                                      ),
+                                    );
                                   },
                             onLongPress: isPast
                                 ? null
                                 : () {
-                                    _showTaskOptions(context, task);
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (context) => TaskDetailSheet(
+                                        task: task,
+                                        selectedDate: _date,
+                                      ),
+                                    );
                                   },
                           ),
                         );
@@ -168,63 +162,151 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildSummaryCard(int total, int completed, int pending) {
+    final progress = total == 0 ? 0.0 : completed / total;
+    final percentage = (progress * 100).toInt();
     final isPast = _isPastDate(_date);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [theme.cardColor, theme.cardColor.withOpacity(0.8)]
+              : [Colors.white, Colors.white.withOpacity(0.9)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: (isDark ? Colors.black : theme.primaryColor).withOpacity(
+              0.08,
+            ),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildSummaryItem(
-            "Total",
-            total.toString(),
-            Theme.of(context).brightness == Brightness.dark
-                ? Theme.of(context).colorScheme.primary
-                : AppColors.slatePurple,
+          // Circular Progress
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 85,
+                height: 85,
+                child: CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 10,
+                  backgroundColor: (isDark
+                      ? Colors.white10
+                      : Colors.grey[100])!,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    completed == total && total > 0
+                        ? Colors.green
+                        : theme.primaryColor,
+                  ),
+                  strokeCap: StrokeCap.round,
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "$percentage%",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          _buildSummaryItem("Done", completed.toString(), Colors.green),
-          _buildSummaryItem(
-            isPast ? "Missed" : "Pending",
-            pending.toString(),
-            isPast ? Colors.redAccent : AppColors.salmonPink,
+          const SizedBox(width: 28),
+          // Text Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getMotivationalMessage(progress, total, isPast),
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    _buildStatusDot("Total", total, theme.primaryColor),
+                    _buildStatusDot("Done", completed, Colors.green),
+                    _buildStatusDot(
+                      isPast ? "Missed" : "Left",
+                      pending,
+                      isPast ? Colors.redAccent : AppColors.salmonPink,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryItem(String label, String value, Color color) {
-    return Column(
+  Widget _buildStatusDot(String label, int count, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: color,
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.8),
+            shape: BoxShape.circle,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(width: 5),
         Text(
-          label,
+          "$count $label",
           style: TextStyle(
-            fontSize: 14,
-            color: Theme.of(context).textTheme.bodySmall?.color,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
       ],
     );
+  }
+
+  String _getMotivationalMessage(double progress, int total, bool isPast) {
+    if (total == 0)
+      return isPast ? "No history here. 🌫️" : "No tasks today! ☕";
+
+    if (isPast) {
+      if (progress == 1.0) return "Perfect score! You nailed it! 🏆";
+      if (progress >= 0.7) return "Excellent performance! 🌟";
+      if (progress >= 0.4) return "Good effort on this day! 👍";
+      if (progress > 0) return "Managed to get some done. 📈";
+      return "This day passed by. ⌛";
+    }
+
+    if (progress == 0) return "Let's get started! 💪";
+    if (progress < 0.4) return "Great start, keep it up! ✨";
+    if (progress < 0.7) return "You're doing great! 🌟";
+    if (progress < 1.0) return "Almost there! 🎯";
+    return "All done! Enjoy your day 🎉";
   }
 
   Widget _buildTimelineButton() {
@@ -281,113 +363,6 @@ class _HomeViewState extends State<HomeView> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showTaskOptions(BuildContext context, TaskModel task) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 8),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-          ListTile(
-            leading: const Icon(
-              Icons.edit_rounded,
-              color: AppColors.slatePurple,
-            ),
-            title: const Text('Edit Task'),
-            onTap: () {
-              Navigator.pop(context);
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => AddTaskView(task: task),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete_rounded, color: Colors.redAccent),
-            title: const Text('Delete Task'),
-            onTap: () {
-              Navigator.pop(context);
-              _showDeleteConfirmation(context, task);
-            },
-          ),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context, TaskModel task) {
-    final isDefaultTask = !task.oneTime || task.defaultTaskId != null;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isDefaultTask ? 'Delete Recurring Task' : 'Delete Task'),
-        content: Text(
-          isDefaultTask
-              ? 'Would you like to delete this task for today only, or stop it from recurring entirely?'
-              : 'Are you sure you want to delete this task?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          if (isDefaultTask) ...[
-            TextButton(
-              onPressed: () {
-                context.read<TaskCubit>().hideDefaultTaskForDate(
-                  task.defaultTaskId ?? task.id,
-                  _date,
-                  taskId: task.id,
-                );
-                Navigator.pop(context);
-              },
-              child: const Text('Only Today'),
-            ),
-            TextButton(
-              onPressed: () {
-                context.read<TaskCubit>().deleteDefaultTaskEntirely(
-                  task.defaultTaskId ?? task.id,
-                  taskId: task.id,
-                );
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Entirely',
-                style: TextStyle(color: Colors.redAccent),
-              ),
-            ),
-          ] else
-            TextButton(
-              onPressed: () {
-                context.read<TaskCubit>().deleteTask(task.id);
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Colors.redAccent),
-              ),
-            ),
-        ],
       ),
     );
   }

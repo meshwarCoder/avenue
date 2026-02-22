@@ -28,9 +28,6 @@ class _PastTasksViewState extends State<PastTasksView> {
     final today = DateTime.now();
     final normalizedToday = DateTime(today.year, today.month, today.day);
 
-    // Calculate start date of the visible week
-    // If offset is 1, we show [Today - 7 .. Today - 1]
-    // If offset is 2, we show [Today - 14 .. Today - 8]
     final endOfRange = normalizedToday.subtract(
       Duration(days: (_weekOffset - 1) * 7 + 1),
     );
@@ -117,10 +114,6 @@ class _PastTasksViewState extends State<PastTasksView> {
                   ),
                   itemCount: days.length,
                   itemBuilder: (context, index) {
-                    // Determine logic: show latest first or oldest first?
-                    // Usually timeline is newest at top?
-                    // days array is Oldest -> Newest (startOfRange -> endOfRange)
-                    // Let's reverse display so newest day is at top
                     final day = days[6 - index]; // 6, 5, 4... 0
 
                     return DayCard(

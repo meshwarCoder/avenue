@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:avenue/features/schdules/presentation/views/add_task_view.dart';
 import 'package:avenue/features/schdules/presentation/widgets/task_card.dart';
+import 'package:avenue/features/schdules/presentation/widgets/task_detail_sheet.dart';
 import 'package:avenue/features/ai/presentation/widgets/animated_ai_button.dart';
 import 'package:avenue/core/widgets/animated_task_button.dart';
 import '../../../../core/widgets/avenue_loading.dart';
-import '../../../../core/utils/task_utils.dart';
 import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
 import '../../data/models/task_model.dart';
@@ -269,100 +269,32 @@ class TimelineLayout extends StatelessWidget {
                 child: TaskCard(
                   task: task,
                   height: height,
-                  onTap: _isNotToday(task.taskDate)
-                      ? null
-                      : () async {
-                          if (!TaskUtils.canCompleteTask(task)) {
-                            TaskUtils.showBlockedActionMessage(
-                              context,
-                              "This task hasn't started yet!",
-                            );
-                            return;
-                          }
-
-                          final confirm = task.completed
-                              ? await TaskUtils.confirmTaskUndo(context)
-                              : await TaskUtils.confirmTaskCompletion(context);
-
-                          if (confirm && context.mounted) {
-                            context.read<TaskCubit>().toggleTaskDone(task);
-                          }
-                        },
-                  onLongPress: _isNotToday(task.taskDate)
-                      ? null
-                      : () {
-                          _showTaskOptions(context, task);
-                        },
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => TaskDetailSheet(
+                        task: task,
+                        selectedDate: task.taskDate,
+                      ),
+                    );
+                  },
+                  onLongPress: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => TaskDetailSheet(
+                        task: task,
+                        selectedDate: task.taskDate,
+                      ),
+                    );
+                  },
                 ),
               );
             });
           }),
-        ],
-      ),
-    );
-  }
-
-  bool _isNotToday(DateTime date) {
-    final now = DateTime.now();
-    return date.year != now.year ||
-        date.month != now.month ||
-        date.day != now.day;
-  }
-
-  void _showTaskOptions(BuildContext context, TaskModel task) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.edit, color: Colors.blue),
-            title: const Text('Edit Task'),
-            onTap: () {
-              Navigator.pop(context);
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => AddTaskView(task: task),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete, color: Colors.red),
-            title: const Text('Delete Task'),
-            onTap: () {
-              Navigator.pop(context);
-              _showDeleteConfirmation(context, task);
-            },
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context, TaskModel task) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Task'),
-        content: const Text('Are you sure you want to delete this task?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<TaskCubit>().deleteTask(task.id);
-              Navigator.pop(context);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
         ],
       ),
     );
