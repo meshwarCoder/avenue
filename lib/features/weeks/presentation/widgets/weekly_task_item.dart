@@ -116,23 +116,36 @@ class WeeklyTaskItem extends StatelessWidget {
                     ),
                     if (height > 45) ...[
                       const SizedBox(height: 2),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildImportanceDot(task.importanceType ?? 'Low'),
-                          if (task.completed)
-                            const Icon(
-                              Icons.check_circle_rounded,
-                              color: Colors.green,
-                              size: 10,
-                            )
-                          else if (_isMissed(task))
-                            const Icon(
-                              Icons.error_outline_rounded,
-                              color: Colors.red,
-                              size: 10,
-                            ),
-                        ],
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: 2,
+                          left: 3,
+                          right: 3,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildImportanceDot(task.importanceType ?? 'Low'),
+                            const SizedBox(width: 4),
+                            if (task.completed)
+                              const Flexible(
+                                child: Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Colors.green,
+                                  size: 10,
+                                ),
+                              )
+                            else if (_isMissed(task))
+                              const Flexible(
+                                child: Icon(
+                                  Icons.error_outline_rounded,
+                                  color: Colors.red,
+                                  size: 10,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ],
                   ],

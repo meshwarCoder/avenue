@@ -250,17 +250,18 @@ class TaskCard extends StatelessWidget {
         ? Colors.white.withOpacity(0.9)
         : theme.colorScheme.primary.withOpacity(0.7);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          isOneTime ? Icons.calendar_today : Icons.repeat,
-          size: 10,
-          color: color,
-        ),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isOneTime ? Icons.calendar_today : Icons.repeat,
+            size: 10,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
             isOneTime ? "ONE-TIME" : "RECURRING",
             style: TextStyle(
               fontSize: 9,
@@ -271,8 +272,8 @@ class TaskCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

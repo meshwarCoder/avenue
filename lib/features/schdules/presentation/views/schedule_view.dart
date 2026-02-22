@@ -168,106 +168,119 @@ class _HomeViewState extends State<HomeView> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [theme.cardColor, theme.cardColor.withOpacity(0.8)]
-              : [Colors.white, Colors.white.withOpacity(0.9)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: (isDark ? Colors.black : theme.primaryColor).withOpacity(
-              0.08,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isSmall = screenWidth < 360;
+        final padding = isSmall ? 16.0 : 28.0;
+        final chartSize = isSmall ? 70.0 : 85.0;
+        final spacing = isSmall ? 16.0 : 28.0;
+
+        return Container(
+          margin: EdgeInsets.fromLTRB(20, 10, 20, isSmall ? 10 : 20),
+          padding: EdgeInsets.all(padding),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [theme.cardColor, theme.cardColor.withOpacity(0.8)]
+                  : [Colors.white, Colors.white.withOpacity(0.9)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Circular Progress
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 85,
-                height: 85,
-                child: CircularProgressIndicator(
-                  value: progress,
-                  strokeWidth: 10,
-                  backgroundColor: (isDark
-                      ? Colors.white10
-                      : Colors.grey[100])!,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    completed == total && total > 0
-                        ? Colors.green
-                        : theme.primaryColor,
-                  ),
-                  strokeCap: StrokeCap.round,
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: (isDark ? Colors.black : theme.primaryColor).withOpacity(
+                  0.08,
                 ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "$percentage%",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ],
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
-          const SizedBox(width: 28),
-          // Text Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _getMotivationalMessage(progress, total, isPast),
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                    height: 1.2,
+          child: Row(
+            children: [
+              // Circular Progress
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: chartSize,
+                    height: chartSize,
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: isSmall ? 8 : 10,
+                      backgroundColor: (isDark
+                          ? Colors.white10
+                          : Colors.grey[100])!,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        completed == total && total > 0
+                            ? Colors.green
+                            : theme.primaryColor,
+                      ),
+                      strokeCap: StrokeCap.round,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "$percentage%",
+                        style: TextStyle(
+                          fontSize: isSmall ? 16 : 20,
+                          fontWeight: FontWeight.w900,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              SizedBox(width: spacing),
+              // Text Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildStatusDot("Total", total, theme.primaryColor),
-                    _buildStatusDot("Done", completed, Colors.green),
-                    _buildStatusDot(
-                      isPast ? "Missed" : "Left",
-                      pending,
-                      isPast ? Colors.redAccent : AppColors.salmonPink,
+                    Text(
+                      _getMotivationalMessage(progress, total, isPast),
+                      style: TextStyle(
+                        fontSize: isSmall ? 15 : 17,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: isSmall ? 8 : 12),
+                    Wrap(
+                      spacing: isSmall ? 8 : 12,
+                      runSpacing: 4,
+                      children: [
+                        _buildStatusDot("Total", total, theme.primaryColor),
+                        _buildStatusDot("Done", completed, Colors.green),
+                        _buildStatusDot(
+                          isPast ? "Missed" : "Left",
+                          pending,
+                          isPast ? Colors.redAccent : AppColors.salmonPink,
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildStatusDot(String label, int count, Color color) {
     return Row(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Container(
           width: 7,
@@ -278,12 +291,16 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
         const SizedBox(width: 5),
-        Text(
-          "$count $label",
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+        Flexible(
+          child: Text(
+            "$count $label",
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -345,16 +362,20 @@ class _HomeViewState extends State<HomeView> {
                 size: 20,
               ),
               const SizedBox(width: 12),
-              Text(
-                "View Timeline",
-                style: TextStyle(
-                  color: isDark ? Colors.white : color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  letterSpacing: 0.5,
+              Expanded(
+                child: Text(
+                  "View Timeline",
+                  style: TextStyle(
+                    color: isDark ? Colors.white : color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    letterSpacing: 0.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 color: (isDark ? Colors.white : color).withOpacity(0.5),

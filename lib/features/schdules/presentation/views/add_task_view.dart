@@ -449,13 +449,20 @@ class _AddTaskViewState extends State<AddTaskView> {
               size: 22,
             ),
             const SizedBox(width: 12),
-            Text(
-              _selectedDate != null
-                  ? "${_selectedDate!.day} ${_getMonthName(_selectedDate!.month)} ${_selectedDate!.year}"
-                  : "Select Date",
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+            Expanded(
+              child: Text(
+                _selectedDate != null
+                    ? "${_selectedDate!.day} ${_getMonthName(_selectedDate!.month)} ${_selectedDate!.year}"
+                    : "Select Date",
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
           ],
         ),
@@ -480,52 +487,56 @@ class _AddTaskViewState extends State<AddTaskView> {
 
   Widget _buildWeekdaySelector() {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(7, (index) {
-        final dayIndex = index + 1;
-        final isSelected = _selectedWeekdays.contains(dayIndex);
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              if (isSelected)
-                _selectedWeekdays.remove(dayIndex);
-              else
-                _selectedWeekdays.add(dayIndex);
-            });
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              border: isSelected
-                  ? Border.all(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 2,
-                    )
-                  : null,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              days[index],
-              style: TextStyle(
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(7, (index) {
+          final dayIndex = index + 1;
+          final isSelected = _selectedWeekdays.contains(dayIndex);
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                if (isSelected)
+                  _selectedWeekdays.remove(dayIndex);
+                else
+                  _selectedWeekdays.add(dayIndex);
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
                 color: isSelected
-                    ? Colors.white
-                    : Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
-                fontSize: 8,
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                border: isSelected
+                    ? Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      )
+                    : null,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                days[index],
+                style: TextStyle(
+                  color: isSelected
+                      ? Colors.white
+                      : Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                ),
               ),
             ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 

@@ -31,7 +31,7 @@ class WeeklyHeader extends StatelessWidget {
     final isFuture = currentMonday.isAfter(today);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
         children: [
           // Month Range
@@ -52,15 +52,14 @@ class WeeklyHeader extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Future Today Button (Left of arrows)
-              Visibility(
-                visible: isFuture,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: _buildTodayButton(context, today),
+              // Future Today Button (Left of arrows) — zero-width when hidden
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                child: isFuture
+                    ? _buildTodayButton(context, today)
+                    : const SizedBox.shrink(),
               ),
-              const SizedBox(width: 8),
+              if (isFuture) const SizedBox(width: 4),
 
               // Arrows Container
               Container(
@@ -80,6 +79,11 @@ class WeeklyHeader extends StatelessWidget {
                       onPressed: () => onWeekChanged(
                         currentMonday.subtract(const Duration(days: 7)),
                       ),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      padding: EdgeInsets.zero,
                     ),
                     Container(
                       width: 1,
@@ -95,19 +99,23 @@ class WeeklyHeader extends StatelessWidget {
                       onPressed: () => onWeekChanged(
                         currentMonday.add(const Duration(days: 7)),
                       ),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      padding: EdgeInsets.zero,
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(width: 8),
-              // Past Today Button (Right of arrows)
-              Visibility(
-                visible: isPast,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: _buildTodayButton(context, today),
+              if (isPast) const SizedBox(width: 4),
+              // Past Today Button (Right of arrows) — zero-width when hidden
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                child: isPast
+                    ? _buildTodayButton(context, today)
+                    : const SizedBox.shrink(),
               ),
             ],
           ),

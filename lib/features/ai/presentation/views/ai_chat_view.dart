@@ -284,43 +284,46 @@ class _ChatScreenState extends State<_ChatScreen> {
 
   Widget _buildEmptyState(ThemeData theme, bool isDark) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : AppColors.deepPurple.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.auto_awesome_rounded,
-              size: 48,
-              color: isDark ? Colors.white70 : AppColors.deepPurple,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'How can I help you today?',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppColors.deepPurple,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48),
-            child: Text(
-              'Try "Plan my week" or "Add a gym session every Monday at 6pm"',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : AppColors.deepPurple.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                size: 48,
                 color: isDark ? Colors.white70 : AppColors.deepPurple,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Text(
+              'How can I help you today?',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : AppColors.deepPurple,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 48),
+              child: Text(
+                'Try "Plan my week" or "Add a gym session every Monday at 6pm"',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: isDark ? Colors.white70 : AppColors.deepPurple,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

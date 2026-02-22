@@ -84,56 +84,54 @@ class _WeeklyCalendarPageState extends State<WeeklyCalendarPage> {
                         );
                       }
                     },
-                    child: Column(
-                      children: [
-                        // Header: Navigation and Month/Year range
-                        WeeklyHeader(
-                          currentMonday: _currentMonday,
-                          firstTaskDate: state.firstTaskDate,
-                          lastTaskDate: state.lastTaskDate,
-                          weekStartDay: settingsState.weekStartDay,
-                          onWeekChanged: (newMonday) {
-                            setState(() {
-                              _currentMonday = newMonday;
-                            });
-                            context.read<WeeklyCubit>().loadWeeklyTasks(
-                              newMonday,
-                            );
-                          },
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: WeeklyHeader(
+                            currentMonday: _currentMonday,
+                            firstTaskDate: state.firstTaskDate,
+                            lastTaskDate: state.lastTaskDate,
+                            weekStartDay: settingsState.weekStartDay,
+                            onWeekChanged: (newMonday) {
+                              setState(() {
+                                _currentMonday = newMonday;
+                              });
+                              context.read<WeeklyCubit>().loadWeeklyTasks(
+                                newMonday,
+                              );
+                            },
+                          ),
                         ),
-
-                        // Days Row: Clickable day labels (Mon, Tue, etc.)
-                        WeeklyDaysRow(
-                          days: days,
-                          currentMonday: _currentMonday,
-                          currentZoom: _hourHeight,
-                          onZoomChanged: (newZoom) {
-                            setState(() {
-                              _hourHeight = newZoom;
-                            });
-                          },
-                          onDayTapped: (date) async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => BlocProvider.value(
-                                  value: context.read<TaskCubit>(),
-                                  child: HomeView(selectedDate: date),
+                        SliverToBoxAdapter(
+                          child: WeeklyDaysRow(
+                            days: days,
+                            currentMonday: _currentMonday,
+                            currentZoom: _hourHeight,
+                            onZoomChanged: (newZoom) {
+                              setState(() {
+                                _hourHeight = newZoom;
+                              });
+                            },
+                            onDayTapped: (date) async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => BlocProvider.value(
+                                    value: context.read<TaskCubit>(),
+                                    child: HomeView(selectedDate: date),
+                                  ),
                                 ),
-                              ),
-                            ).then((_) {
-                              // Reload weekly tasks upon return to ensure UI is in sync
-                              if (mounted) {
-                                context.read<WeeklyCubit>().loadWeeklyTasks(
-                                  _currentMonday,
-                                );
-                              }
-                            });
-                          },
+                              ).then((_) {
+                                if (mounted) {
+                                  context.read<WeeklyCubit>().loadWeeklyTasks(
+                                    _currentMonday,
+                                  );
+                                }
+                              });
+                            },
+                          ),
                         ),
-
-                        // Main Grid: Scrollable area with time sidebar and tasks
-                        Expanded(
+                        SliverFillRemaining(
                           child: WeeklyGrid(
                             days: days,
                             state: state,
