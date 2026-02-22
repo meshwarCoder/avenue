@@ -106,20 +106,74 @@ class TaskCubit extends Cubit<TaskState> {
   Future<void> _initializeNotifications() async {
     try {
       final now = DateTime.now();
-      // Fetch tasks from 1 hour ago into the future to cover tasks starting right now
-      final result = await repository.getFutureTasks(
+      final List<TaskModel> allFutureExpectedTasks = [];
+
+      // 1. Fetch persistent (crystallized) future tasks
+      final futureResult = await repository.getFutureTasks(
         now.subtract(const Duration(hours: 1)),
       );
 
-      result.fold(
+      futureResult.fold(
         (failure) => AvenueLogger.log(
           event: 'NOTIFICATION_BOOT_LOAD_FAILED',
           level: LoggerLevel.WARN,
           layer: LoggerLayer.SYNC,
           payload: failure.message,
         ),
-        (tasks) => notificationManager.scheduleFutureTasksIfMissing(tasks),
+        (tasks) => allFutureExpectedTasks.addAll(tasks),
       );
+
+      // 2. Fetch habits (default tasks) and project them for the next 7 days
+      final defaultsResult = await repository.getDefaultTasks();
+      defaultsResult.fold((failure) => null, (defaultTasks) {
+        final List<TaskModel> habitInstances = [];
+        for (int i = 0; i <= 7; i++) {
+          final date = CalendarUtils.normalize(now.add(Duration(days: i)));
+          for (var dt in defaultTasks) {
+            if (dt.weekdays.contains(date.weekday) && !dt.isDeleted) {
+              // Check if it's hidden for this date
+              final dateStr = date.toIso8601String().split('T')[0];
+              if (dt.hideOn.any(
+                (d) => d.toIso8601String().split('T')[0] == dateStr,
+              )) {
+                continue;
+              }
+
+              final predictableId = TaskModel.generatePredictableId(
+                dt.id,
+                date,
+              );
+              // Avoid duplicates if a crystallized version already exists
+              if (allFutureExpectedTasks.any((t) => t.id == predictableId)) {
+                continue;
+              }
+
+              habitInstances.add(
+                TaskModel.fromTimeOfDay(
+                  id: predictableId,
+                  name: dt.name,
+                  desc: dt.desc,
+                  startTime: dt.startTime,
+                  endTime: dt.endTime,
+                  taskDate: date,
+                  category: dt.category,
+                  completed: false,
+                  importanceType: dt.importanceType,
+                  defaultTaskId: dt.id,
+                ),
+              );
+            }
+          }
+        }
+        allFutureExpectedTasks.addAll(habitInstances);
+      });
+
+      // 3. Delegate to notification manager
+      if (allFutureExpectedTasks.isNotEmpty) {
+        await notificationManager.scheduleFutureTasksIfMissing(
+          allFutureExpectedTasks,
+        );
+      }
     } catch (e) {
       AvenueLogger.log(
         event: 'NOTIFICATION_BOOT_CRASH',
@@ -322,6 +376,7 @@ class TaskCubit extends Cubit<TaskState> {
         traceId: traceId,
       ),
       (_) {
+        _initializeNotifications(); // Schedule instances of the new habit
         if (state is FutureTasksLoaded) {
           loadFutureTasks();
         } else {
@@ -567,6 +622,7 @@ class TaskCubit extends Cubit<TaskState> {
       (failure) =>
           _logState(TaskError(failure.message, selectedDate: _selectedDate)),
       (_) {
+        _initializeNotifications();
         loadTasks(force: true);
         syncTasks();
       },
@@ -579,6 +635,7 @@ class TaskCubit extends Cubit<TaskState> {
       (failure) =>
           _logState(TaskError(failure.message, selectedDate: _selectedDate)),
       (_) {
+        _initializeNotifications();
         loadTasks(force: true);
         syncTasks();
       },
