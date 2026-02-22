@@ -63,7 +63,7 @@ To "move" or "remove" a habit for ONE SPECIFIC DAY:
       "date": "2026-02-14"
     }
   ],
-  "suggested_chat_title": "..."
+  "suggested_chat_title": "A Suggested Title for the Chat"
 }
 
 # MISSION
