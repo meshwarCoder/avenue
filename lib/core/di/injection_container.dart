@@ -54,7 +54,7 @@ Future<void> initializeDependencies() async {
     () => LocalNotificationService.instance,
   );
   sl.registerLazySingleton<TaskNotificationManager>(
-    () => TaskNotificationManager(sl()),
+    () => TaskNotificationManager(sl(), sl()),
   );
   sl.registerLazySingleton<SyncService>(
     () => SyncService(
@@ -63,6 +63,7 @@ Future<void> initializeDependencies() async {
       embeddingService: sl(),
       authRepository: sl(),
       deviceService: sl(),
+      notificationManager: sl(),
     ),
   );
 
@@ -100,7 +101,7 @@ Future<void> initializeDependencies() async {
     ),
   );
   sl.registerFactory(() => WeeklyCubit(repository: sl()));
-  sl.registerLazySingleton(() => ThemeCubit());
+  sl.registerLazySingleton(() => ThemeCubit(sl()));
   sl.registerLazySingleton(() => SettingsCubit(sl()));
 
   // AI Chat

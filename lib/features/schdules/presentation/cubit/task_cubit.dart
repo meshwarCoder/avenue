@@ -30,6 +30,7 @@ class TaskCubit extends Cubit<TaskState> {
     _selectedDate = CalendarUtils.normalize(_selectedDate);
     // Removed loadTasks(); Views will trigger it with their specific dates
     syncTasks(); // Sync once on app start
+    _initializeNotifications(); // Ensure future notifications are set
 
     // Listen for connectivity changes to auto-sync when back online
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
@@ -47,6 +48,7 @@ class TaskCubit extends Cubit<TaskState> {
   }
 
   void _logState(TaskState state, {String? traceId}) {
+    if (isClosed) return;
     AvenueLogger.log(
       event: 'STATE_TASKS_UPDATED',
       layer: LoggerLayer.STATE,
@@ -99,6 +101,33 @@ class TaskCubit extends Cubit<TaskState> {
         }
       },
     );
+  }
+
+  Future<void> _initializeNotifications() async {
+    try {
+      final now = DateTime.now();
+      // Fetch tasks from 1 hour ago into the future to cover tasks starting right now
+      final result = await repository.getFutureTasks(
+        now.subtract(const Duration(hours: 1)),
+      );
+
+      result.fold(
+        (failure) => AvenueLogger.log(
+          event: 'NOTIFICATION_BOOT_LOAD_FAILED',
+          level: LoggerLevel.WARN,
+          layer: LoggerLayer.SYNC,
+          payload: failure.message,
+        ),
+        (tasks) => notificationManager.scheduleFutureTasksIfMissing(tasks),
+      );
+    } catch (e) {
+      AvenueLogger.log(
+        event: 'NOTIFICATION_BOOT_CRASH',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.SYNC,
+        payload: e.toString(),
+      );
+    }
   }
 
   @override
@@ -327,7 +356,7 @@ class TaskCubit extends Cubit<TaskState> {
       ),
       (_) {
         // 2. Schedule notifications for the new task
-        notificationManager.scheduleTaskNotifications(task);
+        notificationManager.updateTaskNotificationIfNeeded(null, task);
 
         if (state is FutureTasksLoaded) {
           loadFutureTasks();
@@ -366,7 +395,19 @@ class TaskCubit extends Cubit<TaskState> {
       },
       (_) {
         // 2. Re-schedule notifications for the updated task
-        notificationManager.scheduleTaskNotifications(task);
+        // We find the old task in the state if possible to compare
+        TaskModel? oldTask;
+        if (state is TaskLoaded) {
+          oldTask = (state as TaskLoaded).tasks.firstWhereOrNull(
+            (t) => t.id == task.id,
+          );
+        } else if (state is FutureTasksLoaded) {
+          oldTask = (state as FutureTasksLoaded).tasks.firstWhereOrNull(
+            (t) => t.id == task.id,
+          );
+        }
+
+        notificationManager.updateTaskNotificationIfNeeded(oldTask, task);
 
         if (state is FutureTasksLoaded) {
           loadFutureTasks();
@@ -436,7 +477,7 @@ class TaskCubit extends Cubit<TaskState> {
         // 2. Reschedule notifications based on the new status
         // Note: 'task' here is the old state, so we toggle it for scheduling
         final updatedTask = task.copyWith(completed: !task.completed);
-        notificationManager.scheduleTaskNotifications(updatedTask);
+        notificationManager.updateTaskNotificationIfNeeded(task, updatedTask);
 
         if (state is FutureTasksLoaded) {
           loadFutureTasks();

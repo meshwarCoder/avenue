@@ -1,12 +1,14 @@
 import 'package:avenue/core/services/local_notification_service.dart';
 import 'package:avenue/features/schdules/data/models/task_model.dart';
+import 'package:avenue/features/settings/data/settings_repository.dart';
 import '../utils/observability.dart';
 
 /// Manage task-specific notification logic, separating it from the UI and core service.
 class TaskNotificationManager {
   final LocalNotificationService _notificationService;
+  final SettingsRepository _settingsRepository;
 
-  TaskNotificationManager(this._notificationService);
+  TaskNotificationManager(this._notificationService, this._settingsRepository);
 
   /// Generate a unique integer ID for notifications from a Task UUID
   int _getNotificationId(
@@ -26,11 +28,21 @@ class TaskNotificationManager {
     // 1. Cancel existing notifications for this task first to avoid duplicates
     await cancelTaskNotifications(task.id);
 
-    if (!task.notificationsEnabled) {
+    // Global toggle check
+    if (!_settingsRepository.getNotificationsEnabled()) {
+      AvenueLogger.log(
+        event: 'NOTIFICATION_SKIPPED_GLOBAL',
+        layer: LoggerLayer.SYNC,
+        payload: 'Notifications globally disabled',
+      );
+      return;
+    }
+
+    if (!task.notificationsEnabled || task.isDeleted) {
       AvenueLogger.log(
         event: 'NOTIFICATION_SKIPPED_DISABLED',
         layer: LoggerLayer.SYNC,
-        payload: 'Notifications disabled for task: ${task.id}',
+        payload: 'Notifications disabled or task deleted for task: ${task.id}',
       );
       return;
     }
@@ -42,19 +54,10 @@ class TaskNotificationManager {
     AvenueLogger.log(
       event: 'TASK_NOTIFICATION_CHECK',
       layer: LoggerLayer.SYNC,
-      payload: {
-        'taskId': task.id,
-        'now': now.toIso8601String(),
-        'schedulingWindow': schedulingWindow.toIso8601String(),
-        'startTime': task.startTime?.toIso8601String(),
-        'endTime': task.endTime?.toIso8601String(),
-        'enabled': task.notificationsEnabled,
-        'completed': task.completed,
-      },
+      payload: {'id': task.id, 'start': task.startTime?.toIso8601String()},
     );
 
     // 2. Schedule the main notification (at startTime)
-    // Only if task is NOT completed (why remind to start if done?)
     if (!task.completed &&
         task.startTime != null &&
         task.startTime!.isAfter(schedulingWindow)) {
@@ -64,18 +67,6 @@ class TaskNotificationManager {
         body: task.desc ?? 'Time to start your task!',
         scheduledTime: task.startTime!,
         payload: 'task_${task.id}',
-      );
-      AvenueLogger.log(
-        event: 'NOTIFICATION_SCHEDULED_START',
-        layer: LoggerLayer.SYNC,
-        payload: 'Task ID: ${task.id}, Start Time: ${task.startTime}',
-      );
-    } else {
-      AvenueLogger.log(
-        event: 'NOTIFICATION_SKIPPED_START',
-        layer: LoggerLayer.SYNC,
-        payload:
-            'Skipped start notification. Task ID: ${task.id}, Start Time: ${task.startTime}',
       );
     }
 
@@ -95,18 +86,6 @@ class TaskNotificationManager {
           scheduledTime: reminderTime,
           payload: 'task_${task.id}',
         );
-        AvenueLogger.log(
-          event: 'NOTIFICATION_SCHEDULED_REMINDER',
-          layer: LoggerLayer.SYNC,
-          payload: 'Task ID: ${task.id}, Reminder Time: $reminderTime',
-        );
-      } else {
-        AvenueLogger.log(
-          event: 'NOTIFICATION_SKIPPED_REMINDER',
-          layer: LoggerLayer.SYNC,
-          payload:
-              'Skipped reminder notification. Reminder Time: $reminderTime',
-        );
       }
     }
 
@@ -124,18 +103,74 @@ class TaskNotificationManager {
         scheduledTime: task.endTime!,
         payload: 'task_${task.id}',
       );
+    }
+  }
+
+  /// Updates notifications only if essential fields have changed.
+  Future<void> updateTaskNotificationIfNeeded(
+    TaskModel? oldTask,
+    TaskModel newTask,
+  ) async {
+    if (oldTask == null) return scheduleTaskNotifications(newTask);
+
+    final bool timeChanged =
+        oldTask.startTime != newTask.startTime ||
+        oldTask.endTime != newTask.endTime;
+    final bool statusChanged = oldTask.completed != newTask.completed;
+    final bool settingsChanged =
+        oldTask.notificationsEnabled != newTask.notificationsEnabled ||
+        oldTask.reminderBeforeMinutes != newTask.reminderBeforeMinutes;
+    final bool deletionChanged = oldTask.isDeleted != newTask.isDeleted;
+
+    if (timeChanged || statusChanged || settingsChanged || deletionChanged) {
       AvenueLogger.log(
-        event: 'NOTIFICATION_SCHEDULED_END',
+        event: 'NOTIFICATION_UPDATE_NEEDED',
         layer: LoggerLayer.SYNC,
-        payload:
-            'Task ID: ${task.id}, End Time: ${task.endTime}, Type: ${task.completed ? "Done" : "Missed"}',
+        payload: newTask.id,
       );
-    } else {
+      return scheduleTaskNotifications(newTask);
+    }
+  }
+
+  /// Safely handles boot-time scheduling.
+  /// Only schedules notifications for tasks that don't have pending notifications.
+  Future<void> scheduleFutureTasksIfMissing(List<TaskModel> tasks) async {
+    try {
+      if (!_settingsRepository.getNotificationsEnabled()) return;
+
+      final pendingRequests = await _notificationService
+          .getPendingNotificationRequests();
+      final pendingIds = pendingRequests.map((r) => r.id).toSet();
+
+      int scheduledCount = 0;
+      for (final task in tasks) {
+        // Only consider future tasks that are enabled and not completed
+        if (!task.notificationsEnabled || task.completed || task.isDeleted) {
+          continue;
+        }
+
+        final mainId = _getNotificationId(task.id);
+        if (!pendingIds.contains(mainId)) {
+          // If the main notification is missing, re-evaluate and schedule all for this task
+          // We use scheduleTaskNotifications because we know at least one is missing
+          await scheduleTaskNotifications(task);
+          scheduledCount++;
+        }
+      }
+
+      if (scheduledCount > 0) {
+        AvenueLogger.log(
+          event: 'NOTIFICATION_BOOT_REPAIR',
+          layer: LoggerLayer.SYNC,
+          payload: 'Scheduled $scheduledCount missing notifications on boot',
+        );
+      }
+    } catch (e) {
       AvenueLogger.log(
-        event: 'NOTIFICATION_SKIPPED_END',
+        event: 'NOTIFICATION_BOOT_ERROR',
+        level: LoggerLevel.ERROR,
         layer: LoggerLayer.SYNC,
-        payload:
-            'Skipped end notification. Task ID: ${task.id}, End Time: ${task.endTime}',
+        payload: 'Failed to repair notifications on boot: $e',
       );
     }
   }

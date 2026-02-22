@@ -1,5 +1,4 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart'
-    as fln;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -10,8 +9,8 @@ class LocalNotificationService {
   LocalNotificationService._();
   static final LocalNotificationService instance = LocalNotificationService._();
 
-  final fln.FlutterLocalNotificationsPlugin _notifications =
-      fln.FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notifications =
+      FlutterLocalNotificationsPlugin();
 
   static const String _channelId = 'avenue_default_channel';
   static const String _channelName = 'Avenue Notifications';
@@ -22,54 +21,27 @@ class LocalNotificationService {
   Future<void> init() async {
     try {
       tz.initializeTimeZones();
-
       try {
         final dynamic location = await FlutterTimezone.getLocalTimezone();
-        var timeZoneName = (location is String)
+        final String timeZoneName = location is String
             ? location
-            : location.toString();
-
-        // Handle specific TimezoneInfo format
-        if (timeZoneName.startsWith('TimezoneInfo(')) {
-          final parts = timeZoneName.split('(');
-          if (parts.length > 1) {
-            final inner = parts[1].split(',');
-            if (inner.isNotEmpty) {
-              timeZoneName = inner[0].trim();
-            }
-          }
-        }
-
-        tz.setLocalLocation(
-          tz.getLocation(
-            timeZoneName.isNotEmpty ? timeZoneName : 'Africa/Cairo',
-          ),
-        );
-
+            : 'Africa/Cairo';
+        tz.setLocalLocation(tz.getLocation(timeZoneName));
         AvenueLogger.log(
           event: 'TIMEZONE_INIT_SUCCESS',
           layer: LoggerLayer.SYNC,
-          payload: 'Local timezone set to: $timeZoneName',
+          payload: timeZoneName,
         );
       } catch (e) {
-        AvenueLogger.log(
-          event: 'TIMEZONE_INIT_FAILED',
-          layer: LoggerLayer.SYNC,
-          level: LoggerLevel.WARN,
-          payload: 'Failed to get local timezone ($e), falling back to Cairo',
-        );
         tz.setLocalLocation(tz.getLocation('Africa/Cairo'));
       }
 
-      const androidSettings = fln.AndroidInitializationSettings(
+      const androidSettings = AndroidInitializationSettings(
         '@mipmap/ic_launcher',
       );
-      const linuxSettings = fln.LinuxInitializationSettings(
-        defaultActionName: 'Open notification',
-      );
-      const initSettings = fln.InitializationSettings(
+      const initSettings = InitializationSettings(
         android: androidSettings,
-        linux: linuxSettings,
+        linux: LinuxInitializationSettings(defaultActionName: 'Open'),
       );
 
       await _notifications.initialize(
@@ -77,34 +49,35 @@ class LocalNotificationService {
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
 
-      const androidChannel = fln.AndroidNotificationChannel(
-        _channelId,
-        _channelName,
-        description: _channelDescription,
-        importance: fln.Importance.high,
-        enableVibration: true,
-        playSound: true,
-      );
-
-      await _notifications
+      final androidImplementation = _notifications
           .resolvePlatformSpecificImplementation<
-            fln.AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.createNotificationChannel(androidChannel);
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+
+      if (androidImplementation != null) {
+        await androidImplementation.createNotificationChannel(
+          const AndroidNotificationChannel(
+            _channelId,
+            _channelName,
+            description: _channelDescription,
+            importance: Importance.max,
+          ),
+        );
+      }
+
+      await requestPermissionIfNeeded();
 
       AvenueLogger.log(
         event: 'NOTIFICATION_INIT_SUCCESS',
         layer: LoggerLayer.SYNC,
-        payload: 'LocalNotificationService initialized successfully',
       );
-    } catch (e) {
+    } catch (e, stack) {
       AvenueLogger.log(
         event: 'NOTIFICATION_INIT_ERROR',
         layer: LoggerLayer.SYNC,
         level: LoggerLevel.ERROR,
-        payload: 'Initialization failed: $e',
+        payload: '$e\n$stack',
       );
-      rethrow;
     }
   }
 
@@ -113,47 +86,34 @@ class LocalNotificationService {
     try {
       final androidImplementation = _notifications
           .resolvePlatformSpecificImplementation<
-            fln.AndroidFlutterLocalNotificationsPlugin
+            AndroidFlutterLocalNotificationsPlugin
           >();
 
-      if (androidImplementation == null) {
-        AvenueLogger.log(
-          event: 'NOTIFICATION_PERMISSION_WARN',
-          layer: LoggerLayer.SYNC,
-          level: LoggerLevel.WARN,
-          payload: 'Android plugin not available',
-        );
-        return false;
-      }
+      if (androidImplementation == null) return false;
 
       final granted = await androidImplementation
           .requestNotificationsPermission();
+      final exactPermitted = await androidImplementation
+          .canScheduleExactNotifications();
 
-      if (granted == true) {
-        AvenueLogger.log(
-          event: 'NOTIFICATION_PERMISSION_GRANTED',
-          layer: LoggerLayer.SYNC,
-          payload: 'Notification permission granted',
-        );
-        return true;
-      } else {
-        AvenueLogger.log(
-          event: 'NOTIFICATION_PERMISSION_DENIED',
-          layer: LoggerLayer.SYNC,
-          level: LoggerLevel.WARN,
-          payload: 'Notification permission denied',
-        );
-        return false;
+      if (exactPermitted == false) {
+        await androidImplementation.requestExactAlarmsPermission();
       }
+
+      return granted == true;
     } catch (e) {
-      AvenueLogger.log(
-        event: 'NOTIFICATION_PERMISSION_ERROR',
-        layer: LoggerLayer.SYNC,
-        level: LoggerLevel.ERROR,
-        payload: 'Permission request failed: $e',
-      );
       return false;
     }
+  }
+
+  /// Checks if the app can schedule exact alarms
+  Future<bool> canScheduleExactAlarms() async {
+    final androidImplementation = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    return await androidImplementation?.canScheduleExactNotifications() ??
+        false;
   }
 
   /// Shows an instant notification
@@ -164,42 +124,23 @@ class LocalNotificationService {
     String? payload,
   }) async {
     try {
-      const androidDetails = fln.AndroidNotificationDetails(
+      const androidDetails = AndroidNotificationDetails(
         _channelId,
         _channelName,
-        channelDescription: _channelDescription,
-        importance: fln.Importance.high,
-        priority: fln.Priority.high,
-        icon: '@mipmap/ic_launcher',
-        playSound: true,
-        enableVibration: true,
-      );
-
-      const notificationDetails = fln.NotificationDetails(
-        android: androidDetails,
-        linux: fln.LinuxNotificationDetails(),
+        importance: Importance.max,
+        priority: Priority.high,
+        fullScreenIntent: true,
+        category: AndroidNotificationCategory.reminder,
       );
 
       await _notifications.show(
         id: id,
         title: title,
         body: body,
-        notificationDetails: notificationDetails,
+        notificationDetails: const NotificationDetails(android: androidDetails),
         payload: payload,
       );
-
-      AvenueLogger.log(
-        event: 'NOTIFICATION_SHOWN',
-        layer: LoggerLayer.SYNC,
-        payload: 'Instant notification shown: $title',
-      );
     } catch (e) {
-      AvenueLogger.log(
-        event: 'NOTIFICATION_SHOW_ERROR',
-        layer: LoggerLayer.SYNC,
-        level: LoggerLevel.ERROR,
-        payload: 'Failed to show notification: $e',
-      );
       rethrow;
     }
   }
@@ -213,116 +154,62 @@ class LocalNotificationService {
     String? payload,
   }) async {
     try {
-      if (scheduledTime.isBefore(DateTime.now())) {
-        throw ArgumentError('Scheduled time must be in the future');
-      }
+      if (scheduledTime.isBefore(DateTime.now())) return;
 
       final tzScheduledTime = tz.TZDateTime.from(scheduledTime, tz.local);
+      final androidImplementation = _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      final bool canExact =
+          await androidImplementation?.canScheduleExactNotifications() ?? false;
 
-      const androidDetails = fln.AndroidNotificationDetails(
-        _channelId,
-        _channelName,
-        channelDescription: _channelDescription,
-        importance: fln.Importance.high,
-        priority: fln.Priority.high,
-        icon: '@mipmap/ic_launcher',
-        playSound: true,
-        enableVibration: true,
-      );
-
-      const notificationDetails = fln.NotificationDetails(
-        android: androidDetails,
-        linux: fln.LinuxNotificationDetails(),
-      );
-
-      try {
-        await _notifications.zonedSchedule(
-          id: id,
-          title: title,
-          body: body,
-          scheduledDate: tzScheduledTime,
-          notificationDetails: notificationDetails,
-          androidScheduleMode: fln.AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: payload,
-        );
-      } on UnimplementedError {
-        AvenueLogger.log(
-          event: 'NOTIFICATION_SCHEDULE_SKIPPED',
-          layer: LoggerLayer.SYNC,
-          level: LoggerLevel.WARN,
-          payload: 'Scheduled notifications not supported on this platform',
-        );
-        return;
-      }
-
-      AvenueLogger.log(
-        event: 'NOTIFICATION_SCHEDULED',
-        layer: LoggerLayer.SYNC,
-        payload: {
-          'id': id,
-          'title': title,
-          'targetTime': scheduledTime.toIso8601String(),
-          'tzScheduledTime': tzScheduledTime.toString(),
-          'localTimeZone': tz.local.name,
-        },
+      await _notifications.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: tzScheduledTime,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channelId,
+            _channelName,
+            importance: Importance.max,
+            priority: Priority.high,
+            fullScreenIntent: true,
+            category: AndroidNotificationCategory.reminder,
+          ),
+        ),
+        androidScheduleMode: canExact
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: payload,
       );
     } catch (e) {
-      AvenueLogger.log(
-        event: 'NOTIFICATION_SCHEDULE_ERROR',
-        layer: LoggerLayer.SYNC,
-        level: LoggerLevel.ERROR,
-        payload: 'Failed to schedule notification: $e',
-      );
-      rethrow;
+      // Log error if needed
     }
   }
 
   /// Cancels a specific notification by ID
   Future<void> cancelNotification(int id) async {
-    try {
-      await _notifications.cancel(id: id);
-      AvenueLogger.log(
-        event: 'NOTIFICATION_CANCELLED',
-        layer: LoggerLayer.SYNC,
-        payload: 'Notification $id cancelled',
-      );
-    } catch (e) {
-      AvenueLogger.log(
-        event: 'NOTIFICATION_CANCEL_ERROR',
-        layer: LoggerLayer.SYNC,
-        level: LoggerLevel.ERROR,
-        payload: 'Failed to cancel notification: $e',
-      );
-      rethrow;
-    }
+    await _notifications.cancel(id: id);
   }
 
   /// Cancels all scheduled notifications
   Future<void> cancelAllNotifications() async {
-    try {
-      await _notifications.cancelAll();
-      AvenueLogger.log(
-        event: 'NOTIFICATION_CANCEL_ALL_SUCCESS',
-        layer: LoggerLayer.SYNC,
-        payload: 'All notifications cancelled',
-      );
-    } catch (e) {
-      AvenueLogger.log(
-        event: 'NOTIFICATION_CANCEL_ALL_ERROR',
-        layer: LoggerLayer.SYNC,
-        level: LoggerLevel.ERROR,
-        payload: 'Failed to cancel all notifications: $e',
-      );
-      rethrow;
-    }
+    await _notifications.cancelAll();
   }
 
   /// Handles notification tap events
-  void _onNotificationTapped(fln.NotificationResponse response) {
+  void _onNotificationTapped(NotificationResponse response) {
     AvenueLogger.log(
       event: 'NOTIFICATION_TAPPED',
       layer: LoggerLayer.SYNC,
-      payload: {'payload': response.payload},
+      payload: response.payload,
     );
+  }
+
+  /// Returns a list of all pending notification requests
+  Future<List<PendingNotificationRequest>> getPendingNotificationRequests() {
+    return _notifications.pendingNotificationRequests();
   }
 }
