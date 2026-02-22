@@ -6,6 +6,9 @@ import 'package:avenue/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:avenue/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:avenue/features/settings/presentation/cubit/settings_state.dart';
 import 'package:avenue/features/settings/presentation/views/feedback_view.dart';
+import 'package:avenue/features/schdules/presentation/cubit/default_tasks_cubit.dart';
+import 'package:avenue/features/schdules/presentation/views/default_tasks_view.dart';
+import 'package:avenue/core/di/injection_container.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -89,6 +92,21 @@ class SettingsView extends StatelessWidget {
             icon: Icons.person_outline_rounded,
             title: "Profile Details",
             onTap: () {},
+          ),
+          _buildSettingItem(
+            context,
+            icon: Icons.repeat_rounded,
+            title: "Manage Recurring Tasks",
+            subtitle: "View and edit your master routine",
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BlocProvider(
+                  create: (context) => sl<DefaultTasksCubit>(),
+                  child: const DefaultTasksView(),
+                ),
+              ),
+            ),
           ),
           _buildSettingItem(
             context,

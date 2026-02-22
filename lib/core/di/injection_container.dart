@@ -5,6 +5,7 @@ import '../../features/schdules/data/datasources/task_local_data_source_impl.dar
 import '../../features/schdules/data/repo/schedule_repo_impl.dart';
 import '../../features/schdules/domain/repo/schedule_repository.dart';
 import '../../features/schdules/presentation/cubit/task_cubit.dart';
+import '../../features/schdules/presentation/cubit/default_tasks_cubit.dart';
 import '../../features/ai/presentation/logic/chat_cubit.dart';
 import '../services/embedding_service.dart';
 import '../../features/weeks/domain/repo/weekly_repository.dart';
@@ -105,6 +106,7 @@ Future<void> initializeDependencies() async {
   sl.registerFactory(() => WeeklyCubit(repository: sl()));
   sl.registerLazySingleton(() => ThemeCubit(sl()));
   sl.registerLazySingleton(() => SettingsCubit(sl(), sl()));
+  sl.registerFactory(() => DefaultTasksCubit(sl()));
 
   // AI Chat
   sl.registerLazySingleton<EmbeddingService>(

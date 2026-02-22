@@ -11,6 +11,7 @@ import '../../../../core/utils/calendar_utils.dart';
 
 class AddTaskView extends StatefulWidget {
   final TaskModel? task;
+  final DefaultTaskModel? defaultTask;
   final DateTime? initialDate;
   final TimeOfDay? initialStartTime;
   final TimeOfDay? initialEndTime;
@@ -18,6 +19,7 @@ class AddTaskView extends StatefulWidget {
   const AddTaskView({
     super.key,
     this.task,
+    this.defaultTask,
     this.initialDate,
     this.initialStartTime,
     this.initialEndTime,
@@ -58,13 +60,27 @@ class _AddTaskViewState extends State<AddTaskView> {
   void initState() {
     super.initState();
     final task = widget.task;
-    _selectedImportance = task?.importanceType ?? 'Medium';
-    _selectedCategory = task?.category ?? 'Work';
-    _titleController = TextEditingController(text: task?.name);
-    _descController = TextEditingController(text: task?.desc);
-    _startTime = task?.startTimeOfDay ?? widget.initialStartTime;
-    _endTime = task?.endTimeOfDay ?? widget.initialEndTime;
-    _selectedDate = task?.taskDate ?? widget.initialDate ?? DateTime.now();
+    final defaultTask = widget.defaultTask;
+
+    if (defaultTask != null) {
+      _selectedImportance = defaultTask.importanceType ?? 'Medium';
+      _selectedCategory = defaultTask.category;
+      _titleController = TextEditingController(text: defaultTask.name);
+      _descController = TextEditingController(text: defaultTask.desc);
+      _startTime = defaultTask.startTime;
+      _endTime = defaultTask.endTime;
+      _isRecurring = true;
+      _selectedWeekdays.addAll(defaultTask.weekdays);
+      _selectedDate = DateTime.now();
+    } else {
+      _selectedImportance = task?.importanceType ?? 'Medium';
+      _selectedCategory = task?.category ?? 'Work';
+      _titleController = TextEditingController(text: task?.name);
+      _descController = TextEditingController(text: task?.desc);
+      _startTime = task?.startTimeOfDay ?? widget.initialStartTime;
+      _endTime = task?.endTimeOfDay ?? widget.initialEndTime;
+      _selectedDate = task?.taskDate ?? widget.initialDate ?? DateTime.now();
+    }
 
     _startTimeController = TextEditingController(text: _formatTime(_startTime));
     _endTimeController = TextEditingController(text: _formatTime(_endTime));
@@ -159,7 +175,9 @@ class _AddTaskViewState extends State<AddTaskView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    widget.task == null ? 'New Task' : 'Edit Task',
+                    widget.task == null && widget.defaultTask == null
+                        ? 'New Task'
+                        : 'Edit Task',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.white : AppColors.deepPurple,
@@ -199,7 +217,9 @@ class _AddTaskViewState extends State<AddTaskView> {
               ),
               const SizedBox(height: 24),
 
-              if (widget.task == null && !widget.disableRecurring) ...[
+              if (widget.task == null &&
+                  widget.defaultTask == null &&
+                  !widget.disableRecurring) ...[
                 _buildFieldLabel("Occurrence", theme),
                 Row(
                   children: [
@@ -307,7 +327,9 @@ class _AddTaskViewState extends State<AddTaskView> {
                       elevation: 0,
                     ),
                     child: Text(
-                      widget.task == null ? 'Create Task' : 'Update Changes',
+                      widget.task == null && widget.defaultTask == null
+                          ? 'Create Task'
+                          : 'Update Changes',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -875,6 +897,7 @@ class _AddTaskViewState extends State<AddTaskView> {
 
   void _saveDefaultTask() {
     final defaultTask = DefaultTaskModel(
+      id: widget.defaultTask?.id,
       name: _titleController.text,
       desc: _descController.text,
       startTime: _startTime!,
@@ -882,8 +905,13 @@ class _AddTaskViewState extends State<AddTaskView> {
       category: _selectedCategory,
       weekdays: _selectedWeekdays,
       importanceType: _selectedImportance,
+      hideOn: widget.defaultTask?.hideOn,
     );
-    context.read<TaskCubit>().addDefaultTask(defaultTask);
+    if (widget.defaultTask == null) {
+      context.read<TaskCubit>().addDefaultTask(defaultTask);
+    } else {
+      context.read<TaskCubit>().updateDefaultTask(defaultTask);
+    }
     Navigator.pop(context);
   }
 
