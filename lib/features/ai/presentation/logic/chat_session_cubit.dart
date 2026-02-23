@@ -113,9 +113,17 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
       final messageModels = await _repository.getChatMessages(chatId);
       if (isClosed) return;
 
-      // Convert to ChatMessage
+      // Fetch local pending actions
+      final pendingActionsMap = await _repository.getPendingActions(chatId);
+
+      // Convert to ChatMessage and merge pending actions
       final messages = messageModels.map((m) {
-        return ChatMessage(text: m.content, isUser: m.role == 'user');
+        final isUser = m.role == 'user';
+        return ChatMessage(
+          text: m.content,
+          isUser: isUser,
+          suggestedActions: !isUser ? pendingActionsMap[m.content] : null,
+        );
       }).toList();
 
       // Load chats

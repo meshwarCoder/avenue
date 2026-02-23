@@ -32,6 +32,7 @@ class AiChatView extends StatelessWidget {
             BlocProvider(
               create: (context) => ChatCubit(
                 aiOrchestrator: sl(),
+                chatRepository: sl(),
                 sessionCubit: context.read<ChatSessionCubit>(),
                 taskCubit: sl(),
               ),

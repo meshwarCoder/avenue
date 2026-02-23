@@ -1,12 +1,21 @@
+import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:sqflite/sqflite.dart';
 import '../models/chat_model.dart';
 import '../models/chat_message_model.dart';
 import '../../../../core/utils/observability.dart';
+import '../../../../core/services/database_service.dart';
+import '../../ai/ai_action_models.dart';
 
 class ChatRepository {
   final SupabaseClient _supabase;
+  final DatabaseService _databaseService;
 
-  ChatRepository({required SupabaseClient supabase}) : _supabase = supabase;
+  ChatRepository({
+    required SupabaseClient supabase,
+    required DatabaseService databaseService,
+  }) : _supabase = supabase,
+       _databaseService = databaseService;
 
   // Create a new chat session
   Future<String> createChat(String userId) async {
@@ -135,6 +144,80 @@ class ChatRepository {
         payload: 'deleteChat failed: $e',
       );
       rethrow;
+    }
+  }
+
+  // --- LOCAL PENDING ACTIONS ---
+
+  Future<void> savePendingActions(
+    String chatId,
+    String messageText,
+    List<AiAction> actions,
+  ) async {
+    try {
+      final db = await _databaseService.database;
+      final actionsJson = jsonEncode(actions.map((a) => a.toJson()).toList());
+
+      await db.insert('ai_pending_actions', {
+        'id': '${chatId}_${messageText.hashCode}',
+        'chat_id': chatId,
+        'message_text': messageText,
+        'actions_json': actionsJson,
+        'created_at': DateTime.now().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+      AvenueLogger.log(
+        event: 'DB_CREATE',
+        layer: LoggerLayer.DB,
+        payload: {
+          'entity': 'pending_actions',
+          'chatId': chatId,
+          'count': actions.length,
+        },
+      );
+    } catch (e) {
+      AvenueLogger.log(
+        event: 'DB_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.DB,
+        payload: 'savePendingActions failed: $e',
+      );
+    }
+  }
+
+  Future<Map<String, List<AiAction>>> getPendingActions(String chatId) async {
+    try {
+      final db = await _databaseService.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'ai_pending_actions',
+        where: 'chat_id = ?',
+        whereArgs: [chatId],
+      );
+
+      final result = <String, List<AiAction>>{};
+      for (final map in maps) {
+        final text = map['message_text'] as String;
+        final jsonStr = map['actions_json'] as String;
+        final List<dynamic> list = jsonDecode(jsonStr);
+        final actions = list.map((item) => AiAction.fromJson(item)).toList();
+        result[text] = actions;
+      }
+      return result;
+    } catch (e) {
+      return {};
+    }
+  }
+
+  Future<void> deletePendingActions(String chatId, String messageText) async {
+    try {
+      final db = await _databaseService.database;
+      await db.delete(
+        'ai_pending_actions',
+        where: 'chat_id = ? AND message_text = ?',
+        whereArgs: [chatId, messageText],
+      );
+    } catch (e) {
+      // Ignore
     }
   }
 }

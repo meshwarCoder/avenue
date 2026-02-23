@@ -123,8 +123,11 @@ Future<void> initializeDependencies() async {
 
   // Chat Repository
   sl.registerLazySingleton<ChatRepository>(
-    () => ChatRepository(supabase: sl()),
+    () => ChatRepository(supabase: sl(), databaseService: sl()),
   );
 
-  sl.registerFactory(() => ChatCubit(aiOrchestrator: sl(), taskCubit: sl()));
+  sl.registerFactory(
+    () =>
+        ChatCubit(aiOrchestrator: sl(), chatRepository: sl(), taskCubit: sl()),
+  );
 }
