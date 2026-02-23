@@ -17,7 +17,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 9, // Increment version
+      version: 10, // Increment version
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -28,6 +28,18 @@ class DatabaseService {
       await db.execute('DROP TABLE IF EXISTS tasks');
       await db.execute('DROP TABLE IF EXISTS default_tasks');
       await _createDB(db, newVersion);
+    }
+    if (oldVersion < 10) {
+      // Add ai_pending_actions table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS ai_pending_actions (
+          id TEXT PRIMARY KEY,
+          chat_id TEXT NOT NULL,
+          message_text TEXT NOT NULL,
+          actions_json TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        )
+      ''');
     }
     if (oldVersion < 3) {
       // Add default_tasks table
@@ -154,6 +166,16 @@ class DatabaseService {
       CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
         value TEXT
+      )
+    ''');
+    // Pending AI Actions Table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS ai_pending_actions (
+        id TEXT PRIMARY KEY,
+        chat_id TEXT NOT NULL,
+        message_text TEXT NOT NULL,
+        actions_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
       )
     ''');
   }

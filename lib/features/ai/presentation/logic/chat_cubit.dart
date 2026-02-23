@@ -5,19 +5,25 @@ import 'package:avenue/features/schdules/data/models/task_model.dart';
 import 'package:avenue/features/schdules/data/models/default_task_model.dart';
 import 'package:avenue/features/ai/ai/ai_action_models.dart';
 import '../../ai/ai_orchestrator.dart';
-import 'chat_state.dart';
-import 'chat_session_cubit.dart';
+import '../logic/chat_state.dart';
+import '../logic/chat_session_cubit.dart';
+import '../../data/repositories/chat_repository.dart';
 
 import 'package:avenue/features/schdules/presentation/cubit/task_cubit.dart';
 import '../../../../core/utils/observability.dart';
 
 class ChatCubit extends Cubit<ChatState> {
   final AiOrchestrator aiOrchestrator;
+  final ChatRepository chatRepository;
   final ChatSessionCubit? sessionCubit;
   final TaskCubit? taskCubit;
 
-  ChatCubit({required this.aiOrchestrator, this.sessionCubit, this.taskCubit})
-    : super(ChatInitial()) {
+  ChatCubit({
+    required this.aiOrchestrator,
+    required this.chatRepository,
+    this.sessionCubit,
+    this.taskCubit,
+  }) : super(ChatInitial()) {
     // Ensure we start with a clean AI state when the Cubit is created
     aiOrchestrator.clearHistory();
   }
@@ -73,6 +79,16 @@ class ChatCubit extends Cubit<ChatState> {
             suggestedActions: actions.isEmpty ? null : actions,
           ),
         );
+
+      // Save pending actions locally so they persist across sessions
+      if (actions.isNotEmpty && sessionCubit?.currentChatId != null) {
+        await chatRepository.savePendingActions(
+          sessionCubit!.currentChatId!,
+          responseText,
+          actions,
+        );
+      }
+
       _logState(
         ChatLoaded(_messages, updatedAt: DateTime.now(), isTyping: false),
         traceId: tid,
@@ -153,11 +169,43 @@ class ChatCubit extends Cubit<ChatState> {
     );
 
     // 2. Execute each action
+    final actionSummaries = <String>[];
     for (final action in msg.suggestedActions!) {
       await _executeAction(action, traceId: tid);
+      if (action is TaskAction) {
+        actionSummaries.add(
+          "${action.action == 'create' ? 'Created' : 'Updated'} task '${action.name}'",
+        );
+      } else if (action is HabitAction) {
+        actionSummaries.add(
+          "${action.action == 'create' ? 'Created' : 'Updated'} habit '${action.name}'",
+        );
+      } else if (action is SkipHabitInstanceAction) {
+        actionSummaries.add("Skipped habit instance");
+      }
     }
 
-    // 3. Force Global UI Reload
+    // 3. Cleanup local pending actions
+    if (sessionCubit?.currentChatId != null) {
+      await chatRepository.deletePendingActions(
+        sessionCubit!.currentChatId!,
+        msg.text,
+      );
+    }
+
+    // 4. Record confirmation in history (Supabase + local)
+    final summaryText = "✅ Actions confirmed: ${actionSummaries.join(', ')}";
+    if (sessionCubit?.currentChatId != null) {
+      await sessionCubit!.saveMessage('ai', summaryText);
+
+      // Update local state by adding the "audit" message
+      _messages = List.from(_messages)
+        ..add(ChatMessage(text: summaryText, isUser: false));
+      _logState(ChatLoaded(_messages, updatedAt: DateTime.now()));
+      sessionCubit!.updateMessages(_messages);
+    }
+
+    // 5. Force Global UI Reload
     // Capture original date to restore it after action reload
     final originalDate = taskCubit?.selectedDate;
 
@@ -215,7 +263,6 @@ class ChatCubit extends Cubit<ChatState> {
             completed: false,
             category: action.category ?? 'Other',
             isDeleted: false,
-            serverUpdatedAt: DateTime.now(),
             defaultTaskId: action.defaultTaskId,
           );
           await taskCubit!.addTask(task, traceId: traceId);
@@ -244,7 +291,6 @@ class ChatCubit extends Cubit<ChatState> {
               desc: action.note ?? existing.desc,
               category: action.category ?? existing.category,
               isDeleted: action.isDeleted ?? existing.isDeleted,
-              serverUpdatedAt: DateTime.now(),
             );
             await taskCubit!.updateTask(updated, traceId: traceId);
           });
@@ -260,7 +306,6 @@ class ChatCubit extends Cubit<ChatState> {
             weekdays: action.weekdays ?? [1, 2, 3, 4, 5],
             importanceType: action.importance ?? 'Medium',
             desc: action.note ?? '',
-            serverUpdatedAt: DateTime.now(),
           );
           await taskCubit!.addDefaultTask(task, traceId: traceId);
         } else if (action.action == 'update' && action.id != null) {
@@ -281,7 +326,6 @@ class ChatCubit extends Cubit<ChatState> {
               desc: action.note ?? existing.desc,
               category: action.category ?? existing.category,
               isDeleted: action.isDeleted ?? existing.isDeleted,
-              serverUpdatedAt: DateTime.now(),
             );
             await taskCubit!.updateDefaultTask(updated);
           });
@@ -304,7 +348,6 @@ class ChatCubit extends Cubit<ChatState> {
           )) {
             final updated = existing.copyWith(
               hideOn: [...existing.hideOn, normalizedDate],
-              serverUpdatedAt: DateTime.now(),
             );
             await taskCubit!.updateDefaultTask(updated);
           }
