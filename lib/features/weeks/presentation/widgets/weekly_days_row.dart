@@ -36,18 +36,23 @@ class WeeklyDaysRow extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8, bottom: 8),
       child: Row(
         children: [
-          SizedBox(
-            width: 60.0,
-            child: Center(
-              child: ZoomKnob(
-                currentZoom: currentZoom,
-                minZoom: 20.0,
-                maxZoom: 150.0,
-                onZoomChanged: onZoomChanged,
+          Expanded(
+            flex: 1,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 12.0, right: 4.0),
+              child: Center(
+                child: DragZoomRing(
+                  value: currentZoom,
+                  initialValue: 60.0,
+                  minValue: 20.0,
+                  maxValue: 150.0,
+                  onChanged: onZoomChanged,
+                ),
               ),
             ),
-          ), // Zoom Knob replaces empty spacer
+          ),
           Expanded(
+            flex: days.length,
             child: Row(
               children: days.map((date) {
                 final isToday = _isSameDay(date, DateTime.now());

@@ -24,8 +24,9 @@ class WeeklyGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Total flex layout perfectly matches header: 1 (time column) + 7 (days grid) = 8
     final screenWidth = MediaQuery.of(context).size.width;
-    final dayWidth = (screenWidth - 60) / 7;
+    final dayWidth = screenWidth / (1 + days.length);
 
     return SingleChildScrollView(
       controller: scrollController,
@@ -34,8 +35,11 @@ class WeeklyGrid extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildTimeColumn(context),
-            Expanded(child: _buildDaysGrid(context, days, state, dayWidth)),
+            Expanded(flex: 1, child: _buildTimeColumn(context)),
+            Expanded(
+              flex: days.length,
+              child: _buildDaysGrid(context, days, state, dayWidth),
+            ),
           ],
         ),
       ),
@@ -44,31 +48,33 @@ class WeeklyGrid extends StatelessWidget {
 
   Widget _buildTimeColumn(BuildContext context) {
     final is24Hour = context.read<SettingsCubit>().state.is24HourFormat;
-    return SizedBox(
-      width: 60.0,
-      child: Column(
-        children: List.generate(24, (index) {
-          final timeOfDay = TimeOfDay(hour: index, minute: 0);
-          final timeText = TimeUtils.formatTime(timeOfDay, is24Hour);
-          return SizedBox(
-            height: hourHeight,
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.only(bottom: hourHeight / 2),
-                child: Text(
-                  timeText,
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.5),
-                    fontSize: 10,
-                  ),
+    return Column(
+      children: List.generate(24, (index) {
+        final timeOfDay = TimeOfDay(hour: index, minute: 0);
+        final timeText = TimeUtils.formatTime(timeOfDay, is24Hour);
+        return SizedBox(
+          height: hourHeight,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: FractionalTranslation(
+              translation: const Offset(
+                0.0,
+                -0.6,
+              ), // Pulls text exactly onto the hour line intersection
+              child: Text(
+                timeText,
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.5),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-          );
-        }),
-      ),
+          ),
+        );
+      }),
     );
   }
 
