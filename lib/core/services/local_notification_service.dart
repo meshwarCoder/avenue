@@ -11,6 +11,9 @@ class LocalNotificationService {
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+  bool _isInitialized = false;
+
+  bool get isInitialized => _isInitialized;
 
   static const String _channelId = 'avenue_default_channel';
   static const String _channelName = 'Avenue Notifications';
@@ -19,6 +22,7 @@ class LocalNotificationService {
 
   /// Initializes the service, including timezones and notification channels
   Future<void> init() async {
+    if (_isInitialized) return;
     try {
       tz.initializeTimeZones();
       try {
@@ -33,6 +37,7 @@ class LocalNotificationService {
           payload: timeZoneName,
         );
       } catch (e) {
+        // Fallback to a safe location if local lookup fails
         tz.setLocalLocation(tz.getLocation('Africa/Cairo'));
       }
 
@@ -65,6 +70,7 @@ class LocalNotificationService {
         );
       }
 
+      _isInitialized = true;
       await requestPermissionIfNeeded();
 
       AvenueLogger.log(
@@ -72,6 +78,7 @@ class LocalNotificationService {
         layer: LoggerLayer.SYNC,
       );
     } catch (e, stack) {
+      _isInitialized = false;
       AvenueLogger.log(
         event: 'NOTIFICATION_INIT_ERROR',
         layer: LoggerLayer.SYNC,
@@ -123,6 +130,14 @@ class LocalNotificationService {
     required String body,
     String? payload,
   }) async {
+    if (!_isInitialized) {
+      AvenueLogger.log(
+        event: 'NOTIFICATION_SKIPPED',
+        layer: LoggerLayer.SYNC,
+        payload: 'Service not initialized',
+      );
+      return;
+    }
     try {
       const androidDetails = AndroidNotificationDetails(
         _channelId,
@@ -153,6 +168,14 @@ class LocalNotificationService {
     required DateTime scheduledTime,
     String? payload,
   }) async {
+    if (!_isInitialized) {
+      AvenueLogger.log(
+        event: 'NOTIFICATION_SKIPPED',
+        layer: LoggerLayer.SYNC,
+        payload: 'Service not initialized',
+      );
+      return;
+    }
     try {
       if (scheduledTime.isBefore(DateTime.now())) return;
 
@@ -191,11 +214,13 @@ class LocalNotificationService {
 
   /// Cancels a specific notification by ID
   Future<void> cancelNotification(int id) async {
+    if (!_isInitialized) return;
     await _notifications.cancel(id: id);
   }
 
   /// Cancels all scheduled notifications
   Future<void> cancelAllNotifications() async {
+    if (!_isInitialized) return;
     await _notifications.cancelAll();
   }
 
@@ -210,6 +235,7 @@ class LocalNotificationService {
 
   /// Returns a list of all pending notification requests
   Future<List<PendingNotificationRequest>> getPendingNotificationRequests() {
+    if (!_isInitialized) return Future.value([]);
     return _notifications.pendingNotificationRequests();
   }
 }

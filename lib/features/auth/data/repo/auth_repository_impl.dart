@@ -21,7 +21,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await supabase.auth.signUp(email: email, password: password);
       return const Right(null);
     } on AuthException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(_mapAuthException(e));
     } on SocketException {
       return const Left(
         ServerFailure('No internet connection. Please check your network.'),
@@ -46,7 +46,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await supabase.auth.signInWithPassword(email: email, password: password);
       return const Right(null);
     } on AuthException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(_mapAuthException(e));
     } on SocketException {
       return const Left(
         ServerFailure('No internet connection. Please check your network.'),
@@ -211,5 +211,26 @@ class AuthRepositoryImpl implements AuthRepository {
           return AuthEvent.unknown;
       }
     });
+  }
+
+  Failure _mapAuthException(AuthException e) {
+    final message = e.message.toLowerCase();
+    if (message.contains('invalid login credentials')) {
+      return const ServerFailure('Invalid email or password.');
+    } else if (message.contains('email not confirmed')) {
+      return const ServerFailure('Email not confirmed.');
+    } else if (message.contains('user already exists')) {
+      return const ServerFailure(
+        'An account with this email already exists. Try signing in instead.',
+      );
+    } else if (message.contains('not found') ||
+        message.contains('no user found')) {
+      return const ServerFailure(
+        'No account found with this email. Please sign up first.',
+      );
+    } else if (message.contains('rate limit')) {
+      return const ServerFailure('Too many attempts. Please try again later.');
+    }
+    return ServerFailure(e.message);
   }
 }
