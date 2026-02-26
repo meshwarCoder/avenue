@@ -102,10 +102,7 @@ class _RegisterViewState extends State<RegisterView> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const AuthHeader(
-                        title: "Join Avenue",
-                        subtitle: "Create an account to start syncing",
-                      ),
+                      const AuthHeader(title: "Join Avenue", subtitle: ""),
                       const SizedBox(height: 48),
 
                       // Email Field

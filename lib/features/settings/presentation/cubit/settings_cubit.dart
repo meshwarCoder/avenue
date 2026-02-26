@@ -1,6 +1,9 @@
 import 'package:avenue/core/di/injection_container.dart';
 import 'package:avenue/core/services/local_notification_service.dart';
+import 'package:avenue/core/services/open_router_client.dart';
+import 'package:avenue/core/services/embedding_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../data/settings_repository.dart';
 import 'settings_state.dart';
 
@@ -15,16 +18,36 @@ class SettingsCubit extends Cubit<SettingsState> {
     _loadSettings();
   }
 
-  void _loadSettings() {
+  Future<void> _loadSettings() async {
     final weekStartDay = _repository.getWeekStartDay();
     final is24HourFormat = _repository.getIs24HourFormat();
     final notificationsEnabled = _repository.getNotificationsEnabled();
+    final aiModel = _repository.getAiModel();
+    final aiApiKey = _repository.getAiApiKey();
+
+    // Apply cached model override to client immediately
+    sl<OpenRouterClient>().model = aiModel;
+    sl<OpenRouterClient>().apiKey =
+        aiApiKey ?? dotenv.env['OPENROUTER_API_KEY'] ?? '';
+    sl<EmbeddingService>().apiKey =
+        aiApiKey ?? dotenv.env['OPENROUTER_API_KEY'] ?? '';
+
     emit(
       state.copyWith(
         weekStartDay: weekStartDay,
         is24HourFormat: is24HourFormat,
         notificationsEnabled: notificationsEnabled,
+        aiModel: aiModel,
+        aiApiKey: aiApiKey,
       ),
+    );
+
+    // Fetch role from Supabase (async, update UI when ready)
+    final roleResult = await _authRepository.fetchUserRole();
+    if (isClosed) return;
+    roleResult.fold(
+      (_) => null, // On failure, keep isDev = false
+      (role) => emit(state.copyWith(isDev: role == 'dev')),
     );
   }
 
@@ -47,6 +70,23 @@ class SettingsCubit extends Cubit<SettingsState> {
     }
     if (isClosed) return;
     emit(state.copyWith(notificationsEnabled: enabled));
+  }
+
+  Future<void> updateAiModel(String model) async {
+    await _repository.setAiModel(model);
+    sl<OpenRouterClient>().model = model;
+    if (isClosed) return;
+    emit(state.copyWith(aiModel: model));
+  }
+
+  Future<void> updateAiApiKey(String? key) async {
+    await _repository.setAiApiKey(key);
+    sl<OpenRouterClient>().apiKey =
+        key ?? dotenv.env['OPENROUTER_API_KEY'] ?? '';
+    sl<EmbeddingService>().apiKey =
+        key ?? dotenv.env['OPENROUTER_API_KEY'] ?? '';
+    if (isClosed) return;
+    emit(state.copyWith(aiApiKey: key));
   }
 
   Future<void> submitFeedback({

@@ -3,7 +3,7 @@ class AiTools {
     {
       'name': 'getSchedule',
       'description':
-          'Fetch schedule for a specific date or date range. This is the PRIMARY tool for all time-based questions. Returns both normal tasks and recurring habits/default tasks by default. Past dates only return normal tasks.',
+          'Fetch schedule for a specific date or date range. Returns both normal tasks and recurring habits by default. Past dates only return normal tasks.',
       'parameters': {
         'type': 'object',
         'properties': {
@@ -19,7 +19,7 @@ class AiTools {
             'type': 'string',
             'enum': ['all', 'task', 'default'],
             'description':
-                'Filter by type: "all" (default), "task" (non-recurring), or "default" (habits/recurring).',
+                'Filter by type: "all" (default), "task" (one-time tasks), or "default" (recurring habits).',
           },
         },
         'required': ['startDate'],
@@ -28,7 +28,7 @@ class AiTools {
     {
       'name': 'searchSchedule',
       'description':
-          'Semantic search for tasks or habits by topic, name, or meaning. Use this when the user asks about a specific activity without specifying a date.',
+          'Semantic search for tasks or habits by topic, name, or meaning. Use when the user asks about a specific activity without specifying a date.',
       'parameters': {
         'type': 'object',
         'properties': {
@@ -40,7 +40,7 @@ class AiTools {
             'type': 'string',
             'enum': ['all', 'task', 'default'],
             'description':
-                'Filter by type: "all" (default), "task" (non-recurring), or "default" (habits/recurring).',
+                'Filter by type: "all" (default), "task" (one-time tasks), or "default" (recurring habits).',
           },
         },
         'required': ['query'],
@@ -49,15 +49,15 @@ class AiTools {
     {
       'name': 'manageSchedule',
       'description':
-          'Unified tool to create or update one-time tasks and recurring habits. Use this for ALL modifications to the schedule.',
+          'Propose creating, updating, or deleting a one-time task or recurring habit. The proposed action is NOT executed immediately — it is presented to the user for confirmation first.',
       'parameters': {
         'type': 'object',
         'properties': {
           'action': {
             'type': 'string',
-            'enum': ['create', 'update'],
+            'enum': ['create', 'update', 'delete'],
             'description':
-                'Whether to create a new entry or update an existing one.',
+                '"create" for new entries, "update" to modify existing, "delete" to remove. Delete only requires type + id.',
           },
           'type': {
             'type': 'string',
@@ -67,23 +67,30 @@ class AiTools {
           },
           'id': {
             'type': 'string',
-            'description': 'Required ONLY for "update" action.',
+            'description':
+                'Required for "update" and "delete" actions. Must be a real UUID retrieved from getSchedule or searchSchedule.',
           },
-          'name': {'type': 'string'},
+          'name': {
+            'type': 'string',
+            'description': 'Name of the task or habit.',
+          },
           'date': {
             'type': 'string',
-            'description': 'YYYY-MM-DD (Required for type="task").',
+            'description': 'YYYY-MM-DD. Required for type="task" on create.',
           },
           'startTime': {
             'type': 'string',
-            'description': 'HH:mm (Required for create).',
+            'description': 'HH:mm. Required for create.',
           },
-          'endTime': {'type': 'string', 'description': 'HH:mm.'},
+          'endTime': {
+            'type': 'string',
+            'description': 'HH:mm. Defaults to startTime + 1 hour if omitted.',
+          },
           'weekdays': {
             'type': 'array',
             'items': {'type': 'integer'},
             'description':
-                '1=Mon, 7=Sun (Required for create where type="default").',
+                '1=Mon, 7=Sun. Required for create where type="default".',
           },
           'importance': {
             'type': 'string',
@@ -92,12 +99,20 @@ class AiTools {
           'note': {'type': 'string'},
           'category': {
             'type': 'string',
-            'enum': ['Work', 'Meeting', 'Personal', 'Health', 'Other'],
+            'enum': [
+              'Work',
+              'Meeting',
+              'Personal',
+              'Health',
+              'Study',
+              'Finance',
+              'Social',
+              'Other',
+            ],
           },
-          'isDone': {'type': 'boolean', 'description': 'Only for type="task".'},
-          'isDeleted': {
+          'isDone': {
             'type': 'boolean',
-            'description': 'Set to true to delete the task or habit.',
+            'description': 'Mark task as complete. Only for type="task".',
           },
         },
         'required': ['action', 'type'],

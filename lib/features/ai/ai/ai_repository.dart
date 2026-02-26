@@ -9,8 +9,14 @@ class AiRepository {
   final OpenRouterClient _client;
   final AiToolExecutor _executor;
   final List<Map<String, dynamic>> _history = [];
-  static const int _maxHistoryMessages = 15;
+  static const int _maxHistoryMessages = 20;
   static const int _maxToolIterations = 5;
+  static const int _preserveFirstMessages =
+      2; // Keep first user+assistant exchange
+
+  static const String _formatReminder =
+      'IMPORTANT: You MUST respond with valid JSON in the exact format specified in your system instructions. '
+      'Use the {"message": "...", "actions": [...]} structure. Do NOT use markdown or plain text.';
 
   AiRepository({
     required OpenRouterClient client,
@@ -85,10 +91,19 @@ class AiRepository {
       _history.add({'role': 'model', 'parts': parts});
       _history.add({'role': 'function', 'parts': toolResults});
 
-      // Call Gemini again with results
+      // Reinforce output format after tool results to prevent drift
+      final reinforcedHistory = _getRecentHistory();
+      reinforcedHistory.add({
+        'role': 'user',
+        'parts': [
+          {'text': _formatReminder},
+        ],
+      });
+
+      // Call Gemini again with results + reinforcement
       currentResponse = await _client.generateContent(
         systemPrompt: systemPrompt,
-        history: _getRecentHistory(),
+        history: reinforcedHistory,
         userMessage: null,
         tools: AiTools.declarations,
         traceId: tid,
@@ -111,7 +126,14 @@ class AiRepository {
   }
 
   List<Map<String, dynamic>> _getRecentHistory() {
-    if (_history.length <= _maxHistoryMessages) return _history;
-    return _history.sublist(_history.length - _maxHistoryMessages);
+    if (_history.length <= _maxHistoryMessages) return List.from(_history);
+
+    // Smart truncation: preserve the first user+assistant exchange
+    // to maintain the response pattern, then take the most recent messages
+    final firstMessages = _history.take(_preserveFirstMessages).toList();
+    final recentCount = _maxHistoryMessages - _preserveFirstMessages;
+    final recentMessages = _history.sublist(_history.length - recentCount);
+
+    return [...firstMessages, ...recentMessages];
   }
 }

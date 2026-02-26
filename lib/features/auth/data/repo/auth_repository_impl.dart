@@ -143,10 +143,58 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Stream<AuthEvent> get authEvents =>
-      supabase.auth.onAuthStateChange.map((data) {
-        if (data.event == AuthChangeEvent.signedIn) return AuthEvent.signedIn;
-        if (data.event == AuthChangeEvent.signedOut) return AuthEvent.signedOut;
-        return AuthEvent.unknown;
-      });
+  Future<Either<Failure, String>> fetchUserRole() async {
+    try {
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) {
+        return const Left(ServerFailure('User not logged in'));
+      }
+
+      final data = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      final role = data?['role'] as String? ?? 'user';
+      return Right(role);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Stream<AuthEvent> get authEvents {
+    return supabase.auth.onAuthStateChange.map((data) {
+      switch (data.event) {
+        case AuthChangeEvent.signedIn:
+          return AuthEvent.signedIn;
+        case AuthChangeEvent.signedOut:
+          return AuthEvent.signedOut;
+        default:
+          return AuthEvent.unknown;
+      }
+    });
+  }
+
+  Failure _mapAuthException(AuthException e) {
+    final message = e.message.toLowerCase();
+    if (message.contains('invalid login credentials')) {
+      return const ServerFailure('Invalid email or password.');
+    } else if (message.contains('email not confirmed')) {
+      return const ServerFailure('Email not confirmed.');
+    } else if (message.contains('user already exists')) {
+      return const ServerFailure(
+        'An account with this email already exists. Try signing in instead.',
+      );
+    } else if (message.contains('not found') ||
+        message.contains('no user found')) {
+      return const ServerFailure(
+        'No account found with this email. Please sign up first.',
+      );
+    } else if (message.contains('rate limit')) {
+      return const ServerFailure('Too many attempts. Please try again later.');
+    }
+    return ServerFailure(e.message);
+  }
 }

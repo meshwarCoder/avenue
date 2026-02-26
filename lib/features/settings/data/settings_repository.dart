@@ -69,4 +69,28 @@ class SettingsRepository {
       'created_at': DateTime.now().toUtc().toIso8601String(),
     });
   }
+
+  static const String _keyAiModelOverride = 'ai_model_override';
+  static const String _keyAiApiKeyOverride = 'ai_api_key_override';
+
+  String getAiModel() {
+    return _cacheHelper.getData(key: _keyAiModelOverride) as String? ??
+        'google/gemini-3-pro-preview';
+  }
+
+  Future<void> setAiModel(String model) async {
+    await _cacheHelper.setData(key: _keyAiModelOverride, value: model);
+  }
+
+  String? getAiApiKey() {
+    return _cacheHelper.getData(key: _keyAiApiKeyOverride) as String?;
+  }
+
+  Future<void> setAiApiKey(String? key) async {
+    if (key == null || key.isEmpty) {
+      await _cacheHelper.removeData(key: _keyAiApiKeyOverride);
+    } else {
+      await _cacheHelper.setData(key: _keyAiApiKeyOverride, value: key);
+    }
+  }
 }

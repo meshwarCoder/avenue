@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/utils/calendar_utils.dart';
+import '../../../../core/utils/constants.dart';
 import '../../../schdules/presentation/views/schedule_view.dart';
+import '../../../schdules/presentation/cubit/default_tasks_cubit.dart';
+import '../../../schdules/presentation/views/default_tasks_view.dart';
+import '../../../../core/di/injection_container.dart';
 import '../cubit/weekly_cubit.dart';
 import '../cubit/weekly_state.dart';
 import '../../../schdules/presentation/cubit/task_cubit.dart';
@@ -102,6 +106,9 @@ class _WeeklyCalendarPageState extends State<WeeklyCalendarPage> {
                           ),
                         ),
                         SliverToBoxAdapter(
+                          child: _buildRecurringTasksButton(context),
+                        ),
+                        SliverToBoxAdapter(
                           child: WeeklyDaysRow(
                             days: days,
                             currentMonday: _currentMonday,
@@ -147,6 +154,67 @@ class _WeeklyCalendarPageState extends State<WeeklyCalendarPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildRecurringTasksButton(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final color = isDark ? theme.colorScheme.primary : AppColors.deepPurple;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: InkWell(
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BlocProvider(
+                create: (context) => sl<DefaultTasksCubit>(),
+                child: const DefaultTasksView(),
+              ),
+            ),
+          );
+          if (mounted) {
+            context.read<WeeklyCubit>().loadWeeklyTasks(_currentMonday);
+            context.read<TaskCubit>().loadTasks(force: true);
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: BoxDecoration(
+            color: color.withOpacity(isDark ? 0.12 : 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(isDark ? 0.25 : 0.1)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.repeat_rounded,
+                color: isDark ? Colors.white70 : color,
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  "Master Routine",
+                  style: TextStyle(
+                    color: isDark ? Colors.white : color,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: (isDark ? Colors.white : color).withOpacity(0.5),
+                size: 14,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -3,13 +3,13 @@ import 'dart:io';
 import '../utils/observability.dart';
 
 class OpenRouterClient {
-  final String apiKey;
-  final String model;
+  String apiKey;
+  String model;
   final String baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
 
   OpenRouterClient({
     required this.apiKey,
-    this.model = 'stepfun/step-3.5-flash:free',
+    this.model = 'google/gemini-3-pro-preview',
   });
 
   Future<Map<String, dynamic>> generateContent({

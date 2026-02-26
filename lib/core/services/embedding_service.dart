@@ -3,12 +3,12 @@ import 'dart:io';
 import '../utils/observability.dart';
 
 class EmbeddingService {
-  final String _apiKey;
+  String apiKey;
   // Using a Google model via OpenRouter to maintain 768 dimensions if possible
   final String _model = 'google/gemini-embedding-001';
   final String _baseUrl = 'https://openrouter.ai/api/v1/embeddings';
 
-  EmbeddingService({required String apiKey}) : _apiKey = apiKey;
+  EmbeddingService({required String apiKey}) : apiKey = apiKey;
 
   /// Generates a vector embedding for the given text.
   /// Returns a list of doubles representing the embedding.
@@ -20,7 +20,7 @@ class EmbeddingService {
       final url = Uri.parse(_baseUrl);
       final request = await client.postUrl(url);
       request.headers.set('Content-Type', 'application/json');
-      request.headers.set('Authorization', 'Bearer $_apiKey');
+      request.headers.set('Authorization', 'Bearer $apiKey');
       request.headers.set('HTTP-Referer', 'https://avenue-app.com');
       request.headers.set('X-Title', 'Avenue');
 

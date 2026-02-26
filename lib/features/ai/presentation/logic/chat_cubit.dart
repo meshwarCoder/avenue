@@ -193,13 +193,19 @@ class ChatCubit extends Cubit<ChatState> {
     for (final action in msg.suggestedActions!) {
       await _executeAction(action, traceId: tid);
       if (action is TaskAction) {
-        actionSummaries.add(
-          "${action.action == 'create' ? 'Created' : 'Updated'} task '${action.name}'",
-        );
+        final verb = switch (action.action) {
+          'create' => 'Created',
+          'delete' => 'Deleted',
+          _ => 'Updated',
+        };
+        actionSummaries.add("$verb task '${action.name ?? 'task'}'");
       } else if (action is HabitAction) {
-        actionSummaries.add(
-          "${action.action == 'create' ? 'Created' : 'Updated'} habit '${action.name}'",
-        );
+        final verb = switch (action.action) {
+          'create' => 'Created',
+          'delete' => 'Deleted',
+          _ => 'Updated',
+        };
+        actionSummaries.add("$verb habit '${action.name ?? 'habit'}'");
       } else if (action is SkipHabitInstanceAction) {
         actionSummaries.add("Skipped habit instance");
       }
@@ -286,6 +292,14 @@ class ChatCubit extends Cubit<ChatState> {
             defaultTaskId: action.defaultTaskId,
           );
           await taskCubit!.addTask(task, traceId: traceId);
+        } else if (action.action == 'delete' && action.id != null) {
+          final repo = taskCubit!.repository;
+          final result = await repo.getTaskById(action.id!);
+          result.fold((l) => null, (existing) async {
+            if (existing == null) return;
+            final updated = existing.copyWith(isDeleted: true);
+            await taskCubit!.updateTask(updated, traceId: traceId);
+          });
         } else if (action.action == 'update' && action.id != null) {
           final repo = taskCubit!.repository;
           final result = await repo.getTaskById(action.id!);
@@ -328,6 +342,14 @@ class ChatCubit extends Cubit<ChatState> {
             desc: action.note ?? '',
           );
           await taskCubit!.addDefaultTask(task, traceId: traceId);
+        } else if (action.action == 'delete' && action.id != null) {
+          final repo = taskCubit!.repository;
+          final result = await repo.getDefaultTaskById(action.id!);
+          result.fold((l) => null, (existing) async {
+            if (existing == null) return;
+            final updated = existing.copyWith(isDeleted: true);
+            await taskCubit!.updateDefaultTask(updated);
+          });
         } else if (action.action == 'update' && action.id != null) {
           final repo = taskCubit!.repository;
           final result = await repo.getDefaultTaskById(action.id!);

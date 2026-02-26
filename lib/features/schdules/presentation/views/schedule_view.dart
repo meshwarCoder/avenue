@@ -4,9 +4,7 @@ import 'package:avenue/core/utils/constants.dart';
 import 'package:avenue/features/schdules/presentation/views/timeline_view.dart';
 import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
-import '../cubit/default_tasks_cubit.dart';
-import './default_tasks_view.dart';
-import '../../../../core/di/injection_container.dart';
+
 import '../widgets/task_card.dart';
 import '../../../../core/widgets/avenue_loading.dart';
 import '../../../../core/utils/calendar_utils.dart';
@@ -62,24 +60,6 @@ class _HomeViewState extends State<HomeView> {
                 onPressed: () => Navigator.pop(context),
               )
             : null,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.repeat_rounded,
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
-            ),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => BlocProvider(
-                  create: (context) => sl<DefaultTasksCubit>(),
-                  child: const DefaultTasksView(),
-                ),
-              ),
-            ),
-            tooltip: 'Manage Recurring Tasks',
-          ),
-        ],
       ),
       body: BlocBuilder<TaskCubit, TaskState>(
         builder: (context, state) {

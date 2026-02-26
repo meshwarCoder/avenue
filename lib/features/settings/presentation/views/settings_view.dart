@@ -7,9 +7,6 @@ import 'package:avenue/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:avenue/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:avenue/features/settings/presentation/cubit/settings_state.dart';
 import 'package:avenue/features/settings/presentation/views/feedback_view.dart';
-import 'package:avenue/features/schdules/presentation/cubit/default_tasks_cubit.dart';
-import 'package:avenue/features/schdules/presentation/views/default_tasks_view.dart';
-import 'package:avenue/core/di/injection_container.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -105,21 +102,7 @@ class SettingsView extends StatelessWidget {
             title: "Profile Details",
             onTap: () {},
           ),
-          _buildSettingItem(
-            context,
-            icon: Icons.repeat_rounded,
-            title: "Manage Recurring Tasks",
-            subtitle: "View and edit your master routine",
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => BlocProvider(
-                  create: (context) => sl<DefaultTasksCubit>(),
-                  child: const DefaultTasksView(),
-                ),
-              ),
-            ),
-          ),
+
           _buildSettingItem(
             context,
             icon: Icons.logout_rounded,
@@ -150,6 +133,35 @@ class SettingsView extends StatelessWidget {
               if (shouldLogout == true && context.mounted) {
                 context.read<AuthCubit>().signOut();
               }
+            },
+          ),
+          BlocBuilder<SettingsCubit, SettingsState>(
+            builder: (context, state) {
+              if (!state.isDev) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 24),
+                  _buildSectionHeader(context, "Dev Options"),
+                  _buildSettingItem(
+                    context,
+                    icon: Icons.smart_toy_outlined,
+                    title: "AI Model",
+                    subtitle: state.aiModel,
+                    onTap: () => _showModelEditor(context, state.aiModel),
+                  ),
+                  _buildSettingItem(
+                    context,
+                    icon: Icons.key_outlined,
+                    title: "API Key",
+                    subtitle:
+                        state.aiApiKey != null && state.aiApiKey!.isNotEmpty
+                        ? '***${state.aiApiKey!.substring(state.aiApiKey!.length > 4 ? state.aiApiKey!.length - 4 : 0)}'
+                        : 'Default (Server)',
+                    onTap: () => _showApiKeyEditor(context, state.aiApiKey),
+                  ),
+                ],
+              );
             },
           ),
           const SizedBox(height: 40),
@@ -216,12 +228,15 @@ class SettingsView extends StatelessWidget {
 
   Widget _buildFeedbackSection(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Card(
       elevation: 0,
-      color: AppColors.deepPurple.withOpacity(0.05),
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.05)
+          : AppColors.deepPurple.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.deepPurple.withOpacity(0.1)),
+        side: BorderSide(color: AppColors.deepPurple.withValues(alpha: 0.1)),
       ),
       child: InkWell(
         onTap: () => Navigator.push(
@@ -236,12 +251,14 @@ class SettingsView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.deepPurple.withOpacity(0.1),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : AppColors.deepPurple.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.feedback_outlined,
-                  color: AppColors.deepPurple,
+                  color: isDark ? Colors.white : AppColors.deepPurple,
                   size: 20,
                 ),
               ),
@@ -254,7 +271,7 @@ class SettingsView extends StatelessWidget {
                       "Help us improve Avenue",
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.deepPurple,
+                        color: isDark ? Colors.white : AppColors.deepPurple,
                       ),
                     ),
                     Text(
@@ -266,9 +283,9 @@ class SettingsView extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: AppColors.deepPurple,
+                color: isDark ? Colors.white : AppColors.deepPurple,
               ),
             ],
           ),
@@ -278,12 +295,13 @@ class SettingsView extends StatelessWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: AppColors.slatePurple,
+          color: isDark ? Colors.white : AppColors.slatePurple,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
         ),
@@ -301,6 +319,7 @@ class SettingsView extends StatelessWidget {
     Widget? trailing,
   }) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
@@ -310,7 +329,11 @@ class SettingsView extends StatelessWidget {
         side: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.05)),
       ),
       child: ListTile(
-        leading: Icon(icon, color: titleColor ?? theme.colorScheme.primary),
+        leading: Icon(
+          icon,
+          color:
+              titleColor ?? (isDark ? Colors.white : theme.colorScheme.primary),
+        ),
         title: Text(
           title,
           style: theme.textTheme.bodyLarge?.copyWith(
@@ -554,6 +577,76 @@ class SettingsView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _showModelEditor(BuildContext context, String currentModel) {
+    final controller = TextEditingController(text: currentModel);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Change AI Model'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Model name',
+            hintText: 'e.g. google/gemini-3-pro-preview',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final newModel = controller.text.trim();
+              if (newModel.isNotEmpty) {
+                context.read<SettingsCubit>().updateAiModel(newModel);
+              }
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showApiKeyEditor(BuildContext context, String? currentKey) {
+    final controller = TextEditingController(text: currentKey ?? '');
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Change API Key'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'OpenRouter API Key',
+            hintText: 'Sk-or-v1-... (leave blank for default)',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final newKey = controller.text.trim();
+              context.read<SettingsCubit>().updateAiApiKey(
+                newKey.isNotEmpty ? newKey : null,
+              );
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
     );
   }
 }

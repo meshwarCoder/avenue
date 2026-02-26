@@ -199,9 +199,43 @@ class _DragZoomRingState extends State<DragZoomRing>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 2,
-                          offset: const Offset(1, 1),
+                          color: Colors.black.withOpacity(isDark ? 0.45 : 0.15),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white10
+                            : Colors.black.withOpacity(0.06),
+                        width: 1,
+                      ),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Glowing indicator dot
+                        Positioned(
+                          top: 5,
+                          child: Container(
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white
+                                  : theme.colorScheme.primary,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.65,
+                                  ),
+                                  blurRadius: 6,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
