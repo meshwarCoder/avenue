@@ -11,16 +11,21 @@ import '../../data/repositories/chat_repository.dart';
 
 import 'package:avenue/features/schdules/presentation/cubit/task_cubit.dart';
 import '../../../../core/utils/observability.dart';
+import '../../../../core/services/network_service.dart';
+import '../../../../core/errors/failures.dart';
+import '../../../../core/errors/error_mapper.dart';
 
 class ChatCubit extends Cubit<ChatState> {
   final AiOrchestrator aiOrchestrator;
   final ChatRepository chatRepository;
+  final NetworkService networkService;
   final ChatSessionCubit? sessionCubit;
   final TaskCubit? taskCubit;
 
   ChatCubit({
     required this.aiOrchestrator,
     required this.chatRepository,
+    required this.networkService,
     this.sessionCubit,
     this.taskCubit,
   }) : super(ChatInitial()) {
@@ -49,6 +54,21 @@ class ChatCubit extends Cubit<ChatState> {
       traceId: tid,
       payload: {'text': text},
     );
+
+    if (!await networkService.isConnected) {
+      _messages = List.from(_messages)
+        ..add(
+          ChatMessage(
+            text: ErrorMapper.mapFailureToMessage(const NetworkFailure()),
+            isUser: false,
+          ),
+        );
+      _logState(
+        ChatLoaded(_messages, updatedAt: DateTime.now(), isTyping: false),
+        traceId: tid,
+      );
+      return;
+    }
 
     // Optimistic UI update
     _messages = List.from(_messages)

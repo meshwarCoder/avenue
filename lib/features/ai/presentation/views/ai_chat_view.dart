@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:avenue/core/utils/constants.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import '../../../../core/services/network_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../logic/chat_cubit.dart';
 import '../logic/chat_state.dart';
@@ -33,6 +35,7 @@ class AiChatView extends StatelessWidget {
               create: (context) => ChatCubit(
                 aiOrchestrator: sl(),
                 chatRepository: sl(),
+                networkService: sl(),
                 sessionCubit: context.read<ChatSessionCubit>(),
                 taskCubit: sl(),
               ),
@@ -168,52 +171,139 @@ class _ChatScreenState extends State<_ChatScreen> {
             return Column(
               children: [
                 Expanded(
-                  child: BlocBuilder<ChatCubit, ChatState>(
-                    builder: (context, state) {
-                      List<ChatMessage> messages = [];
-                      if (state is ChatLoaded) messages = state.messages;
+                  child: StreamBuilder<List<ConnectivityResult>>(
+                    stream: sl<NetworkService>().connectionStream,
+                    builder: (context, connectivitySnapshot) {
+                      final hasConnection =
+                          connectivitySnapshot.data == null ||
+                          !connectivitySnapshot.data!.contains(
+                            ConnectivityResult.none,
+                          );
 
-                      if (messages.isEmpty && state is! ChatError) {
-                        return _buildEmptyState(theme, isDark);
+                      if (!hasConnection) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.wifi_off_rounded,
+                                size: 64,
+                                color: isDark ? Colors.white54 : Colors.grey,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "You are not connected to the internet",
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                "you can't use the AI assistant without an internet connection.",
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                              const SizedBox(height: 24),
+                              ElevatedButton(
+                                onPressed: () {
+                                  // Trigger a rebuild or check
+                                  setState(() {});
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.deepPurple,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text("Retry"),
+                              ),
+                            ],
+                          ),
+                        );
                       }
 
-                      return ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 24,
-                        ),
-                        reverse: true,
-                        itemCount:
-                            messages.length +
-                            (state is ChatLoaded && state.isTyping ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          final isTyping =
-                              state is ChatLoaded && state.isTyping;
-                          if (isTyping) {
-                            if (index == 0)
-                              return _buildTypingIndicator(theme, isDark);
-                            final msgIndex = messages.length - 1 - (index - 1);
-                            return _buildAnimatedMessage(
-                              context,
-                              messages[msgIndex],
-                              msgIndex,
-                              theme,
-                              isDark,
-                            );
-                          } else {
-                            final msgIndex = messages.length - 1 - index;
-                            return _buildAnimatedMessage(
-                              context,
-                              messages[msgIndex],
-                              msgIndex,
-                              theme,
-                              isDark,
-                            );
+                      return BlocBuilder<ChatCubit, ChatState>(
+                        builder: (context, state) {
+                          List<ChatMessage> messages = [];
+                          if (state is ChatLoaded) messages = state.messages;
+
+                          if (messages.isEmpty && state is! ChatError) {
+                            return _buildEmptyState(theme, isDark);
                           }
+
+                          return ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 24,
+                            ),
+                            reverse: true,
+                            itemCount:
+                                messages.length +
+                                (state is ChatLoaded && state.isTyping ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              final isTyping =
+                                  state is ChatLoaded && state.isTyping;
+                              if (isTyping) {
+                                if (index == 0)
+                                  return _buildTypingIndicator(theme, isDark);
+                                final msgIndex =
+                                    messages.length - 1 - (index - 1);
+                                return _buildAnimatedMessage(
+                                  context,
+                                  messages[msgIndex],
+                                  msgIndex,
+                                  theme,
+                                  isDark,
+                                );
+                              } else {
+                                final msgIndex = messages.length - 1 - index;
+                                return _buildAnimatedMessage(
+                                  context,
+                                  messages[msgIndex],
+                                  msgIndex,
+                                  theme,
+                                  isDark,
+                                );
+                              }
+                            },
+                          );
                         },
                       );
                     },
                   ),
+                ),
+                StreamBuilder<List<ConnectivityResult>>(
+                  stream: sl<NetworkService>().connectionStream,
+                  builder: (context, snapshot) {
+                    final hasConnection =
+                        snapshot.data == null ||
+                        !snapshot.data!.contains(ConnectivityResult.none);
+
+                    if (!hasConnection) {
+                      return Container(
+                        width: double.infinity,
+                        color: Colors.red.withOpacity(0.1),
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              size: 14,
+                              color: Colors.red,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              "تم فقد الاتصال بالإنترنت",
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
                 ),
                 const _ChatInput(),
               ],
@@ -825,59 +915,73 @@ class _ChatInputState extends State<_ChatInput> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        border: Border(
-          top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(28),
-              ),
-              child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                decoration: const InputDecoration(
-                  hintText: 'Message Assistant...',
-                  border: InputBorder.none,
-                  hintStyle: TextStyle(fontSize: 15),
+    return StreamBuilder<List<ConnectivityResult>>(
+      stream: sl<NetworkService>().connectionStream,
+      builder: (context, snapshot) {
+        final hasConnection =
+            snapshot.data == null ||
+            !snapshot.data!.contains(ConnectivityResult.none);
+
+        return Container(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            border: Border(
+              top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: hasConnection
+                        ? theme.cardColor
+                        : theme.disabledColor.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    enabled: hasConnection,
+                    decoration: InputDecoration(
+                      hintText: hasConnection
+                          ? 'Message Assistant...'
+                          : 'لا يوجد اتصال بالإنترنت',
+                      border: InputBorder.none,
+                      hintStyle: const TextStyle(fontSize: 15),
+                    ),
+                    style: const TextStyle(fontSize: 15),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
                 ),
-                style: const TextStyle(fontSize: 15),
-                onSubmitted: (_) => _sendMessage(),
               ),
-            ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: hasConnection ? _sendMessage : null,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: hasConnection ? AppColors.deepPurple : Colors.grey,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_upward_rounded,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: _sendMessage,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                color: AppColors.deepPurple,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.arrow_upward_rounded,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

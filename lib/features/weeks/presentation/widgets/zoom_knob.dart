@@ -94,8 +94,8 @@ class _DragZoomRingState extends State<DragZoomRing>
   }
 
   void _onVerticalDragUpdate(DragUpdateDetails details) {
-    // Negative dy means dragging up. Dragging up should increase zoom.
-    final delta = -details.primaryDelta!;
+    // Positive dy (dragging down) should increase zoom.
+    final delta = details.primaryDelta!;
 
     // Sensitivity: 1 pixel drag = change in value.
     final adjustedDelta = delta * 0.8;

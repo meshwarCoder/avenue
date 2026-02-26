@@ -18,8 +18,10 @@ import '../services/task_notification_manager.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/sync_service.dart';
 import '../services/database_service.dart';
+import '../services/network_service.dart';
 
 import '../../features/auth/data/repo/auth_repository_impl.dart';
 import '../../features/auth/domain/repo/auth_repository.dart';
@@ -45,6 +47,7 @@ Future<void> initializeDependencies() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
   sl.registerLazySingleton(() => CacheHelper(sl()));
+  sl.registerLazySingleton(() => Connectivity());
 
   // Register DatabaseService
   final databaseService = DatabaseService();
@@ -54,6 +57,9 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
 
   // Services
+  sl.registerLazySingleton<NetworkService>(
+    () => NetworkServiceImpl(connectivity: sl()),
+  );
   sl.registerLazySingleton<DeviceService>(() => DeviceService());
   sl.registerLazySingleton<LocalNotificationService>(
     () => LocalNotificationService.instance,
@@ -97,8 +103,12 @@ Future<void> initializeDependencies() async {
 
   // Cubits (Factory - new instance each time)
   sl.registerLazySingleton(
-    () =>
-        AuthCubit(repository: sl(), deviceService: sl(), databaseService: sl()),
+    () => AuthCubit(
+      repository: sl(),
+      deviceService: sl(),
+      databaseService: sl(),
+      networkService: sl(),
+    ),
   );
   sl.registerLazySingleton(
     () => TaskCubit(
@@ -133,7 +143,11 @@ Future<void> initializeDependencies() async {
   );
 
   sl.registerFactory(
-    () =>
-        ChatCubit(aiOrchestrator: sl(), chatRepository: sl(), taskCubit: sl()),
+    () => ChatCubit(
+      aiOrchestrator: sl(),
+      chatRepository: sl(),
+      taskCubit: sl(),
+      networkService: sl(),
+    ),
   );
 }

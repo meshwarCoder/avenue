@@ -1,5 +1,6 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:avenue/core/utils/constants.dart';
+import '../utils/constants.dart';
 
 class AvenueLoadingIndicator extends StatelessWidget {
   final String? message;
@@ -57,6 +58,60 @@ class AvenueLoadingIndicator extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class AvenueLoadingOverlay extends StatelessWidget {
+  final Widget child;
+  final bool isLoading;
+  final String? message;
+
+  const AvenueLoadingOverlay({
+    super.key,
+    required this.child,
+    required this.isLoading,
+    this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        child,
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: isLoading
+              ? Container(
+                  key: const ValueKey('avenue_loading_overlay'),
+                  color: AppColors.deepPurple.withOpacity(0.4),
+                  child: Stack(
+                    children: [
+                      // Backdrop Blur Effect
+                      Positioned.fill(
+                        child: ClipRect(
+                          child: BackdropFilter(
+                            filter: ui.ImageFilter.blur(
+                              sigmaX: 1.0,
+                              sigmaY: 1.0,
+                            ),
+                            child: Container(
+                              color: Colors.black.withOpacity(0.1),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Center(
+                        child: AvenueLoadingIndicator(
+                          message: message ?? "Loading...",
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 }

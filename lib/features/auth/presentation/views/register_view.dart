@@ -63,6 +63,7 @@ class _RegisterViewState extends State<RegisterView> {
           }
         },
         child: Stack(
+          fit: StackFit.expand,
           children: [
             // Background Decorative Elements
             Positioned(

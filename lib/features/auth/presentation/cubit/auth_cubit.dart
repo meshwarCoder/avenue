@@ -3,13 +3,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/repo/auth_repository.dart';
 import 'auth_state.dart';
 import '../../../../core/services/device_service.dart';
+import 'package:dartz/dartz.dart';
 import '../../../../core/services/database_service.dart';
 import '../../../../core/utils/observability.dart';
+
+import '../../../../core/services/network_service.dart';
+import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/errors/failures.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository repository;
   final DeviceService deviceService;
   final DatabaseService databaseService;
+  final NetworkService networkService;
 
   StreamSubscription? _authSubscription;
 
@@ -17,6 +23,7 @@ class AuthCubit extends Cubit<AuthState> {
     required this.repository,
     required this.deviceService,
     required this.databaseService,
+    required this.networkService,
   }) : super(AuthInitial()) {
     _initAuthListener();
     _checkAuthStatus();
@@ -50,6 +57,7 @@ class AuthCubit extends Cubit<AuthState> {
   void _checkAuthStatus() {
     // Initial check on app start
     if (repository.isAuthenticated) {
+      emit(const AuthLoading(source: AuthLoadingSource.other));
       _handleAuthSuccess();
     } else {
       emit(Unauthenticated());
@@ -59,6 +67,11 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> _handleAuthSuccess() async {
     // Sync profile and device info on every auth success (app start or login)
     if (state is Authenticated) return;
+
+    final source = state is AuthLoading
+        ? (state as AuthLoading).source
+        : AuthLoadingSource.other;
+    emit(AuthLoading(source: source));
 
     String? userId;
     try {
@@ -144,80 +157,106 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> signUp({required String email, required String password}) async {
+    if (!await networkService.isConnected) {
+      emit(const AuthError('No internet connection try again'));
+      return;
+    }
+
     emit(AuthLoading());
     final result = await repository.signUp(email: email, password: password);
     if (isClosed) return;
-    result.fold((failure) => emit(AuthError(failure.message)), (_) {
-      // Success! We rely on _authSubscription to handle the rest.
-      // However, if email confirmation is required, the listener might NOT fire 'signedIn' yet.
-      if (!repository.isAuthenticated) {
-        emit(
-          const AuthError(
-            'Account created! Please check your email to confirm your account.',
-          ),
-        );
-      }
-    });
+    result.fold(
+      (failure) => emit(AuthError(ErrorMapper.mapFailureToMessage(failure))),
+      (_) {
+        if (!repository.isAuthenticated) {
+          emit(
+            const AuthError(
+              'Account created! Please check your email to confirm your account.',
+            ),
+          );
+        }
+      },
+    );
   }
 
   Future<void> signIn({required String email, required String password}) async {
+    if (!await networkService.isConnected) {
+      emit(const AuthError('No internet connection try again'));
+      return;
+    }
+
     emit(AuthLoading());
     final result = await repository.signIn(email: email, password: password);
     if (isClosed) return;
-    result.fold((failure) => emit(AuthError(failure.message)), (_) {
-      // Success! We rely on _authSubscription.
-      if (!repository.isAuthenticated) {
-        emit(
-          const AuthError(
-            'Login failed. Please confirm your email if you haven\'t already.',
-          ),
-        );
-      }
-    });
+    result.fold(
+      (failure) => emit(AuthError(ErrorMapper.mapFailureToMessage(failure))),
+      (_) {
+        if (!repository.isAuthenticated) {
+          emit(
+            const AuthError(
+              'Login failed. Please confirm your email if you haven\'t already.',
+            ),
+          );
+        }
+      },
+    );
   }
 
   Future<void> signInWithGoogle() async {
+    if (!await networkService.isConnected) {
+      emit(const AuthError('No internet connection try again'));
+      return;
+    }
+
     emit(const AuthLoading(source: AuthLoadingSource.google));
     final result = await repository.signInWithGoogle();
     if (isClosed) return;
-    result.fold((failure) => emit(AuthError(failure.message)), (_) {
-      // Success means the browser flow started.
-      // We rely on _authSubscription.
-      // Fallback: If no auth event received in 5s, reset to Unauthenticated
-      Future.delayed(const Duration(seconds: 5), () {
-        if (isClosed) return;
-        if (state is AuthLoading && !repository.isAuthenticated) {
-          emit(Unauthenticated());
-        }
-      });
-    });
+    result.fold(
+      (failure) => emit(AuthError(ErrorMapper.mapFailureToMessage(failure))),
+      (_) {
+        Future.delayed(const Duration(seconds: 5), () {
+          if (isClosed) return;
+          if (state is AuthLoading && !repository.isAuthenticated) {
+            emit(Unauthenticated());
+          }
+        });
+      },
+    );
   }
 
   Future<void> signInWithFacebook() async {
+    if (!await networkService.isConnected) {
+      emit(const AuthError('No internet connection try again'));
+      return;
+    }
+
     emit(const AuthLoading(source: AuthLoadingSource.facebook));
     final result = await repository.signInWithFacebook();
     if (isClosed) return;
-    result.fold((failure) => emit(AuthError(failure.message)), (_) {
-      // Success means the browser flow started.
-      // We rely on _authSubscription.
-      // Fallback: If no auth event received in 5s, reset to Unauthenticated
-      Future.delayed(const Duration(seconds: 5), () {
-        if (isClosed) return;
-        if (state is AuthLoading && !repository.isAuthenticated) {
-          emit(Unauthenticated());
-        }
-      });
-    });
+    result.fold(
+      (failure) => emit(AuthError(ErrorMapper.mapFailureToMessage(failure))),
+      (_) {
+        Future.delayed(const Duration(seconds: 5), () {
+          if (isClosed) return;
+          if (state is AuthLoading && !repository.isAuthenticated) {
+            emit(Unauthenticated());
+          }
+        });
+      },
+    );
   }
 
   Future<void> signOut() async {
-    emit(const AuthLoading(source: AuthLoadingSource.other));
-    final result = await repository.signOut();
+    // 1. Attempt remote sign out (Supabase SDK clears local tokens immediately)
+    // We don't await this for the UI to be responsive, or we await it but proceed regardless of success
+    repository.signOut().catchError((_) => const Right<Failure, void>(null));
+
     if (isClosed) return;
-    result.fold((failure) => emit(AuthError(failure.message)), (_) async {
-      await databaseService.clearUserData();
-      // Unauthenticated state will be emitted by listener
-    });
+
+    // 2. Clear all local user data and emit Unauthenticated
+    // This provides a robust "force logout" experience even when offline
+    await databaseService.clearUserData();
+    emit(Unauthenticated());
   }
 
   @override
