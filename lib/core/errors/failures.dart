@@ -24,3 +24,9 @@ class ValidationFailure extends Failure {
 class NetworkFailure extends Failure {
   const NetworkFailure([super.message = 'No internet connection']);
 }
+
+class TimeoutFailure extends Failure {
+  const TimeoutFailure([
+    super.message = 'Connection timeout. Please try again.',
+  ]);
+}

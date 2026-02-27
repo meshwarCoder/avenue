@@ -27,6 +27,8 @@ import '../../features/auth/data/repo/auth_repository_impl.dart';
 import '../../features/auth/domain/repo/auth_repository.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
 import '../logic/theme_cubit.dart';
+import '../logic/app_connectivity_cubit.dart';
+import '../network/request_executor.dart';
 import '../../features/ai/data/repositories/chat_repository.dart';
 import '../../features/settings/data/settings_repository.dart';
 import '../../features/settings/presentation/cubit/settings_cubit.dart';
@@ -60,6 +62,10 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<NetworkService>(
     () => NetworkServiceImpl(connectivity: sl()),
   );
+  sl.registerLazySingleton<RequestExecutor>(
+    () => RequestExecutor(networkService: sl()),
+  );
+  sl.registerLazySingleton(() => AppConnectivityCubit(networkService: sl()));
   sl.registerLazySingleton<DeviceService>(() => DeviceService());
   sl.registerLazySingleton<LocalNotificationService>(
     () => LocalNotificationService.instance,
@@ -85,7 +91,7 @@ Future<void> initializeDependencies() async {
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(supabase: sl()),
+    () => AuthRepositoryImpl(supabase: sl(), requestExecutor: sl()),
   );
   sl.registerLazySingleton<ScheduleRepository>(
     () => ScheduleRepositoryImpl(
@@ -103,12 +109,8 @@ Future<void> initializeDependencies() async {
 
   // Cubits (Factory - new instance each time)
   sl.registerLazySingleton(
-    () => AuthCubit(
-      repository: sl(),
-      deviceService: sl(),
-      databaseService: sl(),
-      networkService: sl(),
-    ),
+    () =>
+        AuthCubit(repository: sl(), deviceService: sl(), databaseService: sl()),
   );
   sl.registerLazySingleton(
     () => TaskCubit(

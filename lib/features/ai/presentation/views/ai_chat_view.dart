@@ -291,7 +291,7 @@ class _ChatScreenState extends State<_ChatScreen> {
                             ),
                             SizedBox(width: 8),
                             Text(
-                              "تم فقد الاتصال بالإنترنت",
+                              "Internet connection lost",
                               style: TextStyle(
                                 color: Colors.red,
                                 fontSize: 12,
@@ -953,7 +953,7 @@ class _ChatInputState extends State<_ChatInput> {
                     decoration: InputDecoration(
                       hintText: hasConnection
                           ? 'Message Assistant...'
-                          : 'لا يوجد اتصال بالإنترنت',
+                          : 'No internet connection',
                       border: InputBorder.none,
                       hintStyle: const TextStyle(fontSize: 15),
                     ),

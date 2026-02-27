@@ -6,16 +6,12 @@ import '../../../../core/services/device_service.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/services/database_service.dart';
 import '../../../../core/utils/observability.dart';
-
-import '../../../../core/services/network_service.dart';
-import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failures.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepository repository;
   final DeviceService deviceService;
   final DatabaseService databaseService;
-  final NetworkService networkService;
 
   StreamSubscription? _authSubscription;
 
@@ -23,7 +19,6 @@ class AuthCubit extends Cubit<AuthState> {
     required this.repository,
     required this.deviceService,
     required this.databaseService,
-    required this.networkService,
   }) : super(AuthInitial()) {
     _initAuthListener();
     _checkAuthStatus();
@@ -157,93 +152,61 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> signUp({required String email, required String password}) async {
-    if (!await networkService.isConnected) {
-      emit(const AuthError('No internet connection try again'));
-      return;
-    }
-
     emit(AuthLoading());
     final result = await repository.signUp(email: email, password: password);
     if (isClosed) return;
-    result.fold(
-      (failure) => emit(AuthError(ErrorMapper.mapFailureToMessage(failure))),
-      (_) {
-        if (!repository.isAuthenticated) {
-          emit(
-            const AuthError(
-              'Account created! Please check your email to confirm your account.',
-            ),
-          );
-        }
-      },
-    );
+    result.fold((failure) => emit(AuthError(failure.message)), (_) {
+      if (!repository.isAuthenticated) {
+        emit(
+          const AuthError(
+            'Account created! Please check your email to confirm your account.',
+          ),
+        );
+      }
+    });
   }
 
   Future<void> signIn({required String email, required String password}) async {
-    if (!await networkService.isConnected) {
-      emit(const AuthError('No internet connection try again'));
-      return;
-    }
-
     emit(AuthLoading());
     final result = await repository.signIn(email: email, password: password);
     if (isClosed) return;
-    result.fold(
-      (failure) => emit(AuthError(ErrorMapper.mapFailureToMessage(failure))),
-      (_) {
-        if (!repository.isAuthenticated) {
-          emit(
-            const AuthError(
-              'Login failed. Please confirm your email if you haven\'t already.',
-            ),
-          );
-        }
-      },
-    );
+    result.fold((failure) => emit(AuthError(failure.message)), (_) {
+      if (!repository.isAuthenticated) {
+        emit(
+          const AuthError(
+            'Login failed. Please confirm your email if you haven\'t already.',
+          ),
+        );
+      }
+    });
   }
 
   Future<void> signInWithGoogle() async {
-    if (!await networkService.isConnected) {
-      emit(const AuthError('No internet connection try again'));
-      return;
-    }
-
     emit(const AuthLoading(source: AuthLoadingSource.google));
     final result = await repository.signInWithGoogle();
     if (isClosed) return;
-    result.fold(
-      (failure) => emit(AuthError(ErrorMapper.mapFailureToMessage(failure))),
-      (_) {
-        Future.delayed(const Duration(seconds: 5), () {
-          if (isClosed) return;
-          if (state is AuthLoading && !repository.isAuthenticated) {
-            emit(Unauthenticated());
-          }
-        });
-      },
-    );
+    result.fold((failure) => emit(AuthError(failure.message)), (_) {
+      Future.delayed(const Duration(seconds: 5), () {
+        if (isClosed) return;
+        if (state is AuthLoading && !repository.isAuthenticated) {
+          emit(Unauthenticated());
+        }
+      });
+    });
   }
 
   Future<void> signInWithFacebook() async {
-    if (!await networkService.isConnected) {
-      emit(const AuthError('No internet connection try again'));
-      return;
-    }
-
     emit(const AuthLoading(source: AuthLoadingSource.facebook));
     final result = await repository.signInWithFacebook();
     if (isClosed) return;
-    result.fold(
-      (failure) => emit(AuthError(ErrorMapper.mapFailureToMessage(failure))),
-      (_) {
-        Future.delayed(const Duration(seconds: 5), () {
-          if (isClosed) return;
-          if (state is AuthLoading && !repository.isAuthenticated) {
-            emit(Unauthenticated());
-          }
-        });
-      },
-    );
+    result.fold((failure) => emit(AuthError(failure.message)), (_) {
+      Future.delayed(const Duration(seconds: 5), () {
+        if (isClosed) return;
+        if (state is AuthLoading && !repository.isAuthenticated) {
+          emit(Unauthenticated());
+        }
+      });
+    });
   }
 
   Future<void> signOut() async {

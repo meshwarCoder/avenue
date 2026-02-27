@@ -6,7 +6,11 @@ import '../cubit/auth_state.dart';
 import '../../../../core/utils/constants.dart';
 import '../widgets/social_login_row.dart';
 import '../widgets/auth_header.dart';
+import '../widgets/auth_text_field.dart';
+import '../widgets/auth_action_button.dart';
 import '../../../../core/widgets/avenue_loading.dart';
+import '../../../../core/widgets/offline_banner.dart';
+import '../../../../core/utils/validation.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -18,7 +22,10 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _emailFieldKey = GlobalKey<AuthTextFieldState>();
+  final _passwordFieldKey = GlobalKey<AuthTextFieldState>();
   final _formKey = GlobalKey<FormState>();
+  AutovalidateMode _autoValidateMode = AutovalidateMode.disabled;
   bool _obscurePassword = true;
 
   @override
@@ -29,6 +36,9 @@ class _LoginViewState extends State<LoginView> {
   }
 
   void _showErrorSnackBar(String message) {
+    // Don't show snackbar if offline banner is already visible
+    if (GlobalConnectivity.offline) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -53,8 +63,11 @@ class _LoginViewState extends State<LoginView> {
 
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
+        final shouldShowOverlay =
+            state is AuthLoading && state.source == AuthLoadingSource.other;
+
         return AvenueLoadingOverlay(
-          isLoading: state is AuthLoading,
+          isLoading: shouldShowOverlay,
           child: Scaffold(
             backgroundColor: theme.scaffoldBackgroundColor,
             body: BlocListener<AuthCubit, AuthState>(
@@ -107,6 +120,7 @@ class _LoginViewState extends State<LoginView> {
                       padding: const EdgeInsets.fromLTRB(32, 60, 32, 32),
                       child: Form(
                         key: _formKey,
+                        autovalidateMode: _autoValidateMode,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -118,26 +132,19 @@ class _LoginViewState extends State<LoginView> {
                             const SizedBox(height: 48),
 
                             // Email Field
-                            _buildTextField(
+                            AuthTextField(
+                              key: _emailFieldKey,
                               controller: _emailController,
                               label: "Email",
                               icon: Icons.alternate_email_rounded,
                               keyboardType: TextInputType.emailAddress,
-                              validator: (v) {
-                                if (v == null || v.isEmpty)
-                                  return "Email is required";
-                                if (!RegExp(
-                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                ).hasMatch(v)) {
-                                  return "Invalid email format";
-                                }
-                                return null;
-                              },
+                              validator: Validation.validateEmail,
                             ),
                             const SizedBox(height: 20),
 
                             // Password Field
-                            _buildTextField(
+                            AuthTextField(
+                              key: _passwordFieldKey,
                               controller: _passwordController,
                               label: "Password",
                               icon: Icons.lock_outline_rounded,
@@ -155,8 +162,7 @@ class _LoginViewState extends State<LoginView> {
                                   () => _obscurePassword = !_obscurePassword,
                                 ),
                               ),
-                              validator: (v) =>
-                                  v!.isEmpty ? "Password is required" : null,
+                              validator: Validation.validatePassword,
                             ),
 
                             const SizedBox(height: 32),
@@ -164,56 +170,29 @@ class _LoginViewState extends State<LoginView> {
                             // Login Button
                             BlocBuilder<AuthCubit, AuthState>(
                               builder: (context, state) {
-                                return ElevatedButton(
-                                  onPressed:
-                                      (state is AuthLoading &&
-                                          state.source ==
-                                              AuthLoadingSource.email)
-                                      ? null
-                                      : () {
-                                          if (_formKey.currentState!
-                                              .validate()) {
-                                            context.read<AuthCubit>().signIn(
-                                              email: _emailController.text
-                                                  .trim(),
-                                              password: _passwordController.text
-                                                  .trim(),
-                                            );
-                                          }
-                                        },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.creamTan,
-                                    foregroundColor: AppColors.deepPurple,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 18,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  child:
-                                      (state is AuthLoading &&
-                                          state.source ==
-                                              AuthLoadingSource.email)
-                                      ? const SizedBox(
-                                          height: 24,
-                                          width: 24,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                  AppColors.deepPurple,
-                                                ),
-                                          ),
-                                        )
-                                      : const Text(
-                                          "Sign In",
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
+                                return AuthActionButton(
+                                  text: "Sign In",
+                                  isLoading:
+                                      state is AuthLoading &&
+                                      state.source == AuthLoadingSource.email,
+                                  onPressed: () {
+                                    if (_formKey.currentState!.validate()) {
+                                      context.read<AuthCubit>().signIn(
+                                        email: _emailController.text.trim(),
+                                        password: _passwordController.text
+                                            .trim(),
+                                      );
+                                    } else {
+                                      _emailFieldKey.currentState
+                                          ?.shakeIfInvalid();
+                                      _passwordFieldKey.currentState
+                                          ?.shakeIfInvalid();
+                                      setState(() {
+                                        _autoValidateMode =
+                                            AutovalidateMode.onUserInteraction;
+                                      });
+                                    }
+                                  },
                                 );
                               },
                             ),
@@ -292,56 +271,6 @@ class _LoginViewState extends State<LoginView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool obscureText = false,
-    Widget? suffixIcon,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    final theme = Theme.of(context);
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      style: TextStyle(color: theme.colorScheme.onSurface),
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: theme.colorScheme.onSurface.withOpacity(0.6),
-        ),
-        prefixIcon: Icon(
-          icon,
-          color: theme.colorScheme.onSurface.withOpacity(0.6),
-          size: 22,
-        ),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: theme.colorScheme.onSurface.withOpacity(0.05),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.all(20),
-      ),
     );
   }
 }
