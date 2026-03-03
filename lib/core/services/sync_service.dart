@@ -4,7 +4,6 @@ import 'package:sqflite/sqflite.dart';
 import '../../features/schdules/data/models/task_model.dart';
 import '../../features/schdules/data/models/default_task_model.dart';
 import 'database_service.dart';
-// import 'embedding_service.dart'; // Removed: Supabase handles embedding generation
 import '../../features/auth/domain/repo/auth_repository.dart';
 import 'device_service.dart';
 import '../utils/observability.dart';
@@ -13,7 +12,6 @@ import 'task_notification_manager.dart';
 class SyncService {
   final DatabaseService databaseService;
   final SupabaseClient supabase;
-  // final EmbeddingService embeddingService; // Removed
   final AuthRepository authRepository;
   final DeviceService deviceService;
   final TaskNotificationManager notificationManager;
@@ -24,7 +22,6 @@ class SyncService {
   SyncService({
     required this.databaseService,
     required this.supabase,
-    // required this.embeddingService, // Removed
     required this.authRepository,
     required this.deviceService,
     required this.notificationManager,
@@ -169,7 +166,7 @@ class SyncService {
         final tasksToPush = <Map<String, dynamic>>[];
         for (final m in localDirtyTasks) {
           final task = TaskModel.fromMap(m);
-          // Embedding generation removed: Supabase now handles it on the server
+          // Embedding generation handled server-side in Supabase
           tasksToPush.add(task.toSupabaseJson(userId));
         }
 
@@ -248,7 +245,7 @@ class SyncService {
         final defaultsToPush = <Map<String, dynamic>>[];
         for (final m in localDirtyDefaults) {
           final task = DefaultTaskModel.fromMap(m);
-          // Embedding generation removed: Supabase now handles it on the server
+          // Embedding generation handled server-side in Supabase
           defaultsToPush.add(task.toSupabaseJson(userId));
         }
 

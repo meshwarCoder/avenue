@@ -78,7 +78,6 @@ Future<void> initializeDependencies() async {
     () => SyncService(
       databaseService: sl(),
       supabase: sl(),
-      // embeddingService: sl(), // Removed: Supabase handles embedding generation
       authRepository: sl(),
       deviceService: sl(),
       notificationManager: sl(),
