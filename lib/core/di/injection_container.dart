@@ -8,10 +8,9 @@ import '../../features/schdules/domain/repo/schedule_repository.dart';
 import '../../features/schdules/presentation/cubit/task_cubit.dart';
 import '../../features/schdules/presentation/cubit/default_tasks_cubit.dart';
 import '../../features/ai/presentation/logic/chat_cubit.dart';
-import '../services/embedding_service.dart';
+import '../../features/weeks/presentation/cubit/weekly_cubit.dart';
 import '../../features/weeks/domain/repo/weekly_repository.dart';
 import '../../features/weeks/data/repo/weekly_repo_impl.dart';
-import '../../features/weeks/presentation/cubit/weekly_cubit.dart';
 import '../services/device_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/task_notification_manager.dart';
@@ -96,11 +95,7 @@ Future<void> initializeDependencies() async {
     () => AuthRepositoryImpl(supabase: sl(), requestExecutor: sl()),
   );
   sl.registerLazySingleton<ScheduleRepository>(
-    () => ScheduleRepositoryImpl(
-      localDataSource: sl(),
-      supabase: sl(),
-      embeddingService: sl(),
-    ),
+    () => ScheduleRepositoryImpl(localDataSource: sl(), supabase: sl()),
   );
   sl.registerLazySingleton<WeeklyRepository>(
     () => WeeklyRepositoryImpl(localDataSource: sl()),
@@ -123,7 +118,7 @@ Future<void> initializeDependencies() async {
   );
   sl.registerFactory(() => WeeklyCubit(repository: sl()));
   sl.registerLazySingleton(() => ThemeCubit(sl()));
-  sl.registerLazySingleton(() => SettingsCubit(sl(), sl()));
+  sl.registerLazySingleton(() => SettingsCubit(sl(), sl(), sl()));
   sl.registerFactory(() => DefaultTasksCubit(sl()));
 
   // AI Chat
@@ -133,10 +128,6 @@ Future<void> initializeDependencies() async {
 
   sl.registerLazySingleton<AiRepository>(
     () => AiRepository(client: sl(), scheduleRepository: sl()),
-  );
-
-  sl.registerLazySingleton<EmbeddingService>(
-    () => EmbeddingService(apiKey: dotenv.env['OPENROUTER_API_KEY'] ?? ''),
   );
 
   sl.registerFactory<AiOrchestrator>(() => AiOrchestrator(repository: sl()));

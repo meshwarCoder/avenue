@@ -2,7 +2,6 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/services/embedding_service.dart';
 import '../../domain/repo/schedule_repository.dart';
 import '../datasources/task_local_data_source.dart';
 import '../models/task_model.dart';
@@ -12,12 +11,10 @@ import '../../../../core/utils/observability.dart';
 class ScheduleRepositoryImpl implements ScheduleRepository {
   final TaskLocalDataSource localDataSource;
   final SupabaseClient supabase;
-  final EmbeddingService embeddingService;
 
   ScheduleRepositoryImpl({
     required this.localDataSource,
     required this.supabase,
-    required this.embeddingService,
   });
 
   @override
@@ -247,30 +244,42 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
   @override
   Future<Either<Failure, List<TaskModel>>> searchTasks(String query) async {
     try {
-      // 1. Generate Embedding
-      // ... (existing implementation)
-      final embedding = await embeddingService.generateEmbedding(query);
+      final user = supabase.auth.currentUser;
+      if (user == null) return const Left(CacheFailure('User not logged in'));
+      final token = supabase.auth.currentSession?.accessToken;
+      if (token == null) return const Left(CacheFailure('token not logged in'));
 
-      if (embedding.isEmpty) {
-        final tasks = await localDataSource.searchTasks(query);
-        return Right(tasks);
-      }
-
-      // 2. Search Tasks (RPC)
-      final List<dynamic> taskResponse = await supabase.rpc(
-        'match_tasks',
-        params: {
-          'query_embedding': embedding,
-          'match_threshold': 0.5,
-          'match_count': 10,
-        },
+      final response = await supabase.functions.invoke(
+        'embed-search',
+        body: {'query': query, 'user_id': user.id, 'limit': 10},
+        headers: {'Authorization': 'Bearer $token'},
       );
 
-      final tasks = taskResponse
+      if (response.status != 200) {
+        throw Exception('Edge function search failed: ${response.status}');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final results = data['results'] as List<dynamic>;
+
+      final tasks = results
+          .where((json) => json['source_table'] == 'tasks')
           .map((json) => TaskModel.fromSupabaseJson(json))
           .toList();
+
       return Right(tasks);
     } catch (e) {
+      AvenueLogger.log(
+        event: 'SEARCH_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.DB,
+        payload: {
+          'query': query,
+          'error': e.toString(),
+          'source': 'EDGE_FUNCTION',
+          'action': 'FALLBACK_LOCAL',
+        },
+      );
       try {
         final tasks = await localDataSource.searchTasks(query);
         return Right(tasks);
@@ -285,45 +294,43 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
     String query,
   ) async {
     try {
-      final embedding = await embeddingService.generateEmbedding(query);
-      if (embedding.isEmpty) {
-        // Fallback to local? Local doesn't have searchDefaultTasks yet
-        // We can implement it or just return empty.
-        // Let's return empty for now or try to filter local loaded.
-        final allDefaults = await localDataSource.getDefaultTasks();
-        // Simple keyword filter
-        final filtered = allDefaults
-            .where(
-              (t) =>
-                  t.name.toLowerCase().contains(query.toLowerCase()) ||
-                  (t.desc?.toLowerCase().contains(query.toLowerCase()) ??
-                      false),
-            )
-            .toList();
-        return Right(filtered);
-      }
+      final user = supabase.auth.currentUser;
+      if (user == null) return const Left(CacheFailure('User not logged in'));
 
-      // Assume 'match_default_tasks' RPC exists or similar logic
-      // If user only created one table 'tasks' with embedding, maybe default tasks are there?
-      // But user said "default tasks table".
-      // So likely need 'match_default_tasks' RPC.
-      // Or we can assume the user will create it.
-
-      final List<dynamic> response = await supabase.rpc(
-        'match_default_tasks',
-        params: {
-          'query_embedding': embedding,
-          'match_threshold': 0.5,
-          'match_count': 10,
+      final response = await supabase.functions.invoke(
+        'embed-search',
+        body: {'query': query, 'user_id': user.id, 'limit': 10},
+        headers: {
+          'Authorization':
+              'Bearer ${supabase.auth.currentSession?.accessToken}',
         },
       );
 
-      final tasks = response
+      if (response.status != 200) {
+        throw Exception('Edge function search failed: ${response.status}');
+      }
+
+      final data = response.data as Map<String, dynamic>;
+      final results = data['results'] as List<dynamic>;
+
+      final tasks = results
+          .where((json) => json['source_table'] == 'default_tasks')
           .map((json) => DefaultTaskModel.fromSupabaseJson(json))
           .toList();
+
       return Right(tasks);
     } catch (e) {
-      // Fallback local
+      AvenueLogger.log(
+        event: 'SEARCH_DEFAULT_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.DB,
+        payload: {
+          'query': query,
+          'error': e.toString(),
+          'source': 'EDGE_FUNCTION',
+          'action': 'FALLBACK_LOCAL',
+        },
+      );
       try {
         final allDefaults = await localDataSource.getDefaultTasks();
         final filtered = allDefaults
@@ -336,7 +343,7 @@ class ScheduleRepositoryImpl implements ScheduleRepository {
             .toList();
         return Right(filtered);
       } catch (e2) {
-        return Left(CacheFailure('Failed to search default tasks'));
+        return Left(CacheFailure('Failed to search default tasks: $e'));
       }
     }
   }

@@ -842,7 +842,7 @@ class _AddTaskViewState extends State<AddTaskView> {
     );
   }
 
-  void _handleSave() {
+  Future<void> _handleSave() async {
     setState(() => _autovalidateMode = AutovalidateMode.onUserInteraction);
 
     if (_formKey.currentState!.validate()) {
@@ -853,6 +853,37 @@ class _AddTaskViewState extends State<AddTaskView> {
           );
           return;
         }
+
+        // Validate concurrency for the first occurrence of this recurring task
+        final date = _getFirstDateForWeekdays(_selectedWeekdays);
+        final sampleTask = TaskModel.fromTimeOfDay(
+          id: widget.defaultTask?.id,
+          name: _titleController.text,
+          desc: _descController.text,
+          startTime: _startTime!,
+          endTime: _endTime!,
+          taskDate: date,
+          category: _selectedCategory,
+          importanceType: _selectedImportance,
+          oneTime: false,
+        );
+
+        final validation = await context
+            .read<TaskCubit>()
+            .validateTaskConcurrency(sampleTask);
+        if (validation == ConcurrencyValidationResult.limitExceeded) {
+          TaskUtils.showBlockedActionMessage(
+            context,
+            "Cannot have 3 tasks at the same time!",
+          );
+          return;
+        }
+
+        if (validation == ConcurrencyValidationResult.overlapWarning) {
+          final confirmed = await _showOverlapWarning();
+          if (!confirmed) return;
+        }
+
         _saveDefaultTask();
       } else {
         // One-time task: Check if it's in the past
@@ -882,9 +913,73 @@ class _AddTaskViewState extends State<AddTaskView> {
               : null,
           completionNotificationEnabled: _completionNotificationEnabled,
         );
+
+        final validation = await context
+            .read<TaskCubit>()
+            .validateTaskConcurrency(task);
+        if (validation == ConcurrencyValidationResult.limitExceeded) {
+          TaskUtils.showBlockedActionMessage(
+            context,
+            "Cannot have 3 tasks at the same time!",
+          );
+          return;
+        }
+
+        if (validation == ConcurrencyValidationResult.overlapWarning) {
+          final confirmed = await _showOverlapWarning();
+          if (!confirmed) return;
+        }
+
         _saveSpecificTask(task);
       }
     }
+  }
+
+  DateTime _getFirstDateForWeekdays(List<int> weekdays) {
+    var date = DateTime.now();
+    while (!weekdays.contains(date.weekday)) {
+      date = date.add(const Duration(days: 1));
+    }
+    return date;
+  }
+
+  Future<bool> _showOverlapWarning() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('Task Overlap'),
+              ],
+            ),
+            content: const Text(
+              'This task overlaps with another one in your schedule. Do you want to proceed?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.deepPurple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Proceed Anyway'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   void _saveSpecificTask(TaskModel task) {

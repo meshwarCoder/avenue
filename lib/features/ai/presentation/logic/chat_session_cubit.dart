@@ -8,6 +8,8 @@ class ChatSessionCubit extends Cubit<ChatSessionState> {
   final ChatRepository _repository;
   final String _userId;
 
+  String get userId => _userId;
+
   ChatSessionCubit({required ChatRepository repository, required String userId})
     : _repository = repository,
       _userId = userId,

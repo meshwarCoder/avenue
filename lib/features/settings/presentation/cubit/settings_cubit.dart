@@ -1,20 +1,24 @@
 import 'package:avenue/core/di/injection_container.dart';
 import 'package:avenue/core/services/local_notification_service.dart';
 import 'package:avenue/core/services/open_router_client.dart';
-import 'package:avenue/core/services/embedding_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../data/settings_repository.dart';
 import 'settings_state.dart';
+import '../../../schdules/domain/repo/schedule_repository.dart';
 
 import 'package:avenue/features/auth/domain/repo/auth_repository.dart';
 
 class SettingsCubit extends Cubit<SettingsState> {
   final SettingsRepository _repository;
   final AuthRepository _authRepository;
+  final ScheduleRepository _scheduleRepository;
 
-  SettingsCubit(this._repository, this._authRepository)
-    : super(const SettingsState()) {
+  SettingsCubit(
+    this._repository,
+    this._authRepository,
+    this._scheduleRepository,
+  ) : super(const SettingsState()) {
     _loadSettings();
   }
 
@@ -28,8 +32,6 @@ class SettingsCubit extends Cubit<SettingsState> {
     // Apply cached model override to client immediately
     sl<OpenRouterClient>().model = aiModel;
     sl<OpenRouterClient>().apiKey =
-        aiApiKey ?? dotenv.env['OPENROUTER_API_KEY'] ?? '';
-    sl<EmbeddingService>().apiKey =
         aiApiKey ?? dotenv.env['OPENROUTER_API_KEY'] ?? '';
 
     emit(
@@ -83,10 +85,47 @@ class SettingsCubit extends Cubit<SettingsState> {
     await _repository.setAiApiKey(key);
     sl<OpenRouterClient>().apiKey =
         key ?? dotenv.env['OPENROUTER_API_KEY'] ?? '';
-    sl<EmbeddingService>().apiKey =
-        key ?? dotenv.env['OPENROUTER_API_KEY'] ?? '';
     if (isClosed) return;
     emit(state.copyWith(aiApiKey: key));
+  }
+
+  Future<void> testSearch(String query) async {
+    if (query.isEmpty) {
+      emit(
+        state.copyWith(searchQuery: '', searchResults: [], isSearching: false),
+      );
+      return;
+    }
+
+    emit(state.copyWith(searchQuery: query, isSearching: true));
+
+    final result = await _scheduleRepository.searchTasks(query);
+
+    if (isClosed) return;
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          isSearching: false,
+          searchResults: [],
+          feedbackErrorMessage: 'Search failed: ${failure.message}',
+        ),
+      ),
+      (tasks) => emit(
+        state.copyWith(
+          isSearching: false,
+          searchResults: tasks
+              .map(
+                (t) => {
+                  'id': t.id,
+                  'name': t.name,
+                  'importance': t.importanceType,
+                },
+              )
+              .toList(),
+        ),
+      ),
+    );
   }
 
   Future<void> submitFeedback({

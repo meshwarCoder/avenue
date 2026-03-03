@@ -88,6 +88,11 @@ class ChatCubit extends Cubit<ChatState> {
     await sessionCubit?.saveMessage('user', text);
 
     try {
+      // Check limits before sending
+      if (sessionCubit != null) {
+        await chatRepository.checkAiUsageLimits(sessionCubit!.userId);
+      }
+
       final (responseText, actions, suggestedTitle) = await aiOrchestrator
           .processUserMessage(text, traceId: tid);
 
@@ -136,6 +141,11 @@ class ChatCubit extends Cubit<ChatState> {
         await sessionCubit?.updateTitleFromAi(suggestedTitle);
       }
 
+      // Increment usage only after a successful AI response
+      if (sessionCubit != null) {
+        await chatRepository.incrementAiUsage(sessionCubit!.userId);
+      }
+
       // Update session state with new messages
       sessionCubit?.updateMessages(_messages);
     } catch (e) {
@@ -146,8 +156,17 @@ class ChatCubit extends Cubit<ChatState> {
         traceId: tid,
         payload: e.toString(),
       );
+
+      String errorMsg =
+          "The app is still in beta, and we can't afford the API right now. Please try again later.";
+      if (e is AiLimitExceededException) {
+        errorMsg = e.isDaily
+            ? "You've reached your daily (5) AI usage limit. Since the app is in beta, these limits help us manage costs. Please try again tomorrow."
+            : "You've reached your monthly (50) AI usage limit. Since the app is in beta, these limits help us manage costs. Please try again next month.";
+      }
+
       _messages = List.from(_messages)
-        ..add(ChatMessage(text: "[Error] $e", isUser: false));
+        ..add(ChatMessage(text: errorMsg, isUser: false));
       _logState(
         ChatLoaded(_messages, updatedAt: DateTime.now(), isTyping: false),
         traceId: tid,
@@ -291,6 +310,18 @@ class ChatCubit extends Cubit<ChatState> {
             isDeleted: false,
             defaultTaskId: action.defaultTaskId,
           );
+
+          // Check Concurrency
+          final validation = await taskCubit!.validateTaskConcurrency(task);
+          if (validation == ConcurrencyValidationResult.limitExceeded) {
+            AvenueLogger.log(
+              event: 'AI_EXECUTION_BLOCKED',
+              layer: LoggerLayer.AI,
+              payload: {'reason': 'limit_exceeded', 'task': task.name},
+            );
+            return;
+          }
+
           await taskCubit!.addTask(task, traceId: traceId);
         } else if (action.action == 'delete' && action.id != null) {
           final repo = taskCubit!.repository;
@@ -303,7 +334,7 @@ class ChatCubit extends Cubit<ChatState> {
         } else if (action.action == 'update' && action.id != null) {
           final repo = taskCubit!.repository;
           final result = await repo.getTaskById(action.id!);
-          result.fold((l) => null, (existing) async {
+          await result.fold((l) async {}, (existing) async {
             if (existing == null) return;
             final updated = existing.copyWith(
               name: action.name ?? existing.name,
@@ -326,6 +357,20 @@ class ChatCubit extends Cubit<ChatState> {
               category: action.category ?? existing.category,
               isDeleted: action.isDeleted ?? existing.isDeleted,
             );
+
+            // Check Concurrency for update
+            final validation = await taskCubit!.validateTaskConcurrency(
+              updated,
+            );
+            if (validation == ConcurrencyValidationResult.limitExceeded) {
+              AvenueLogger.log(
+                event: 'AI_EXECUTION_BLOCKED',
+                layer: LoggerLayer.AI,
+                payload: {'reason': 'limit_exceeded', 'task': updated.name},
+              );
+              return;
+            }
+
             await taskCubit!.updateTask(updated, traceId: traceId);
           });
         }
@@ -341,6 +386,33 @@ class ChatCubit extends Cubit<ChatState> {
             importanceType: action.importance ?? 'Medium',
             desc: action.note ?? '',
           );
+
+          // Check Concurrency for the first instance
+          final date = _getFirstDateForWeekdays(task.weekdays);
+          final sampleTask = TaskModel.fromTimeOfDay(
+            id: task.id,
+            name: task.name,
+            desc: task.desc,
+            startTime: task.startTime,
+            endTime: task.endTime,
+            taskDate: date,
+            category: task.category,
+            importanceType: task.importanceType,
+            oneTime: false,
+          );
+
+          final validation = await taskCubit!.validateTaskConcurrency(
+            sampleTask,
+          );
+          if (validation == ConcurrencyValidationResult.limitExceeded) {
+            AvenueLogger.log(
+              event: 'AI_EXECUTION_BLOCKED',
+              layer: LoggerLayer.AI,
+              payload: {'reason': 'limit_exceeded', 'habit': task.name},
+            );
+            return;
+          }
+
           await taskCubit!.addDefaultTask(task, traceId: traceId);
         } else if (action.action == 'delete' && action.id != null) {
           final repo = taskCubit!.repository;
@@ -353,7 +425,7 @@ class ChatCubit extends Cubit<ChatState> {
         } else if (action.action == 'update' && action.id != null) {
           final repo = taskCubit!.repository;
           final result = await repo.getDefaultTaskById(action.id!);
-          result.fold((l) => null, (existing) async {
+          await result.fold((l) async {}, (existing) async {
             if (existing == null) return;
             final updated = existing.copyWith(
               name: action.name ?? existing.name,
@@ -369,6 +441,28 @@ class ChatCubit extends Cubit<ChatState> {
               category: action.category ?? existing.category,
               isDeleted: action.isDeleted ?? existing.isDeleted,
             );
+
+            // Check Concurrency for the first instance
+            final date = _getFirstDateForWeekdays(updated.weekdays);
+            final sampleTask = TaskModel.fromTimeOfDay(
+              id: updated.id,
+              name: updated.name,
+              desc: updated.desc,
+              startTime: updated.startTime,
+              endTime: updated.endTime,
+              taskDate: date,
+              category: updated.category,
+              importanceType: updated.importanceType,
+              oneTime: false,
+            );
+
+            final validation = await taskCubit!.validateTaskConcurrency(
+              sampleTask,
+            );
+            if (validation == ConcurrencyValidationResult.limitExceeded) {
+              return;
+            }
+
             await taskCubit!.updateDefaultTask(updated);
           });
         }
@@ -404,6 +498,14 @@ class ChatCubit extends Cubit<ChatState> {
         payload: e.toString(),
       );
     }
+  }
+
+  DateTime _getFirstDateForWeekdays(List<int> weekdays) {
+    var date = DateTime.now();
+    while (!weekdays.contains(date.weekday)) {
+      date = date.add(const Duration(days: 1));
+    }
+    return date;
   }
 
   // Helpers

@@ -7,6 +7,11 @@ import '../../../../core/utils/observability.dart';
 import '../../../../core/services/database_service.dart';
 import '../../ai/ai_action_models.dart';
 
+class AiLimitExceededException implements Exception {
+  final bool isDaily;
+  AiLimitExceededException({this.isDaily = true});
+}
+
 class ChatRepository {
   final SupabaseClient _supabase;
   final DatabaseService _databaseService;
@@ -144,6 +149,73 @@ class ChatRepository {
         payload: 'deleteChat failed: $e',
       );
       rethrow;
+    }
+  }
+
+  // --- AI USAGE CAP ---
+  Future<void> checkAiUsageLimits(String userId) async {
+    try {
+      final response = await _supabase
+          .from('profiles')
+          .select('daily_ai_usage, monthly_ai_usage, role')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (response == null) return;
+
+      final role = response['role'] as String?;
+      if (role == 'dev') return;
+
+      final dailyUsage = response['daily_ai_usage'] as int? ?? 0;
+      final monthlyUsage = response['monthly_ai_usage'] as int? ?? 0;
+
+      if (dailyUsage >= 5) {
+        throw AiLimitExceededException(isDaily: true);
+      }
+      if (monthlyUsage >= 50) {
+        throw AiLimitExceededException(isDaily: false);
+      }
+    } catch (e) {
+      if (e is AiLimitExceededException) rethrow;
+      AvenueLogger.log(
+        event: 'DB_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.DB,
+        payload: 'checkAiUsageLimits failed: $e',
+      );
+    }
+  }
+
+  Future<void> incrementAiUsage(String userId) async {
+    try {
+      final response = await _supabase
+          .from('profiles')
+          .select('daily_ai_usage, monthly_ai_usage, role')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (response == null) return;
+
+      final role = response['role'] as String?;
+      if (role == 'dev') return;
+
+      final dailyUsage = response['daily_ai_usage'] as int? ?? 0;
+      final monthlyUsage = response['monthly_ai_usage'] as int? ?? 0;
+
+      await _supabase
+          .from('profiles')
+          .update({
+            'daily_ai_usage': dailyUsage + 1,
+            'monthly_ai_usage': monthlyUsage + 1,
+          })
+          .eq('id', userId);
+    } catch (e) {
+      AvenueLogger.log(
+        event: 'DB_ERROR',
+        level: LoggerLevel.ERROR,
+        layer: LoggerLayer.DB,
+        payload: 'incrementAiUsage failed: $e',
+      );
     }
   }
 

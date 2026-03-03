@@ -160,6 +160,8 @@ class SettingsView extends StatelessWidget {
                         : 'Default (Server)',
                     onTap: () => _showApiKeyEditor(context, state.aiApiKey),
                   ),
+                  const SizedBox(height: 16),
+                  _buildDevSearchField(context, state),
                 ],
               );
             },
@@ -647,6 +649,57 @@ class SettingsView extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDevSearchField(BuildContext context, SettingsState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          decoration: InputDecoration(
+            hintText: 'Search tasks (Dev Test)',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: state.isSearching
+                ? const Padding(
+                    padding: EdgeInsets.all(12.0),
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : null,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onSubmitted: (val) => context.read<SettingsCubit>().testSearch(val),
+        ),
+        if (state.searchResults != null && state.searchResults!.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: state.searchResults!.map((res) {
+                return ListTile(
+                  dense: true,
+                  title: Text(res['name'] ?? 'No Name'),
+                  subtitle: Text(res['id'] ?? 'No ID'),
+                  trailing: res['importance'] != null
+                      ? Text(res['importance'].toString().toUpperCase())
+                      : null,
+                );
+              }).toList(),
+            ),
+          ),
+        ] else if (state.searchQuery != null && !state.isSearching) ...[
+          const SizedBox(height: 8),
+          const Text('No results found for this query.'),
+        ],
+      ],
     );
   }
 }
