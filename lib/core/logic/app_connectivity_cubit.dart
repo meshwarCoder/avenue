@@ -5,11 +5,11 @@ import 'app_connectivity_state.dart';
 import '../services/network_service.dart';
 import '../widgets/offline_banner.dart';
 
-/// Monitors network connectivity globally.
+/// Monitors network connectivity globally with a debounce on the offline state.
 class AppConnectivityCubit extends Cubit<AppConnectivityState> {
   final NetworkService _networkService;
   StreamSubscription<List<ConnectivityResult>>? _connectionSubscription;
-  Timer? _periodicCheckTimer;
+  Timer? _debounceTimer;
   Timer? _backOnlineTimer;
 
   AppConnectivityCubit({required NetworkService networkService})
@@ -19,52 +19,41 @@ class AppConnectivityCubit extends Cubit<AppConnectivityState> {
   }
 
   void _initialize() async {
-    await _checkAndUpdateConnectivity();
+    // Initial check
+    final isConnected = await _networkService.isConnected;
+    _updateState(isConnected);
 
-    _connectionSubscription = _networkService.connectionStream.listen(
-      (results) => _handleConnectivityResults(results),
-      onError: (error) {
-        GlobalConnectivity.setOffline(true);
-        if (!state.isOffline) {
-          emit(const AppConnectivityState.offline());
-        }
-      },
-    );
-
-    _periodicCheckTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => _checkAndUpdateConnectivity(),
-    );
+    _connectionSubscription = _networkService.connectionStream.listen((
+      results,
+    ) {
+      final isConnected =
+          results.isNotEmpty && !results.contains(ConnectivityResult.none);
+      _updateState(isConnected);
+    });
   }
 
-  Future<void> _checkAndUpdateConnectivity() async {
-    try {
-      final isConnected = await _networkService.isConnected;
-      final isOffline = !isConnected;
+  void _updateState(bool isConnected) {
+    if (isConnected) {
+      // Cancel pending offline emission and go online immediately
+      _debounceTimer?.cancel();
+      GlobalConnectivity.setOffline(false);
 
-      GlobalConnectivity.setOffline(isOffline);
-
-      if (isOffline && !state.isOffline) {
-        emit(const AppConnectivityState.offline());
-      } else if (!isOffline && state.isOffline) {
+      if (state.isOffline) {
         _showBackOnlineBanner();
       }
-    } catch (e) {
-      GlobalConnectivity.setOffline(true);
-      emit(const AppConnectivityState.offline());
-    }
-  }
+    } else {
+      // If already offline or debounce is in progress, do nothing
+      if (state.isOffline || (_debounceTimer?.isActive ?? false)) return;
 
-  void _handleConnectivityResults(List<ConnectivityResult> results) {
-    final isOffline =
-        results.isEmpty || results.contains(ConnectivityResult.none);
-
-    GlobalConnectivity.setOffline(isOffline);
-
-    if (isOffline && !state.isOffline) {
-      emit(const AppConnectivityState.offline());
-    } else if (!isOffline && state.isOffline) {
-      _showBackOnlineBanner();
+      // Start 700ms debounce for offline emission
+      _debounceTimer = Timer(const Duration(milliseconds: 700), () async {
+        // Double-check connectivity after delay to confirm actual offline status
+        final stillDisconnected = !(await _networkService.isConnected);
+        if (stillDisconnected && !isClosed) {
+          GlobalConnectivity.setOffline(true);
+          emit(const AppConnectivityState.offline());
+        }
+      });
     }
   }
 
@@ -72,7 +61,7 @@ class AppConnectivityCubit extends Cubit<AppConnectivityState> {
     _backOnlineTimer?.cancel();
     emit(const AppConnectivityState.backOnline());
     _backOnlineTimer = Timer(const Duration(seconds: 2), () {
-      if (!state.isOffline) {
+      if (!isClosed && !state.isOffline) {
         emit(const AppConnectivityState.online());
       }
     });
@@ -81,7 +70,7 @@ class AppConnectivityCubit extends Cubit<AppConnectivityState> {
   @override
   Future<void> close() {
     _connectionSubscription?.cancel();
-    _periodicCheckTimer?.cancel();
+    _debounceTimer?.cancel();
     _backOnlineTimer?.cancel();
     return super.close();
   }

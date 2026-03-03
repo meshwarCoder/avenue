@@ -153,12 +153,9 @@ class SettingsView extends StatelessWidget {
                   _buildSettingItem(
                     context,
                     icon: Icons.key_outlined,
-                    title: "API Key",
-                    subtitle:
-                        state.aiApiKey != null && state.aiApiKey!.isNotEmpty
-                        ? '***${state.aiApiKey!.substring(state.aiApiKey!.length > 4 ? state.aiApiKey!.length - 4 : 0)}'
-                        : 'Default (Server)',
-                    onTap: () => _showApiKeyEditor(context, state.aiApiKey),
+                    title: "Cloud API Key",
+                    subtitle: "Set or update server key",
+                    onTap: () => _showApiKeyEditor(context),
                   ),
                   const SizedBox(height: 16),
                   _buildDevSearchField(context, state),
@@ -617,20 +614,32 @@ class SettingsView extends StatelessWidget {
     );
   }
 
-  void _showApiKeyEditor(BuildContext context, String? currentKey) {
-    final controller = TextEditingController(text: currentKey ?? '');
+  void _showApiKeyEditor(BuildContext context) {
+    final controller = TextEditingController();
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Change API Key'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'OpenRouter API Key',
-            hintText: 'Sk-or-v1-... (leave blank for default)',
-            border: OutlineInputBorder(),
-          ),
-          autofocus: true,
+        title: const Text('Update Cloud API Key'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter a new OpenRouter API Key. This will be stored securely in the cloud and used by the server.',
+              style: TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'New API Key',
+                hintText: 'sk-or-v1-...',
+                border: OutlineInputBorder(),
+              ),
+              obscureText: true,
+              autofocus: true,
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -640,12 +649,12 @@ class SettingsView extends StatelessWidget {
           FilledButton(
             onPressed: () {
               final newKey = controller.text.trim();
-              context.read<SettingsCubit>().updateAiApiKey(
-                newKey.isNotEmpty ? newKey : null,
-              );
+              if (newKey.isNotEmpty) {
+                context.read<SettingsCubit>().updateAiApiKey(newKey);
+              }
               Navigator.pop(dialogContext);
             },
-            child: const Text('Save'),
+            child: const Text('Save to Cloud'),
           ),
         ],
       ),

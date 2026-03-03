@@ -1,6 +1,7 @@
 import 'package:avenue/core/di/injection_container.dart';
 import 'package:avenue/core/services/local_notification_service.dart';
 import 'package:avenue/core/services/open_router_client.dart';
+import 'package:avenue/core/services/embedding_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../data/settings_repository.dart';
@@ -23,16 +24,21 @@ class SettingsCubit extends Cubit<SettingsState> {
   }
 
   Future<void> _loadSettings() async {
+    // Fetch latest AI configuration from server (Write-Only API key isn't fetched)
+    await _repository.fetchServerAiSettings();
+
     final weekStartDay = _repository.getWeekStartDay();
     final is24HourFormat = _repository.getIs24HourFormat();
     final notificationsEnabled = _repository.getNotificationsEnabled();
     final aiModel = _repository.getAiModel();
-    final aiApiKey = _repository.getAiApiKey();
 
     // Apply cached model override to client immediately
     sl<OpenRouterClient>().model = aiModel;
     sl<OpenRouterClient>().apiKey =
         aiApiKey ?? dotenv.env['OPENROUTER_API_KEY'] ?? '';
+    // The API Key is NOT fetched for security; it remains server-side.
+    // Embedding service still uses local env for now unless refactored.
+    sl<EmbeddingService>().apiKey = dotenv.env['OPENROUTER_API_KEY'] ?? '';
 
     emit(
       state.copyWith(
@@ -40,7 +46,6 @@ class SettingsCubit extends Cubit<SettingsState> {
         is24HourFormat: is24HourFormat,
         notificationsEnabled: notificationsEnabled,
         aiModel: aiModel,
-        aiApiKey: aiApiKey,
       ),
     );
 
@@ -76,17 +81,18 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   Future<void> updateAiModel(String model) async {
     await _repository.setAiModel(model);
-    sl<OpenRouterClient>().model = model;
     if (isClosed) return;
     emit(state.copyWith(aiModel: model));
   }
 
-  Future<void> updateAiApiKey(String? key) async {
+  Future<void> updateAiApiKey(String key) async {
+    // Write-only update to server
     await _repository.setAiApiKey(key);
     sl<OpenRouterClient>().apiKey =
         key ?? dotenv.env['OPENROUTER_API_KEY'] ?? '';
+    // Note: We don't store the key in the state or local cache for security
     if (isClosed) return;
-    emit(state.copyWith(aiApiKey: key));
+    // We can emit a success state if needed, but for now just updating the repo is enough
   }
 
   Future<void> testSearch(String query) async {

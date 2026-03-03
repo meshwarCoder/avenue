@@ -308,8 +308,9 @@ class _HomeViewState extends State<HomeView> {
   }
 
   String _getMotivationalMessage(double progress, int total, bool isPast) {
-    if (total == 0)
+    if (total == 0) {
       return isPast ? "No history here. 🌫️" : "No tasks today! ☕";
+    }
 
     if (isPast) {
       if (progress == 1.0) return "Perfect score! You nailed it! 🏆";

@@ -7,7 +7,7 @@
   <dict>
     <key>CFBundleURLSchemes</key>
     <array>
-      <string>com.example.line</string>
+      <string>com.example.avenue</string>
     </array>
   </dict>
 </array>
@@ -15,7 +15,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Line</string>
+	<string>Avenue</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -23,7 +23,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>line</string>
+	<string>avenue</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

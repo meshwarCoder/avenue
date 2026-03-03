@@ -17,6 +17,12 @@ class CalendarUtils {
     return DateTime(date.year, date.month, date.day);
   }
 
+  static bool isToday(DateTime date) {
+    final normalized = normalize(date);
+    final today = normalize(DateTime.now());
+    return normalized.isAtSameMomentAs(today);
+  }
+
   static DateTime getNextWeek(DateTime currentMonday) {
     return currentMonday.add(const Duration(days: 7));
   }

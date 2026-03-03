@@ -71,7 +71,6 @@ class SettingsRepository {
   }
 
   static const String _keyAiModelOverride = 'ai_model_override';
-  static const String _keyAiApiKeyOverride = 'ai_api_key_override';
 
   String getAiModel() {
     return _cacheHelper.getData(key: _keyAiModelOverride) as String? ??
@@ -80,17 +79,42 @@ class SettingsRepository {
 
   Future<void> setAiModel(String model) async {
     await _cacheHelper.setData(key: _keyAiModelOverride, value: model);
+    // Sync with Supabase app_settings for Edge Function
+    await _supabase.from('app_settings').upsert({
+      'key': 'openrouter_model',
+      'value': model,
+    });
   }
 
-  String? getAiApiKey() {
-    return _cacheHelper.getData(key: _keyAiApiKeyOverride) as String?;
+  Future<void> setAiApiKey(String key) async {
+    if (key.isNotEmpty) {
+      // Sync with Supabase app_settings for Edge Function (Write-Only)
+      await _supabase.from('app_settings').upsert({
+        'key': 'openrouter_api_key',
+        'value': key,
+      });
+    }
   }
 
-  Future<void> setAiApiKey(String? key) async {
-    if (key == null || key.isEmpty) {
-      await _cacheHelper.removeData(key: _keyAiApiKeyOverride);
-    } else {
-      await _cacheHelper.setData(key: _keyAiApiKeyOverride, value: key);
+  /// Fetches AI configuration from Supabase and updates the local cache.
+  /// Fetches AI configuration from Supabase and updates the local cache.
+  /// Note: Only fetches the model; the API Key is sensitive and stays on the server.
+  Future<void> fetchServerAiSettings() async {
+    try {
+      final res = await _supabase
+          .from('app_settings')
+          .select('key, value')
+          .eq('key', 'openrouter_model')
+          .maybeSingle();
+
+      if (res != null) {
+        await _cacheHelper.setData(
+          key: _keyAiModelOverride,
+          value: res['value'],
+        );
+      }
+    } catch (e) {
+      // Fail silently, use local cache as backup
     }
   }
 }

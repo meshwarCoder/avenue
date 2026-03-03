@@ -325,6 +325,9 @@ class TaskCubit extends Cubit<TaskState> {
           return a.startTime!.compareTo(b.startTime!);
         });
 
+        // Schedule daily summary for the viewed date (will trigger at midnight of viewed date + 1)
+        notificationManager.scheduleDailySummary(targetDate, allTasks);
+
         _logState(
           TaskLoaded(
             allTasks,
@@ -467,6 +470,14 @@ class TaskCubit extends Cubit<TaskState> {
 
         notificationManager.updateTaskNotificationIfNeeded(oldTask, task);
 
+        // Update daily summary for the task's date
+        if (state is TaskLoaded) {
+          notificationManager.scheduleDailySummary(
+            task.taskDate,
+            (state as TaskLoaded).tasks,
+          );
+        }
+
         if (state is FutureTasksLoaded) {
           loadFutureTasks();
         } else {
@@ -536,6 +547,14 @@ class TaskCubit extends Cubit<TaskState> {
         // Note: 'task' here is the old state, so we toggle it for scheduling
         final updatedTask = task.copyWith(completed: !task.completed);
         notificationManager.updateTaskNotificationIfNeeded(task, updatedTask);
+
+        // Update daily summary for the task's date
+        if (state is TaskLoaded) {
+          notificationManager.scheduleDailySummary(
+            task.taskDate,
+            (state as TaskLoaded).tasks,
+          );
+        }
 
         if (state is FutureTasksLoaded) {
           loadFutureTasks();

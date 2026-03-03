@@ -195,10 +195,10 @@ class _ChatScreenState extends State<_ChatScreen> {
                           final isTyping =
                               state is ChatLoaded && state.isTyping;
                           if (isTyping) {
-                            if (index == 0)
+                            if (index == 0) {
                               return _buildTypingIndicator(theme, isDark);
-                            final msgIndex =
-                                messages.length - 1 - (index - 1);
+                            }
+                            final msgIndex = messages.length - 1 - (index - 1);
                             return _buildAnimatedMessage(
                               context,
                               messages[msgIndex],

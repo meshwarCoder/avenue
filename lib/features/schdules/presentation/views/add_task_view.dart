@@ -519,10 +519,11 @@ class _AddTaskViewState extends State<AddTaskView> {
           return GestureDetector(
             onTap: () {
               setState(() {
-                if (isSelected)
+                if (isSelected) {
                   _selectedWeekdays.remove(dayIndex);
-                else
+                } else {
                   _selectedWeekdays.add(dayIndex);
+                }
               });
             },
             child: AnimatedContainer(
@@ -634,8 +635,9 @@ class _AddTaskViewState extends State<AddTaskView> {
                 borderRadius: BorderRadius.circular(10),
               ),
               hourMinuteColor: WidgetStateColor.resolveWith((states) {
-                if (states.contains(WidgetState.selected))
+                if (states.contains(WidgetState.selected)) {
                   return primaryColor.withValues(alpha: 0.2);
+                }
                 return isDark
                     ? Colors.white.withValues(alpha: 0.05)
                     : Colors.black.withValues(alpha: 0.05);
@@ -983,10 +985,11 @@ class _AddTaskViewState extends State<AddTaskView> {
   }
 
   void _saveSpecificTask(TaskModel task) {
-    if (widget.task == null)
+    if (widget.task == null) {
       context.read<TaskCubit>().addTask(task);
-    else
+    } else {
       context.read<TaskCubit>().updateTask(task);
+    }
     Navigator.pop(context);
   }
 

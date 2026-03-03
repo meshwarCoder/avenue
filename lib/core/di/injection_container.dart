@@ -34,7 +34,7 @@ import '../../features/settings/data/settings_repository.dart';
 import '../../features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../helpers/cache_helper.dart';
-import '../services/open_router_client.dart';
+import '../services/ai_server_client.dart';
 
 final sl = GetIt.instance;
 
@@ -121,9 +121,9 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => SettingsCubit(sl(), sl(), sl()));
   sl.registerFactory(() => DefaultTasksCubit(sl()));
 
-  // AI Chat
-  sl.registerLazySingleton<OpenRouterClient>(
-    () => OpenRouterClient(apiKey: dotenv.env['OPENROUTER_API_KEY'] ?? ''),
+  // AI Chat (Now using Supabase Edge Function)
+  sl.registerLazySingleton<AiServerClient>(
+    () => AiServerClient(supabase: sl()),
   );
 
   sl.registerLazySingleton<AiRepository>(

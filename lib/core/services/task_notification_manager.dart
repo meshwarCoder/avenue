@@ -82,7 +82,7 @@ class TaskNotificationManager {
         await _notificationService.scheduleNotification(
           id: _getNotificationId(task.id, isReminder: true),
           title: 'Upcoming Task: ${task.name} ⏳',
-          body: 'Starts in ${task.reminderBeforeMinutes} minutes',
+          body: 'Starts in ${task.reminderBeforeMinutes} minutes, get ready!',
           scheduledTime: reminderTime,
           payload: 'task_${task.id}',
         );
@@ -90,11 +90,13 @@ class TaskNotificationManager {
     }
 
     // 4. Schedule END TIME status notification
-    if (task.endTime != null && task.endTime!.isAfter(schedulingWindow)) {
-      final title = task.completed ? "Great Job! 🌟" : "time finished ⏳";
+    if (task.endTime != null &&
+        task.endTime!.isAfter(schedulingWindow) &&
+        task.completionNotificationEnabled) {
+      final title = task.completed ? "Mission Accomplished! 🌟" : "Time's Up ⏳";
       final body = task.completed
-          ? "Good Job, you finished the task: ${task.name}"
-          : 'The task "${task.name}" finished';
+          ? "Well done! You completed: ${task.name} ✅"
+          : 'The time for "${task.name}" has passed. Try to finish it or reschedule! 🔄';
 
       await _notificationService.scheduleNotification(
         id: _getNotificationId(task.id, isEndTime: true),
@@ -173,6 +175,63 @@ class TaskNotificationManager {
         payload: 'Failed to repair notifications on boot: $e',
       );
     }
+  }
+
+  /// Schedules a summary of the day's progress at midnight (00:00 AM) of the next day
+  Future<void> scheduleDailySummary(
+    DateTime date,
+    List<TaskModel> tasks,
+  ) async {
+    if (!_settingsRepository.getNotificationsEnabled()) return;
+
+    // Normalizing the date to ensure we are talking about a specific 24h period
+    final targetDate = DateTime(date.year, date.month, date.day);
+    // Midnight of the next day
+    final summaryTime = targetDate.add(const Duration(days: 1));
+
+    if (summaryTime.isBefore(DateTime.now())) return;
+
+    // Filter tasks specifically for the targetDate
+    final dayTasks = tasks
+        .where(
+          (t) =>
+              !t.isDeleted &&
+              t.taskDate.year == targetDate.year &&
+              t.taskDate.month == targetDate.month &&
+              t.taskDate.day == targetDate.day,
+        )
+        .toList();
+
+    if (dayTasks.isEmpty) return;
+
+    final totalCount = dayTasks.length;
+    final completedCount = dayTasks.where((t) => t.completed).length;
+    final percentage = (completedCount / totalCount * 100).round();
+
+    String title;
+    String body;
+
+    if (percentage == 100) {
+      title = "Perfect Day Finished! 🏆";
+      body =
+          "Amazing! You completed all $totalCount tasks yesterday. What a streak!";
+    } else if (percentage >= 70) {
+      title = "Great Results! 📈";
+      body =
+          "You finished $completedCount/$totalCount tasks ($percentage%) yesterday. Keep up the momentum!";
+    } else {
+      title = "Day Summary 📊";
+      body =
+          "You finished $completedCount/$totalCount tasks ($percentage%) yesterday. Ready to beat that today?";
+    }
+
+    await _notificationService.scheduleNotification(
+      id: 999999, // Unique ID for summary - replaces any existing one
+      title: title,
+      body: body,
+      scheduledTime: summaryTime,
+      payload: 'daily_summary',
+    );
   }
 
   /// Cancels all notifications (main, reminder, end-time) for a specific task

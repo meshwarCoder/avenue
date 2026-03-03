@@ -20,8 +20,9 @@ class WeeklyTaskItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (task.startTime == null || task.endTime == null)
+    if (task.startTime == null || task.endTime == null) {
       return const SizedBox.shrink();
+    }
 
     // Ensure we use local time for positioning
     final localStart = task.startTime!.toLocal();
@@ -122,29 +123,28 @@ class WeeklyTaskItem extends StatelessWidget {
                           left: 3,
                           right: 3,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildImportanceDot(task.importanceType ?? 'Low'),
-                            const SizedBox(width: 4),
-                            if (task.completed)
-                              const Flexible(
-                                child: Icon(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildImportanceDot(task.importanceType ?? 'Low'),
+                              const SizedBox(width: 4),
+                              if (task.completed)
+                                const Icon(
                                   Icons.check_circle_rounded,
                                   color: Colors.green,
                                   size: 10,
-                                ),
-                              )
-                            else if (_isMissed(task))
-                              const Flexible(
-                                child: Icon(
+                                )
+                              else if (_isMissed(task))
+                                const Icon(
                                   Icons.error_outline_rounded,
                                   color: Colors.red,
                                   size: 10,
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],

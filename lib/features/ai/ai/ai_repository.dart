@@ -1,4 +1,4 @@
-import '../../../core/services/open_router_client.dart';
+import '../../../core/services/ai_server_client.dart';
 import 'ai_tools.dart';
 import 'ai_tool_executor.dart';
 import '../../schdules/domain/repo/schedule_repository.dart';
@@ -6,7 +6,7 @@ import '../../../core/utils/observability.dart';
 import 'package:uuid/uuid.dart';
 
 class AiRepository {
-  final OpenRouterClient _client;
+  final AiServerClient _client;
   final AiToolExecutor _executor;
   final List<Map<String, dynamic>> _history = [];
   static const int _maxHistoryMessages = 20;
@@ -19,7 +19,7 @@ class AiRepository {
       'Use the {"message": "...", "actions": [...]} structure. Do NOT use markdown or plain text.';
 
   AiRepository({
-    required OpenRouterClient client,
+    required AiServerClient client,
     required ScheduleRepository scheduleRepository,
   }) : _client = client,
        _executor = AiToolExecutor(scheduleRepository);

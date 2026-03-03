@@ -186,8 +186,9 @@ class ChatCubit extends Cubit<ChatState> {
     if (messageIndex < 0 || messageIndex >= _messages.length) return;
 
     final msg = _messages[messageIndex];
-    if (msg.suggestedActions == null || msg.isExecuted || taskCubit == null)
+    if (msg.suggestedActions == null || msg.isExecuted || taskCubit == null) {
       return;
+    }
 
     // 1. OPTIMISTIC UPDATE: Mark as executed immediately to provide instant UI feedback
     final updatedMsg = msg.copyWith(isExecuted: true);

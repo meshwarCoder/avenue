@@ -120,27 +120,28 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, bool>> signInWithGoogle() async {
-    return _requestExecutor.execute(
-      operation: () async {
-        return await supabase.auth.signInWithOAuth(
-          OAuthProvider.google,
-          redirectTo: 'io.supabase.flutter://login-callback/',
-        );
-      },
-    );
+    try {
+      final res = await supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'com.example.avenue://login-callback',
+      );
+      return Right(res);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
   }
 
   @override
   Future<Either<Failure, bool>> signInWithFacebook() async {
-    return _requestExecutor.execute(
-      operation: () async {
-        return await supabase.auth.signInWithOAuth(
-          OAuthProvider.facebook,
-          redirectTo: 'io.supabase.flutter://login-callback/',
-          queryParams: {'auth_type': 'reauthenticate'},
-        );
-      },
-    );
+    try {
+      final res = await supabase.auth.signInWithOAuth(
+        OAuthProvider.facebook,
+        redirectTo: 'com.example.avenue://login-callback',
+      );
+      return Right(res);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
   }
 
   @override

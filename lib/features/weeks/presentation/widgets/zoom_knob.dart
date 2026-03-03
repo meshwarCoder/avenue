@@ -137,107 +137,41 @@ class _DragZoomRingState extends State<DragZoomRing>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // 3D Outer Bezel/Shadow container
+            // Simple Elegant Knob
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 boxShadow: [
-                  // Outer deep shadow
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.5 : 0.15),
-                    blurRadius: 15,
-                    offset: const Offset(5, 8),
-                    spreadRadius: 1,
-                  ),
-                  // Top light highlight for 3D effect
-                  BoxShadow(
-                    color: isDark
-                        ? Colors.white.withOpacity(0.08)
-                        : Colors.white.withOpacity(0.9),
-                    blurRadius: 10,
-                    offset: const Offset(-4, -4),
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            const Color(0xFF3A3A3C),
-                            const Color(0xFF2C2C2E),
-                            const Color(0xFF1C1C1E),
-                          ]
-                        : [
-                            Colors.white,
-                            const Color(0xFFF2F2F7),
-                            const Color(0xFFE5E5EA),
-                          ],
-                  ),
+                  color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
                   border: Border.all(
                     color: isDark
-                        ? Colors.white.withOpacity(0.12)
+                        ? Colors.white10
                         : Colors.black.withOpacity(0.05),
-                    width: 1,
+                    width: 1.5,
                   ),
                 ),
                 child: Center(
-                  // 3D Inner Core Cap
                   child: Container(
-                    width: 12,
-                    height: 12,
+                    width: 24,
+                    height: 24,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          activeRingColor.withOpacity(0.4),
-                          activeRingColor.withOpacity(0.1),
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(isDark ? 0.45 : 0.15),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: isDark
-                            ? Colors.white10
-                            : Colors.black.withOpacity(0.06),
-                        width: 1,
-                      ),
+                      color: activeRingColor.withOpacity(0.05),
                     ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Glowing indicator dot
-                        Positioned(
-                          top: 5,
-                          child: Container(
-                            width: 5,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? Colors.white
-                                  : theme.colorScheme.primary,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: theme.colorScheme.primary.withOpacity(
-                                    0.65,
-                                  ),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Icon(
+                      Icons.unfold_more_rounded,
+                      size: 14,
+                      color: activeRingColor.withOpacity(0.5),
                     ),
                   ),
                 ),

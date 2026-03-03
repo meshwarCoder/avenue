@@ -180,6 +180,31 @@ class DatabaseService {
     ''');
   }
 
+  Future<void> saveSetting(String key, String value) async {
+    final db = await database;
+    await db.insert('settings', {
+      'key': key,
+      'value': value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<String?> getSetting(String key) async {
+    final db = await database;
+    final maps = await db.query(
+      'settings',
+      where: 'key = ?',
+      whereArgs: [key],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return maps.first['value'] as String?;
+  }
+
+  Future<void> deleteSetting(String key) async {
+    final db = await database;
+    await db.delete('settings', where: 'key = ?', whereArgs: [key]);
+  }
+
   Future<void> clearUserData() async {
     final db = await database;
     await db.transaction((txn) async {

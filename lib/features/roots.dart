@@ -59,73 +59,76 @@ class _RootState extends State<Root> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: NotificationListener<UserScrollNotification>(
-        onNotification: (notification) {
-          if (notification.direction == ScrollDirection.reverse) {
-            if (_isNavVisible) setState(() => _isNavVisible = false);
-          } else if (notification.direction == ScrollDirection.forward) {
-            if (!_isNavVisible) setState(() => _isNavVisible = true);
-          }
-          return false;
-        },
-        child: Stack(
-          children: [
-            PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() => _index = index);
-              },
-              children: pages,
-            ),
-
-            // AI Chat Button (Middle)
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeOutCubic,
-              right: _isNavVisible ? 0 : -120,
-              bottom: 186, // 110 (task) + 60 (task height) + 16 (spacing)
-              child: AnimatedAIChatButton(
-                visible: true,
-                onTap: () => context.push('/ai-chat'),
-              ),
-            ),
-
-            // New Task Button (Bottom)
-            AnimatedPositioned(
-              duration: _isNavVisible
-                  ? const Duration(milliseconds: 600) // Slower slide in
-                  : const Duration(milliseconds: 250), // Faster slide out
-              curve: Curves.easeOutCubic,
-              right: _isNavVisible ? 0 : -120,
-              bottom: 110,
-              child: AnimatedTaskButton(
-                visible: true,
-                onTap: () => _showAddTask(context),
-              ),
-            ),
-
-            // Navigation Bar with Slide Down Animation
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeOutCubic,
-              left: 0,
-              right: 0,
-              bottom: _isNavVisible ? 0 : -200, // Slide down out of screen
-              child: AvenueNavBar(
-                currentIndex: _index,
-                items: items,
-                onTap: (i) {
-                  _pageController.animateToPage(
-                    i,
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeOutCubic,
-                  );
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        extendBody: true,
+        body: NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            if (notification.direction == ScrollDirection.reverse) {
+              if (_isNavVisible) setState(() => _isNavVisible = false);
+            } else if (notification.direction == ScrollDirection.forward) {
+              if (!_isNavVisible) setState(() => _isNavVisible = true);
+            }
+            return false;
+          },
+          child: Stack(
+            children: [
+              PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() => _index = index);
                 },
+                children: pages,
               ),
-            ),
-          ],
+
+              // AI Chat Button (Middle)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOutCubic,
+                right: _isNavVisible ? 0 : -120,
+                bottom: 186, // 110 (task) + 60 (task height) + 16 (spacing)
+                child: AnimatedAIChatButton(
+                  visible: true,
+                  onTap: () => context.push('/ai-chat'),
+                ),
+              ),
+
+              // New Task Button (Bottom)
+              AnimatedPositioned(
+                duration: _isNavVisible
+                    ? const Duration(milliseconds: 600) // Slower slide in
+                    : const Duration(milliseconds: 250), // Faster slide out
+                curve: Curves.easeOutCubic,
+                right: _isNavVisible ? 0 : -120,
+                bottom: 110,
+                child: AnimatedTaskButton(
+                  visible: true,
+                  onTap: () => _showAddTask(context),
+                ),
+              ),
+
+              // Navigation Bar with Slide Down Animation
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOutCubic,
+                left: 0,
+                right: 0,
+                bottom: _isNavVisible ? 0 : -200, // Slide down out of screen
+                child: AvenueNavBar(
+                  currentIndex: _index,
+                  items: items,
+                  onTap: (i) {
+                    _pageController.animateToPage(
+                      i,
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeOutCubic,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

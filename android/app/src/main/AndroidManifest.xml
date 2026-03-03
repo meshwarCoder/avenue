@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
-        android:label="line"
+        android:label="Avenue"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         
@@ -50,9 +50,9 @@
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
 
-        <data
-            android:scheme="com.example.line"
-            android:host="login-callback" />
+            <data
+                android:scheme="com.example.avenue"
+                android:host="login-callback" />
     </intent-filter>
 
         </activity>
