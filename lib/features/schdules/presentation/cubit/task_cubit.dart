@@ -13,6 +13,9 @@ import '../../../../core/services/sync_service.dart';
 import '../../../../core/utils/calendar_utils.dart';
 import '../../../../core/utils/observability.dart';
 import '../../../../core/services/task_notification_manager.dart';
+import '../../../../core/utils/task_concurrency_utils.dart';
+
+enum ConcurrencyValidationResult { success, overlapWarning, limitExceeded }
 
 class TaskCubit extends Cubit<TaskState> {
   final ScheduleRepository repository;
@@ -659,5 +662,87 @@ class TaskCubit extends Cubit<TaskState> {
         syncTasks();
       },
     );
+  }
+
+  /// Fetches all active tasks (including habits) for a specific date.
+  /// Used for concurrency and overlap checks.
+  Future<List<TaskModel>> getTasksForDateInternal(DateTime date) async {
+    final targetDate = CalendarUtils.normalize(date);
+    final tasksResult = await repository.getTasksByDate(targetDate);
+    final defaultTasksResult = await repository.getDefaultTasks();
+
+    final List<TaskModel> allTasks = [];
+
+    tasksResult.fold((l) => null, (tasks) {
+      allTasks.addAll(tasks.where((t) => !t.isDeleted));
+    });
+
+    defaultTasksResult.fold((l) => null, (defaultTasks) {
+      for (var dt in defaultTasks) {
+        if (dt.weekdays.contains(targetDate.weekday) && !dt.isDeleted) {
+          final dateStr = targetDate.toIso8601String().split('T')[0];
+          if (dt.hideOn.any(
+            (d) => d.toIso8601String().split('T')[0] == dateStr,
+          )) {
+            continue;
+          }
+
+          final predictableId = TaskModel.generatePredictableId(
+            dt.id,
+            targetDate,
+          );
+          if (allTasks.any((t) => t.id == predictableId)) {
+            continue;
+          }
+
+          allTasks.add(
+            TaskModel.fromTimeOfDay(
+              id: predictableId,
+              name: dt.name,
+              desc: dt.desc,
+              startTime: dt.startTime,
+              endTime: dt.endTime,
+              taskDate: targetDate,
+              category: dt.category,
+              completed: false,
+              oneTime: false,
+              importanceType: dt.importanceType,
+              defaultTaskId: dt.id,
+            ),
+          );
+        }
+      }
+    });
+
+    return allTasks;
+  }
+
+  /// Validates if a task can be added/updated based on concurrency limits.
+  Future<ConcurrencyValidationResult> validateTaskConcurrency(
+    TaskModel task,
+  ) async {
+    if (task.startTime == null || task.endTime == null) {
+      return ConcurrencyValidationResult.success;
+    }
+
+    final tasks = await getTasksForDateInternal(task.taskDate);
+    // Remove the old version of the task if we're updating
+    final otherTasks = tasks.where((t) => t.id != task.id).toList();
+
+    // Check Max Concurrency
+    final tasksWithNew = [...otherTasks, task];
+    final maxConcurrent = TaskConcurrencyUtils.getMaxConcurrency(tasksWithNew);
+
+    if (maxConcurrent >= 3) {
+      return ConcurrencyValidationResult.limitExceeded;
+    }
+
+    // Check Overlap
+    final hasOverlap = TaskConcurrencyUtils.hasAnyOverlap(otherTasks, task);
+    if (hasOverlap) {
+      return ConcurrencyValidationResult.overlapWarning;
+    }
+
+    return ConcurrencyValidationResult.success;
   }
 }
