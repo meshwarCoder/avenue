@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/utils/calendar_utils.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class WeeklyHeader extends StatelessWidget {
   final DateTime currentMonday;
@@ -37,7 +38,7 @@ class WeeklyHeader extends StatelessWidget {
           // Month Range
           Expanded(
             child: Text(
-              _getMonthYearRange(currentMonday, curSunday),
+              _getMonthYearRange(context, currentMonday, curSunday),
               style: TextStyle(
                 color: onSurface,
                 fontSize: 20,
@@ -134,27 +135,32 @@ class WeeklyHeader extends StatelessWidget {
       child: IconButton(
         icon: Icon(Icons.today, size: 18, color: theme.colorScheme.primary),
         onPressed: () => onWeekChanged(today),
-        tooltip: 'Back to Today',
+        tooltip: AppLocalizations.of(context)!.backToToday,
         constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
         padding: EdgeInsets.zero,
       ),
     );
   }
 
-  String _getMonthYearRange(DateTime start, DateTime end) {
+  String _getMonthYearRange(
+    BuildContext context,
+    DateTime start,
+    DateTime end,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
     final months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
+      l10n.january,
+      l10n.february,
+      l10n.march,
+      l10n.april,
+      l10n.mayLong,
+      l10n.june,
+      l10n.july,
+      l10n.august,
+      l10n.september,
+      l10n.october,
+      l10n.november,
+      l10n.december,
     ];
     if (start.month == end.month) {
       return "${months[start.month - 1]} ${start.year}";

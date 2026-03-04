@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../logic/app_connectivity_cubit.dart';
 import '../logic/app_connectivity_state.dart';
@@ -96,7 +97,7 @@ class _OfflineBannerState extends State<OfflineBanner>
                 Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 12),
                 Text(
-                  'No internet connection',
+                  AppLocalizations.of(context)!.noInternet,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -184,7 +185,7 @@ class _BackOnlineBannerState extends State<BackOnlineBanner>
                 Icon(Icons.wifi_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 12),
                 Text(
-                  'Back online',
+                  AppLocalizations.of(context)!.backOnline,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,

@@ -1,66 +1,75 @@
 import 'package:flutter/material.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 
 class Validation {
-  static String? validateTitle(String? value) {
+  static String? validateTitle(BuildContext context, String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Please enter a task title';
+      return AppLocalizations.of(context)!.errTaskTitle;
     }
     return null;
   }
 
-  static String? validateStartTime(TimeOfDay? time) {
+  static String? validateStartTime(BuildContext context, TimeOfDay? time) {
     if (time == null) {
-      return 'Please select a start time';
+      return AppLocalizations.of(context)!.errStartTime;
     }
     return null;
   }
 
-  static String? validateEndTime(TimeOfDay? time) {
+  static String? validateEndTime(BuildContext context, TimeOfDay? time) {
     if (time == null) {
-      return 'Please select an end time';
+      return AppLocalizations.of(context)!.errEndTime;
     }
     return null;
   }
 
-  static String? validateTimeRange(TimeOfDay? start, TimeOfDay? end) {
+  static String? validateTimeRange(
+    BuildContext context,
+    TimeOfDay? start,
+    TimeOfDay? end,
+  ) {
     if (start == null || end == null) return null;
 
     final startMinutes = start.hour * 60 + start.minute;
     final endMinutes = end.hour * 60 + end.minute;
 
     if (endMinutes <= startMinutes) {
-      return 'End time must be after start time';
+      return AppLocalizations.of(context)!.errTimeRange;
     }
     return null;
   }
 
-  static String? validateEmail(String? value) {
+  static String? validateEmail(BuildContext context, String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Email is required';
+      return AppLocalizations.of(context)!.errEmailRequired;
     }
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(value)) {
-      return 'Invalid email format';
+      return AppLocalizations.of(context)!.errEmailInvalid;
     }
     return null;
   }
 
-  static String? validatePassword(String? value) {
+  static String? validatePassword(BuildContext context, String? value) {
     if (value == null || value.isEmpty) {
-      return 'Password is required';
+      return AppLocalizations.of(context)!.errPasswordRequired;
     }
     if (value.length < 6) {
-      return 'Password must be at least 6 characters';
+      return AppLocalizations.of(context)!.errPasswordShort;
     }
     return null;
   }
 
-  static String? validateConfirmPassword(String? value, String password) {
+  static String? validateConfirmPassword(
+    BuildContext context,
+    String? value,
+    String password,
+  ) {
     if (value == null || value.isEmpty) {
-      return 'Confirm your password';
+      return AppLocalizations.of(context)!.errConfirmPasswordRequired;
     }
     if (value != password) {
-      return 'Passwords do not match';
+      return AppLocalizations.of(context)!.errPasswordsMismatch;
     }
     return null;
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/logic/app_connectivity_cubit.dart';
 import '../../../../core/logic/app_connectivity_state.dart';
 import '../../../../core/logic/app_banner_cubit.dart';
@@ -92,21 +93,21 @@ class _AiConnectivityBannerState extends State<AiConnectivityBanner> {
                         begin: const Offset(0, -0.1),
                         end: Offset.zero,
                       ).animate(animation),
-                      child: FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      ),
+                      child: FadeTransition(opacity: animation, child: child),
                     );
                   },
                   // Priority: offline banner > green banner > nothing
                   child: connectivityState.isOffline
-                      ? _OfflineBanner(theme: theme, key: const ValueKey('offline'))
+                      ? _OfflineBanner(
+                          theme: theme,
+                          key: const ValueKey('offline'),
+                        )
                       : (bannerState?.id == 'ai_connection_restored'
-                          ? _ConnectionRestoredBanner(
-                              theme: theme,
-                              key: const ValueKey('restored'),
-                            )
-                          : const SizedBox.shrink(key: ValueKey('empty'))),
+                            ? _ConnectionRestoredBanner(
+                                theme: theme,
+                                key: const ValueKey('restored'),
+                              )
+                            : const SizedBox.shrink(key: ValueKey('empty'))),
                 ),
               );
             },
@@ -121,31 +122,21 @@ class _AiConnectivityBannerState extends State<AiConnectivityBanner> {
 class _OfflineBanner extends StatelessWidget {
   final ThemeData theme;
 
-  const _OfflineBanner({
-    required this.theme,
-    super.key,
-  });
+  const _OfflineBanner({required this.theme, super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: Colors.red.withValues(alpha: 0.1),
       child: Row(
         children: [
-          Icon(
-            Icons.wifi_off_rounded,
-            size: 18,
-            color: Colors.red.shade700,
-          ),
+          Icon(Icons.wifi_off_rounded, size: 18, color: Colors.red.shade700),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'No internet connection. AI is unavailable.',
+              '${AppLocalizations.of(context)!.noInternet}. ${AppLocalizations.of(context)!.aiUnavailable}.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: Colors.red.shade700,
                 fontWeight: FontWeight.w500,
@@ -163,31 +154,21 @@ class _OfflineBanner extends StatelessWidget {
 class _ConnectionRestoredBanner extends StatelessWidget {
   final ThemeData theme;
 
-  const _ConnectionRestoredBanner({
-    required this.theme,
-    super.key,
-  });
+  const _ConnectionRestoredBanner({required this.theme, super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: Colors.green.withValues(alpha: 0.1),
       child: Row(
         children: [
-          Icon(
-            Icons.wifi_rounded,
-            size: 18,
-            color: Colors.green.shade700,
-          ),
+          Icon(Icons.wifi_rounded, size: 18, color: Colors.green.shade700),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Connection restored.',
+              AppLocalizations.of(context)!.backOnline,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: Colors.green.shade700,
                 fontWeight: FontWeight.w500,

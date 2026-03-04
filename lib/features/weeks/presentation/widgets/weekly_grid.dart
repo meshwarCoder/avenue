@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../schdules/data/models/task_model.dart';
 import '../../../schdules/presentation/views/add_task_view.dart';
 import '../cubit/weekly_state.dart';
@@ -58,6 +59,7 @@ class WeeklyGrid extends StatelessWidget {
         final timeText = TimeUtils.formatTime(
           TimeOfDay(hour: hour, minute: 0),
           is24Hour,
+          locale: Localizations.localeOf(context).languageCode,
         );
 
         return SizedBox(
@@ -81,6 +83,7 @@ class WeeklyGrid extends StatelessWidget {
                     TimeUtils.formatTime(
                       const TimeOfDay(hour: 0, minute: 0),
                       is24Hour,
+                      locale: Localizations.localeOf(context).languageCode,
                     ),
                     style: textStyle,
                   ),
@@ -157,7 +160,7 @@ class WeeklyGrid extends StatelessWidget {
             if (TaskUtils.isPast(date, TimeOfDay(hour: hour, minute: 0))) {
               TaskUtils.showBlockedActionMessage(
                 context,
-                "Cannot schedule tasks in the past!",
+                AppLocalizations.of(context)!.errPastTask,
               );
               return;
             }
@@ -176,8 +179,8 @@ class WeeklyGrid extends StatelessWidget {
           child: Container(
             height: hourHeight,
             decoration: BoxDecoration(
-              border: Border(
-                right: BorderSide(
+              border: BorderDirectional(
+                end: BorderSide(
                   color: Theme.of(context).dividerColor.withOpacity(0.1),
                   width: 0.5,
                 ),

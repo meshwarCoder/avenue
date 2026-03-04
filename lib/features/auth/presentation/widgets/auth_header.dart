@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/utils/constants.dart';
 
@@ -19,7 +20,7 @@ class AuthHeader extends StatelessWidget {
           'assets/icon/avenue.svg',
           height: 120,
           width: 120,
-          semanticsLabel: 'Avenue Logo',
+          semanticsLabel: AppLocalizations.of(context)!.appName,
         ),
         const SizedBox(height: 16),
         Text(

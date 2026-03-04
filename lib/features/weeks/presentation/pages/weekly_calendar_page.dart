@@ -15,6 +15,7 @@ import '../../../../features/settings/presentation/cubit/settings_state.dart';
 import '../widgets/weekly_header.dart';
 import '../widgets/weekly_days_row.dart';
 import '../widgets/weekly_grid.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class WeeklyCalendarPage extends StatefulWidget {
   const WeeklyCalendarPage({super.key});
@@ -198,7 +199,7 @@ class _WeeklyCalendarPageState extends State<WeeklyCalendarPage> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  "Master Routine",
+                  AppLocalizations.of(context)!.masterRoutine,
                   style: TextStyle(
                     color: isDark ? Colors.white : color,
                     fontWeight: FontWeight.w600,

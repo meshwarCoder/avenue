@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
 import '../widgets/task_card.dart';
@@ -25,8 +26,8 @@ class _FutureTasksViewState extends State<FutureTasksView> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text(
-          "Future Tasks",
+        title: Text(
+          AppLocalizations.of(context)!.futureTasks,
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -44,7 +45,9 @@ class _FutureTasksViewState extends State<FutureTasksView> {
           } else if (state is FutureTasksLoaded) {
             final tasks = state.tasks;
             if (tasks.isEmpty) {
-              return const Center(child: Text("No future tasks found"));
+              return Center(
+                child: Text(AppLocalizations.of(context)!.noFutureTasks),
+              );
             }
             return ListView.separated(
               padding: const EdgeInsets.all(16),

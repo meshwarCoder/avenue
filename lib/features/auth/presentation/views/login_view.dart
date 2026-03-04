@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../cubit/auth_cubit.dart';
@@ -90,6 +91,10 @@ class _LoginViewState extends State<LoginView> {
                   Positioned(
                     top: -100,
                     right: -100,
+                  Positioned.directional(
+                    textDirection: Directionality.of(context),
+                    top: -100,
+                    end: -100,
                     child: Container(
                       width: 300,
                       height: 300,
@@ -106,6 +111,10 @@ class _LoginViewState extends State<LoginView> {
                   Positioned(
                     bottom: -150,
                     left: -100,
+                  Positioned.directional(
+                    textDirection: Directionality.of(context),
+                    bottom: -150,
+                    start: -100,
                     child: Container(
                       width: 300,
                       height: 300,
@@ -123,6 +132,12 @@ class _LoginViewState extends State<LoginView> {
                   SafeArea(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(32, 60, 32, 32),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        32,
+                        60,
+                        32,
+                        32,
+                      ),
                       child: Form(
                         key: _formKey,
                         autovalidateMode: _autoValidateMode,
@@ -133,6 +148,11 @@ class _LoginViewState extends State<LoginView> {
                             const AuthHeader(
                               title: "Avenue",
                               subtitle: "Your productivity companion",
+                            AuthHeader(
+                              title: AppLocalizations.of(context)!.appName,
+                              subtitle: AppLocalizations.of(
+                                context,
+                              )!.authSubtitle,
                             ),
                             const SizedBox(height: 48),
 
@@ -151,6 +171,19 @@ class _LoginViewState extends State<LoginView> {
                               key: _passwordFieldKey,
                               controller: _passwordController,
                               label: "Password",
+                              label: AppLocalizations.of(context)!.email,
+                              icon: Icons.alternate_email_rounded,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (v) =>
+                                  Validation.validateEmail(context, v),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Password Field
+                            AuthTextField(
+                              key: _passwordFieldKey,
+                              controller: _passwordController,
+                              label: AppLocalizations.of(context)!.password,
                               icon: Icons.lock_outline_rounded,
                               obscureText: _obscurePassword,
                               suffixIcon: IconButton(
@@ -185,15 +218,19 @@ class _LoginViewState extends State<LoginView> {
                                   ),
                                 ),
                               ),
+                              validator: (v) =>
+                                  Validation.validatePassword(context, v),
                             ),
 
                             const SizedBox(height: 24),
+                            const SizedBox(height: 32),
 
                             // Login Button
                             BlocBuilder<AuthCubit, AuthState>(
                               builder: (context, state) {
                                 return AuthActionButton(
                                   text: "Sign In",
+                                  text: AppLocalizations.of(context)!.signIn,
                                   isLoading:
                                       state is AuthLoading &&
                                       state.source == AuthLoadingSource.email,
@@ -239,6 +276,7 @@ class _LoginViewState extends State<LoginView> {
                                   ),
                                   child: Text(
                                     "OR",
+                                    AppLocalizations.of(context)!.orDivider,
                                     style: TextStyle(
                                       color: theme.colorScheme.onSurface
                                           .withOpacity(0.5),
@@ -271,6 +309,15 @@ class _LoginViewState extends State<LoginView> {
                                   style: TextStyle(
                                     color: theme.colorScheme.onSurface
                                         .withOpacity(0.6),
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)!.newToAvenue,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.6),
                                   ),
                                 ),
                                 TextButton(
@@ -279,6 +326,8 @@ class _LoginViewState extends State<LoginView> {
                                       : () => context.push('/register'),
                                   child: const Text(
                                     "Create Account",
+                                  child: Text(
+                                    AppLocalizations.of(context)!.createAccount,
                                     style: TextStyle(
                                       color: AppColors.salmonPink,
                                       fontWeight: FontWeight.bold,

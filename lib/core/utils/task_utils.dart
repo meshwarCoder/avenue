@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import '../../features/schdules/data/models/task_model.dart';
 
 class TaskUtils {
@@ -26,13 +27,16 @@ class TaskUtils {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'You crushed it!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context)!.crushedIt,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Ready to mark this task as done and keep the momentum going?',
+                AppLocalizations.of(context)!.readyMarkDone,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).textTheme.bodySmall?.color,
@@ -51,7 +55,7 @@ class TaskUtils {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Text('Not yet'),
+                      child: Text(AppLocalizations.of(context)!.notYet),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -67,9 +71,9 @@ class TaskUtils {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Text(
-                        "Let's go!",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        AppLocalizations.of(context)!.letsGo,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -107,13 +111,16 @@ class TaskUtils {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Undo this task?',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context)!.undoTask,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Marking this as not done will move it back to your active schedule. Continue?',
+                AppLocalizations.of(context)!.undoConfirm,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).textTheme.bodySmall?.color,
@@ -132,7 +139,7 @@ class TaskUtils {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Text('Cancel'),
+                      child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -148,9 +155,9 @@ class TaskUtils {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Text(
-                        "Yes, undo",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        AppLocalizations.of(context)!.yesUndo,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -225,9 +232,12 @@ class TaskUtils {
                 size: 48,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Action Blocked',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context)!.actionBlocked,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -247,7 +257,7 @@ class TaskUtils {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Understood'),
+                  child: Text(AppLocalizations.of(context)!.understood),
                 ),
               ),
             ],

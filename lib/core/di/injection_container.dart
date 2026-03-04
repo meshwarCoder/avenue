@@ -35,6 +35,9 @@ import '../../features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../helpers/cache_helper.dart';
 import '../services/ai_server_client.dart';
+import '../localization/locale_repository.dart';
+import '../localization/locale_repository_impl.dart';
+import '../localization/locale_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -102,6 +105,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<SettingsRepository>(
     () => SettingsRepository(sl(), sl()),
   );
+  sl.registerLazySingleton<LocaleRepository>(() => LocaleRepositoryImpl(sl()));
 
   // Cubits (Factory - new instance each time)
   sl.registerLazySingleton(
@@ -119,6 +123,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => ThemeCubit(sl()));
   sl.registerLazySingleton(() => SettingsCubit(sl(), sl(), sl()));
   sl.registerFactory(() => DefaultTasksCubit(sl()));
+  sl.registerLazySingleton(() => LocaleCubit(sl()));
 
   // AI Chat (Now using Supabase Edge Function)
   sl.registerLazySingleton<AiServerClient>(

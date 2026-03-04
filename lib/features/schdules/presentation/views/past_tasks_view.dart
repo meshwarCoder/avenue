@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
 import 'package:avenue/features/schdules/presentation/widgets/day_card.dart';
@@ -25,6 +26,7 @@ class _PastTasksViewState extends State<PastTasksView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final today = DateTime.now();
     final normalizedToday = DateTime(today.year, today.month, today.day);
 
@@ -40,15 +42,18 @@ class _PastTasksViewState extends State<PastTasksView> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text(
-          "Past Tasks",
+        title: Text(
+          AppLocalizations.of(context)!.pastTasks,
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(
+            Icons.adaptive.arrow_back,
+            color: theme.colorScheme.onSurface,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -77,8 +82,12 @@ class _PastTasksViewState extends State<PastTasksView> {
                               });
                             }
                           : null,
-                      icon: const Icon(Icons.arrow_back_ios),
-                      tooltip: "Previous Week",
+                      icon: Icon(
+                        Directionality.of(context) == TextDirection.rtl
+                            ? Icons.arrow_forward_ios
+                            : Icons.arrow_back_ios,
+                      ),
+                      tooltip: AppLocalizations.of(context)!.previousWeek,
                       color: canGoBack ? Colors.black : Colors.grey,
                     ),
                     Text(
@@ -97,8 +106,12 @@ class _PastTasksViewState extends State<PastTasksView> {
                               });
                             }
                           : null,
-                      icon: const Icon(Icons.arrow_forward_ios),
-                      tooltip: "Next Week",
+                      icon: Icon(
+                        Directionality.of(context) == TextDirection.rtl
+                            ? Icons.arrow_back_ios
+                            : Icons.arrow_forward_ios,
+                      ),
+                      tooltip: AppLocalizations.of(context)!.nextWeek,
                       color: _weekOffset > 1 ? Colors.black : Colors.grey,
                     ),
                   ],

@@ -50,9 +50,10 @@ class WeeklyTaskItem extends StatelessWidget {
         : height;
     if (finalHeight <= 0) return const SizedBox.shrink();
 
-    return Positioned(
+    return Positioned.directional(
+      textDirection: Directionality.of(context),
       top: top,
-      left: 2 + (columnIndex * (1.0 / maxColumns) * dayWidth),
+      start: 2 + (columnIndex * (1.0 / maxColumns) * dayWidth),
       child: GestureDetector(
         onTap: () {
           showModalBottomSheet(
@@ -118,14 +119,14 @@ class WeeklyTaskItem extends StatelessWidget {
                     if (height > 45) ...[
                       const SizedBox(height: 2),
                       Padding(
-                        padding: const EdgeInsets.only(
+                        padding: const EdgeInsetsDirectional.only(
                           bottom: 2,
-                          left: 3,
-                          right: 3,
+                          start: 3,
+                          end: 3,
                         ),
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
+                          alignment: AlignmentDirectional.centerStart,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
