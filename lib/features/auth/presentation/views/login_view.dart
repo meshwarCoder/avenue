@@ -74,12 +74,23 @@ class _LoginViewState extends State<LoginView> {
                   context.go('/schedule');
                 } else if (state is AuthError) {
                   _showErrorSnackBar(state.message);
+                } else if (state is PasswordResetOtpSent) {
+                  _showOtpVerificationDialog(context, state.email);
+                } else if (state is PasswordResetOtpVerified) {
+                  _showResetPasswordDialog(context, state.email, state.otp);
+                } else if (state is PasswordResetSuccess) {
+                  _showSuccessSnackBar(
+                    "Password reset successfully! You can now sign in.",
+                  );
                 }
               },
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   // Background Decorative Elements
+                  Positioned(
+                    top: -100,
+                    right: -100,
                   Positioned.directional(
                     textDirection: Directionality.of(context),
                     top: -100,
@@ -97,6 +108,9 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                   ),
+                  Positioned(
+                    bottom: -150,
+                    left: -100,
                   Positioned.directional(
                     textDirection: Directionality.of(context),
                     bottom: -150,
@@ -117,6 +131,7 @@ class _LoginViewState extends State<LoginView> {
 
                   SafeArea(
                     child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(32, 60, 32, 32),
                       padding: const EdgeInsetsDirectional.fromSTEB(
                         32,
                         60,
@@ -130,6 +145,9 @@ class _LoginViewState extends State<LoginView> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            const AuthHeader(
+                              title: "Avenue",
+                              subtitle: "Your productivity companion",
                             AuthHeader(
                               title: AppLocalizations.of(context)!.appName,
                               subtitle: AppLocalizations.of(
@@ -142,6 +160,17 @@ class _LoginViewState extends State<LoginView> {
                             AuthTextField(
                               key: _emailFieldKey,
                               controller: _emailController,
+                              label: "Email",
+                              icon: Icons.alternate_email_rounded,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: Validation.validateEmail,
+                            ),
+                            const SizedBox(height: 20),
+
+                            AuthTextField(
+                              key: _passwordFieldKey,
+                              controller: _passwordController,
+                              label: "Password",
                               label: AppLocalizations.of(context)!.email,
                               icon: Icons.alternate_email_rounded,
                               keyboardType: TextInputType.emailAddress,
@@ -170,16 +199,37 @@ class _LoginViewState extends State<LoginView> {
                                   () => _obscurePassword = !_obscurePassword,
                                 ),
                               ),
+                              validator: Validation.validatePassword,
+                            ),
+
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: isLoading
+                                    ? null
+                                    : () => _showForgotPasswordDialog(context),
+                                child: Text(
+                                  "Forgot Password?",
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
                               validator: (v) =>
                                   Validation.validatePassword(context, v),
                             ),
 
+                            const SizedBox(height: 24),
                             const SizedBox(height: 32),
 
                             // Login Button
                             BlocBuilder<AuthCubit, AuthState>(
                               builder: (context, state) {
                                 return AuthActionButton(
+                                  text: "Sign In",
                                   text: AppLocalizations.of(context)!.signIn,
                                   isLoading:
                                       state is AuthLoading &&
@@ -225,6 +275,7 @@ class _LoginViewState extends State<LoginView> {
                                     horizontal: 16,
                                   ),
                                   child: Text(
+                                    "OR",
                                     AppLocalizations.of(context)!.orDivider,
                                     style: TextStyle(
                                       color: theme.colorScheme.onSurface
@@ -250,6 +301,14 @@ class _LoginViewState extends State<LoginView> {
 
                             const SizedBox(height: 24),
 
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "New to Avenue?",
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
                             Wrap(
                               alignment: WrapAlignment.center,
                               crossAxisAlignment: WrapCrossAlignment.center,
@@ -265,6 +324,8 @@ class _LoginViewState extends State<LoginView> {
                                   onPressed: isLoading
                                       ? null
                                       : () => context.push('/register'),
+                                  child: const Text(
+                                    "Create Account",
                                   child: Text(
                                     AppLocalizations.of(context)!.createAccount,
                                     style: TextStyle(
@@ -284,6 +345,276 @@ class _LoginViewState extends State<LoginView> {
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        final textColor = isDark ? Colors.white : theme.colorScheme.onSurface;
+
+        return AlertDialog(
+          title: Text(
+            "Reset Password",
+            style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Enter your email to receive an 8-digit OTP code.",
+                  style: TextStyle(color: textColor.withOpacity(0.8)),
+                ),
+                const SizedBox(height: 20),
+                AuthTextField(
+                  controller: controller,
+                  label: "Email",
+                  icon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: Validation.validateEmail,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: textColor.withOpacity(0.6)),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  context.read<AuthCubit>().sendPasswordResetOtp(
+                    controller.text.trim(),
+                  );
+                  Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.salmonPink,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text("Send Code"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showOtpVerificationDialog(BuildContext context, String email) {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        final textColor = isDark ? Colors.white : theme.colorScheme.onSurface;
+
+        return AlertDialog(
+          title: Text(
+            "Verify OTP",
+            style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Enter the 8-digit code sent to $email",
+                  style: TextStyle(color: textColor.withOpacity(0.8)),
+                ),
+                const SizedBox(height: 20),
+                AuthTextField(
+                  controller: controller,
+                  label: "OTP Code",
+                  icon: Icons.pin_outlined,
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.length != 8) {
+                      return "Enter a valid 8-digit code";
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: textColor.withOpacity(0.6)),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  context.read<AuthCubit>().verifyPasswordResetOtp(
+                    email,
+                    controller.text.trim(),
+                  );
+                  Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.salmonPink,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text("Verify"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showResetPasswordDialog(
+    BuildContext context,
+    String email,
+    String otp,
+  ) {
+    final passwordController = TextEditingController();
+    final confirmController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool obscurePassword = true;
+    bool obscureConfirm = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        final textColor = isDark ? Colors.white : theme.colorScheme.onSurface;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(
+                "New Password",
+                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+              ),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Enter your new password and confirm it.",
+                      style: TextStyle(color: textColor.withOpacity(0.8)),
+                    ),
+                    const SizedBox(height: 20),
+                    AuthTextField(
+                      controller: passwordController,
+                      label: "New Password",
+                      icon: Icons.lock_outline,
+                      obscureText: obscurePassword,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscurePassword
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
+                          color: textColor.withOpacity(0.6),
+                          size: 20,
+                        ),
+                        onPressed: () => setDialogState(
+                          () => obscurePassword = !obscurePassword,
+                        ),
+                      ),
+                      validator: Validation.validatePassword,
+                    ),
+                    const SizedBox(height: 16),
+                    AuthTextField(
+                      controller: confirmController,
+                      label: "Confirm Password",
+                      icon: Icons.lock_reset_rounded,
+                      obscureText: obscureConfirm,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureConfirm
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
+                          color: textColor.withOpacity(0.6),
+                          size: 20,
+                        ),
+                        onPressed: () => setDialogState(
+                          () => obscureConfirm = !obscureConfirm,
+                        ),
+                      ),
+                      validator: (value) => Validation.validateConfirmPassword(
+                        value,
+                        passwordController.text,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    "Cancel",
+                    style: TextStyle(color: textColor.withOpacity(0.6)),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      context.read<AuthCubit>().resetPassword(
+                        passwordController.text.trim(),
+                      );
+                      Navigator.pop(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.salmonPink,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text("Reset Password"),
+                ),
+              ],
+            );
+          },
         );
       },
     );

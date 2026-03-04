@@ -28,6 +28,14 @@ abstract class AuthRepository {
   Future<Either<Failure, bool>> signInWithGoogle();
   Future<Either<Failure, bool>> signInWithFacebook();
   Stream<AuthEvent> get authEvents;
+
+  // Password Reset (OTP)
+  Future<Either<Failure, void>> sendPasswordResetOtp({required String email});
+  Future<Either<Failure, void>> verifyPasswordResetOtp({
+    required String email,
+    required String token,
+  });
+  Future<Either<Failure, void>> updatePassword({required String newPassword});
 }
 
 enum AuthEvent { signedIn, signedOut, unknown }

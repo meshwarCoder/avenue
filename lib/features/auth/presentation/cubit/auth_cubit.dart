@@ -257,6 +257,39 @@ class AuthCubit extends Cubit<AuthState> with WidgetsBindingObserver {
     emit(Unauthenticated());
   }
 
+  Future<void> sendPasswordResetOtp(String email) async {
+    emit(AuthLoading());
+    final result = await repository.sendPasswordResetOtp(email: email);
+    if (isClosed) return;
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => emit(PasswordResetOtpSent(email)),
+    );
+  }
+
+  Future<void> verifyPasswordResetOtp(String email, String otp) async {
+    emit(AuthLoading());
+    final result = await repository.verifyPasswordResetOtp(
+      email: email,
+      token: otp,
+    );
+    if (isClosed) return;
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => emit(PasswordResetOtpVerified(email, otp)),
+    );
+  }
+
+  Future<void> resetPassword(String password) async {
+    emit(AuthLoading());
+    final result = await repository.updatePassword(newPassword: password);
+    if (isClosed) return;
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => emit(PasswordResetSuccess()),
+    );
+  }
+
   @override
   Future<void> close() {
     WidgetsBinding.instance.removeObserver(this);
