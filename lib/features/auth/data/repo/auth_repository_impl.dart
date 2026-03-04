@@ -177,4 +177,42 @@ class AuthRepositoryImpl implements AuthRepository {
       }
     });
   }
+
+  @override
+  Future<Either<Failure, void>> sendPasswordResetOtp({
+    required String email,
+  }) async {
+    return _requestExecutor.execute(
+      operation: () async {
+        await supabase.auth.resetPasswordForEmail(email);
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, void>> verifyPasswordResetOtp({
+    required String email,
+    required String token,
+  }) async {
+    return _requestExecutor.execute(
+      operation: () async {
+        await supabase.auth.verifyOTP(
+          email: email,
+          token: token,
+          type: OtpType.recovery,
+        );
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, void>> updatePassword({
+    required String newPassword,
+  }) async {
+    return _requestExecutor.execute(
+      operation: () async {
+        await supabase.auth.updateUser(UserAttributes(password: newPassword));
+      },
+    );
+  }
 }
