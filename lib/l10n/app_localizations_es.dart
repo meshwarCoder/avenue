@@ -171,7 +171,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get password => 'Contraseña';
 
   @override
-  String get confirmPassword => 'Confirmar Contraseña';
+  String get confirmPassword => 'Confirmar contraseña';
 
   @override
   String get signIn => 'Iniciar Sesión';
@@ -797,4 +797,44 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get actionHabitInstance => 'instancia de hábito';
+
+  @override
+  String get forgotPassword => '¿Olvidaste tu contraseña?';
+
+  @override
+  String get resetPassword => 'Restablecer contraseña';
+
+  @override
+  String get resetPasswordHint =>
+      'Introduce tu correo electrónico y te enviaremos un código de verificación.';
+
+  @override
+  String get sendCode => 'Enviar código';
+
+  @override
+  String get verifyOtp => 'Verificar código';
+
+  @override
+  String otpSentTo(String email) {
+    return 'Introduce el código de verificación enviado a $email';
+  }
+
+  @override
+  String get otpCode => 'Código de verificación';
+
+  @override
+  String get otpInvalid => 'Introduce un código válido de 6 dígitos';
+
+  @override
+  String get verify => 'Verificar';
+
+  @override
+  String get newPassword => 'Nueva contraseña';
+
+  @override
+  String get newPasswordHint => 'Introduce tu nueva contraseña y confírmala.';
+
+  @override
+  String get passwordResetSuccess =>
+      '¡Contraseña restablecida correctamente! Ahora puedes iniciar sesión.';
 }

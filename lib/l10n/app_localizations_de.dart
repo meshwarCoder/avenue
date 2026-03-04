@@ -800,4 +800,44 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get actionHabitInstance => 'Gewohnheitsinstanz';
+
+  @override
+  String get forgotPassword => 'Passwort vergessen?';
+
+  @override
+  String get resetPassword => 'Passwort zurücksetzen';
+
+  @override
+  String get resetPasswordHint =>
+      'Gib deine E-Mail-Adresse ein und wir senden dir einen Verifizierungscode.';
+
+  @override
+  String get sendCode => 'Code senden';
+
+  @override
+  String get verifyOtp => 'Code verifizieren';
+
+  @override
+  String otpSentTo(String email) {
+    return 'Gib den an $email gesendeten Verifizierungscode ein';
+  }
+
+  @override
+  String get otpCode => 'Verifizierungscode';
+
+  @override
+  String get otpInvalid => 'Gib einen gültigen 6-stelligen Code ein';
+
+  @override
+  String get verify => 'Verifizieren';
+
+  @override
+  String get newPassword => 'Neues Passwort';
+
+  @override
+  String get newPasswordHint => 'Gib dein neues Passwort ein und bestätige es.';
+
+  @override
+  String get passwordResetSuccess =>
+      'Passwort erfolgreich zurückgesetzt! Du kannst dich jetzt anmelden.';
 }

@@ -789,4 +789,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionHabitInstance => 'habit instance';
+
+  @override
+  String get forgotPassword => 'Forgot Password?';
+
+  @override
+  String get resetPassword => 'Reset Password';
+
+  @override
+  String get resetPasswordHint =>
+      'Enter your email address and we\'ll send you a verification code.';
+
+  @override
+  String get sendCode => 'Send Code';
+
+  @override
+  String get verifyOtp => 'Verify Code';
+
+  @override
+  String otpSentTo(String email) {
+    return 'Enter the verification code sent to $email';
+  }
+
+  @override
+  String get otpCode => 'Verification Code';
+
+  @override
+  String get otpInvalid => 'Enter a valid 6-digit code';
+
+  @override
+  String get verify => 'Verify';
+
+  @override
+  String get newPassword => 'New Password';
+
+  @override
+  String get newPasswordHint => 'Enter your new password and confirm it.';
+
+  @override
+  String get passwordResetSuccess =>
+      'Password reset successfully! You can now sign in.';
 }

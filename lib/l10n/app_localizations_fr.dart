@@ -797,4 +797,45 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get actionHabitInstance => 'occurrence de l\'habitude';
+
+  @override
+  String get forgotPassword => 'Mot de passe oublié ?';
+
+  @override
+  String get resetPassword => 'Réinitialiser le mot de passe';
+
+  @override
+  String get resetPasswordHint =>
+      'Entrez votre adresse e-mail et nous vous enverrons un code de vérification.';
+
+  @override
+  String get sendCode => 'Envoyer le code';
+
+  @override
+  String get verifyOtp => 'Vérifier le code';
+
+  @override
+  String otpSentTo(String email) {
+    return 'Entrez le code de vérification envoyé à $email';
+  }
+
+  @override
+  String get otpCode => 'Code de vérification';
+
+  @override
+  String get otpInvalid => 'Entrez un code valide à 6 chiffres';
+
+  @override
+  String get verify => 'Vérifier';
+
+  @override
+  String get newPassword => 'Nouveau mot de passe';
+
+  @override
+  String get newPasswordHint =>
+      'Entrez votre nouveau mot de passe et confirmez-le.';
+
+  @override
+  String get passwordResetSuccess =>
+      'Mot de passe réinitialisé avec succès ! Vous pouvez maintenant vous connecter.';
 }

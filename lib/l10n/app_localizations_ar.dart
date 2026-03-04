@@ -792,4 +792,43 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get actionHabitInstance => 'تكرار العادة';
+
+  @override
+  String get forgotPassword => 'نسيت كلمة المرور؟';
+
+  @override
+  String get resetPassword => 'إعادة تعيين كلمة المرور';
+
+  @override
+  String get resetPasswordHint => 'أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق.';
+
+  @override
+  String get sendCode => 'إرسال الرمز';
+
+  @override
+  String get verifyOtp => 'تحقق من الرمز';
+
+  @override
+  String otpSentTo(String email) {
+    return 'أدخل رمز التحقق المرسل إلى $email';
+  }
+
+  @override
+  String get otpCode => 'رمز التحقق';
+
+  @override
+  String get otpInvalid => 'أدخل رمزاً صحيحاً مكوناً من 6 أرقام';
+
+  @override
+  String get verify => 'تحقق';
+
+  @override
+  String get newPassword => 'كلمة مرور جديدة';
+
+  @override
+  String get newPasswordHint => 'أدخل كلمة مرورك الجديدة وأكدها.';
+
+  @override
+  String get passwordResetSuccess =>
+      'تم إعادة تعيين كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول.';
 }

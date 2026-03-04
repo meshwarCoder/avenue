@@ -251,5 +251,19 @@
   "actionSkipped": "Sauté",
   "actionTask": "tâche",
   "actionHabit": "habitude",
-  "actionHabitInstance": "occurrence de l'habitude"
+  "actionHabitInstance": "occurrence de l'habitude",
+  "forgotPassword": "Mot de passe oublié ?",
+  "resetPassword": "Réinitialiser le mot de passe",
+  "resetPasswordHint": "Entrez votre adresse e-mail et nous vous enverrons un code de vérification.",
+  "sendCode": "Envoyer le code",
+  "verifyOtp": "Vérifier le code",
+  "otpSentTo": "Entrez le code de vérification envoyé à {email}",
+  "@otpSentTo": {"placeholders": {"email": {"type": "String"}}},
+  "otpCode": "Code de vérification",
+  "otpInvalid": "Entrez un code valide à 6 chiffres",
+  "verify": "Vérifier",
+  "newPassword": "Nouveau mot de passe",
+  "newPasswordHint": "Entrez votre nouveau mot de passe et confirmez-le.",
+  "confirmPassword": "Confirmer le mot de passe",
+  "passwordResetSuccess": "Mot de passe réinitialisé avec succès ! Vous pouvez maintenant vous connecter."
 }

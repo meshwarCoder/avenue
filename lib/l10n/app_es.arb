@@ -251,5 +251,19 @@
   "actionSkipped": "Omitido",
   "actionTask": "tarea",
   "actionHabit": "hábito",
-  "actionHabitInstance": "instancia de hábito"
+  "actionHabitInstance": "instancia de hábito",
+  "forgotPassword": "¿Olvidaste tu contraseña?",
+  "resetPassword": "Restablecer contraseña",
+  "resetPasswordHint": "Introduce tu correo electrónico y te enviaremos un código de verificación.",
+  "sendCode": "Enviar código",
+  "verifyOtp": "Verificar código",
+  "otpSentTo": "Introduce el código de verificación enviado a {email}",
+  "@otpSentTo": {"placeholders": {"email": {"type": "String"}}},
+  "otpCode": "Código de verificación",
+  "otpInvalid": "Introduce un código válido de 6 dígitos",
+  "verify": "Verificar",
+  "newPassword": "Nueva contraseña",
+  "newPasswordHint": "Introduce tu nueva contraseña y confírmala.",
+  "confirmPassword": "Confirmar contraseña",
+  "passwordResetSuccess": "¡Contraseña restablecida correctamente! Ahora puedes iniciar sesión."
 }

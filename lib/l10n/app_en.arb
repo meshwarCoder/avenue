@@ -258,5 +258,19 @@
   "actionSkipped": "Skipped",
   "actionTask": "task",
   "actionHabit": "habit",
-  "actionHabitInstance": "habit instance"
+  "actionHabitInstance": "habit instance",
+  "forgotPassword": "Forgot Password?",
+  "resetPassword": "Reset Password",
+  "resetPasswordHint": "Enter your email address and we'll send you a verification code.",
+  "sendCode": "Send Code",
+  "verifyOtp": "Verify Code",
+  "otpSentTo": "Enter the verification code sent to {email}",
+  "@otpSentTo": {"placeholders": {"email": {"type": "String"}}},
+  "otpCode": "Verification Code",
+  "otpInvalid": "Enter a valid 6-digit code",
+  "verify": "Verify",
+  "newPassword": "New Password",
+  "newPasswordHint": "Enter your new password and confirm it.",
+  "confirmPassword": "Confirm Password",
+  "passwordResetSuccess": "Password reset successfully! You can now sign in."
 }

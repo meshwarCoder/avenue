@@ -258,5 +258,19 @@
   "actionSkipped": "تم تخطي",
   "actionTask": "مهمة",
   "actionHabit": "عادة",
-  "actionHabitInstance": "تكرار العادة"
+  "actionHabitInstance": "تكرار العادة",
+  "forgotPassword": "نسيت كلمة المرور؟",
+  "resetPassword": "إعادة تعيين كلمة المرور",
+  "resetPasswordHint": "أدخل بريدك الإلكتروني وسنرسل لك رمز التحقق.",
+  "sendCode": "إرسال الرمز",
+  "verifyOtp": "تحقق من الرمز",
+  "otpSentTo": "أدخل رمز التحقق المرسل إلى {email}",
+  "@otpSentTo": {"placeholders": {"email": {"type": "String"}}},
+  "otpCode": "رمز التحقق",
+  "otpInvalid": "أدخل رمزاً صحيحاً مكوناً من 6 أرقام",
+  "verify": "تحقق",
+  "newPassword": "كلمة مرور جديدة",
+  "newPasswordHint": "أدخل كلمة مرورك الجديدة وأكدها.",
+  "confirmPassword": "تأكيد كلمة المرور",
+  "passwordResetSuccess": "تم إعادة تعيين كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول."
 }

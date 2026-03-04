@@ -251,5 +251,19 @@
   "actionSkipped": "Übersprungen",
   "actionTask": "Aufgabe",
   "actionHabit": "Gewohnheit",
-  "actionHabitInstance": "Gewohnheitsinstanz"
+  "actionHabitInstance": "Gewohnheitsinstanz",
+  "forgotPassword": "Passwort vergessen?",
+  "resetPassword": "Passwort zurücksetzen",
+  "resetPasswordHint": "Gib deine E-Mail-Adresse ein und wir senden dir einen Verifizierungscode.",
+  "sendCode": "Code senden",
+  "verifyOtp": "Code verifizieren",
+  "otpSentTo": "Gib den an {email} gesendeten Verifizierungscode ein",
+  "@otpSentTo": {"placeholders": {"email": {"type": "String"}}},
+  "otpCode": "Verifizierungscode",
+  "otpInvalid": "Gib einen gültigen 6-stelligen Code ein",
+  "verify": "Verifizieren",
+  "newPassword": "Neues Passwort",
+  "newPasswordHint": "Gib dein neues Passwort ein und bestätige es.",
+  "confirmPassword": "Passwort bestätigen",
+  "passwordResetSuccess": "Passwort erfolgreich zurückgesetzt! Du kannst dich jetzt anmelden."
 }
