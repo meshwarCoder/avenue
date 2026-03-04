@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 
 class DayCard extends StatelessWidget {
   final DateTime day;
@@ -82,7 +83,9 @@ class DayCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isToday ? "Today" : _getDayName(day.weekday),
+                        isToday
+                            ? AppLocalizations.of(context)!.today
+                            : _getDayName(context, day.weekday),
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -91,7 +94,7 @@ class DayCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "${_getMonthName(day.month)} ${day.day}",
+                        "${_getMonthName(context, day.month)} ${day.day}",
                         style: TextStyle(fontSize: 16, color: subTextColor),
                       ),
                     ],
@@ -106,53 +109,55 @@ class DayCard extends StatelessWidget {
     );
   }
 
-  String _getDayName(int weekday) {
+  String _getDayName(BuildContext context, int weekday) {
+    final l10n = AppLocalizations.of(context)!;
     switch (weekday) {
       case 1:
-        return 'Monday';
+        return l10n.monday;
       case 2:
-        return 'Tuesday';
+        return l10n.tuesday;
       case 3:
-        return 'Wednesday';
+        return l10n.wednesday;
       case 4:
-        return 'Thursday';
+        return l10n.thursday;
       case 5:
-        return 'Friday';
+        return l10n.friday;
       case 6:
-        return 'Saturday';
+        return l10n.saturday;
       case 7:
-        return 'Sunday';
+        return l10n.sunday;
       default:
         return '';
     }
   }
 
-  String _getMonthName(int month) {
+  String _getMonthName(BuildContext context, int month) {
+    final l10n = AppLocalizations.of(context)!;
     switch (month) {
       case 1:
-        return 'January';
+        return l10n.january;
       case 2:
-        return 'February';
+        return l10n.february;
       case 3:
-        return 'March';
+        return l10n.march;
       case 4:
-        return 'April';
+        return l10n.april;
       case 5:
-        return 'May';
+        return l10n.mayLong;
       case 6:
-        return 'June';
+        return l10n.june;
       case 7:
-        return 'July';
+        return l10n.july;
       case 8:
-        return 'August';
+        return l10n.august;
       case 9:
-        return 'September';
+        return l10n.september;
       case 10:
-        return 'October';
+        return l10n.october;
       case 11:
-        return 'November';
+        return l10n.november;
       case 12:
-        return 'December';
+        return l10n.december;
       default:
         return '';
     }

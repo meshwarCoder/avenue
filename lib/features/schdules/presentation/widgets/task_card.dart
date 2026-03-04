@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/models/task_model.dart';
 import 'package:avenue/core/utils/time_utils.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import 'package:avenue/features/settings/presentation/cubit/settings_cubit.dart';
 
 class TaskCard extends StatelessWidget {
@@ -262,7 +263,9 @@ class TaskCard extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            isOneTime ? "ONE-TIME" : "RECURRING",
+            isOneTime
+                ? AppLocalizations.of(context)!.oneTimeUpper
+                : AppLocalizations.of(context)!.recurringUpper,
             style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w700,

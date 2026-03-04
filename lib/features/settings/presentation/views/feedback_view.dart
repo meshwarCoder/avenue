@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/utils/constants.dart';
 import '../cubit/settings_cubit.dart';
 import '../cubit/settings_state.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class FeedbackView extends StatefulWidget {
   const FeedbackView({super.key});
@@ -13,7 +14,7 @@ class FeedbackView extends StatefulWidget {
 
 class _FeedbackViewState extends State<FeedbackView> {
   final _messageController = TextEditingController();
-  String _selectedType = 'Bug Report';
+  String? _selectedType;
 
   @override
   void dispose() {
@@ -29,6 +30,7 @@ class _FeedbackViewState extends State<FeedbackView> {
       listenWhen: (previous, current) =>
           previous.feedbackStatus != current.feedbackStatus,
       listener: (context, state) {
+        final l10n = AppLocalizations.of(context)!;
         if (state.feedbackStatus == FeedbackStatus.success) {
           showDialog(
             context: context,
@@ -37,19 +39,19 @@ class _FeedbackViewState extends State<FeedbackView> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              title: const Column(
+              title: Column(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.favorite_rounded,
                     color: Colors.redAccent,
                     size: 48,
                   ),
-                  SizedBox(height: 16),
-                  Text('Thank You!'),
+                  const SizedBox(height: 16),
+                  Text(l10n.thankYou),
                 ],
               ),
-              content: const Text(
-                'We truly appreciate your feedback! It helps us make Avenue better for everyone.',
+              content: Text(
+                l10n.feedbackThankYouMessage,
                 textAlign: TextAlign.center,
               ),
               actions: [
@@ -59,9 +61,9 @@ class _FeedbackViewState extends State<FeedbackView> {
                       Navigator.pop(context); // Pop dialog
                       Navigator.pop(this.context); // Pop FeedbackView
                     },
-                    child: const Text(
-                      'Done',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.done,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: AppColors.deepPurple,
@@ -76,7 +78,7 @@ class _FeedbackViewState extends State<FeedbackView> {
         } else if (state.feedbackStatus == FeedbackStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: ${state.feedbackErrorMessage}'),
+              content: Text('${l10n.error}: ${state.feedbackErrorMessage}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -85,7 +87,7 @@ class _FeedbackViewState extends State<FeedbackView> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Submit Feedback'),
+          title: Text(AppLocalizations.of(context)!.submitFeedback),
           centerTitle: true,
           elevation: 0,
         ),
@@ -95,7 +97,7 @@ class _FeedbackViewState extends State<FeedbackView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                "Your feedback is important",
+                AppLocalizations.of(context)!.feedbackHeader,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepPurple,
@@ -104,7 +106,7 @@ class _FeedbackViewState extends State<FeedbackView> {
               ),
               const SizedBox(height: 8),
               Text(
-                "Help us improve Avenue by reporting bugs or suggesting new features.",
+                AppLocalizations.of(context)!.feedbackHeaderSubtitle,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
@@ -113,14 +115,17 @@ class _FeedbackViewState extends State<FeedbackView> {
               const SizedBox(height: 32),
 
               // Feedback Type Dropdown
-              _buildLabel(context, "Feedback Type"),
+              _buildLabel(context, AppLocalizations.of(context)!.feedbackType),
               const SizedBox(height: 8),
               _buildDropdown(context),
 
               const SizedBox(height: 24),
 
               // Feedback Message Field
-              _buildLabel(context, "How can we improve?"),
+              _buildLabel(
+                context,
+                AppLocalizations.of(context)!.howCanWeImprove,
+              ),
               const SizedBox(height: 8),
               _buildMessageField(context),
 
@@ -156,11 +161,18 @@ class _FeedbackViewState extends State<FeedbackView> {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: _selectedType,
+          value: _selectedType ?? AppLocalizations.of(context)!.bugReport,
           isExpanded: true,
-          items: ['Bug Report', 'Feature Request'].map((String value) {
-            return DropdownMenuItem<String>(value: value, child: Text(value));
-          }).toList(),
+          items:
+              [
+                AppLocalizations.of(context)!.bugReport,
+                AppLocalizations.of(context)!.featureRequest,
+              ].map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
           onChanged: (String? newValue) {
             if (newValue != null) {
               setState(() {
@@ -179,7 +191,7 @@ class _FeedbackViewState extends State<FeedbackView> {
       controller: _messageController,
       maxLines: 6,
       decoration: InputDecoration(
-        hintText: "Enter your message here...",
+        hintText: AppLocalizations.of(context)!.enterMessageHere,
         filled: true,
         fillColor: theme.colorScheme.surface,
         border: OutlineInputBorder(
@@ -223,9 +235,9 @@ class _FeedbackViewState extends State<FeedbackView> {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-              : const Text(
-                  "Submit Feedback",
-                  style: TextStyle(fontWeight: FontWeight.bold),
+              : Text(
+                  AppLocalizations.of(context)!.submitFeedback,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
         );
       },
@@ -235,14 +247,14 @@ class _FeedbackViewState extends State<FeedbackView> {
   void _submitFeedback() {
     final message = _messageController.text.trim();
     if (message.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter a message')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.errEnterMessage)),
+      );
       return;
     }
 
     context.read<SettingsCubit>().submitFeedback(
-      type: _selectedType,
+      type: _selectedType ?? AppLocalizations.of(context)!.bugReport,
       content: message,
     );
   }

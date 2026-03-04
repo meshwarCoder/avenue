@@ -13,8 +13,10 @@ class SocialLoginRow extends StatelessWidget {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
         final isLoading = state is AuthLoading;
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        return Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 20,
+          runSpacing: 10,
           children: [
             // Google (Functional)
             _SocialButton(
@@ -28,8 +30,6 @@ class SocialLoginRow extends StatelessWidget {
                   state is AuthLoading &&
                   state.source == AuthLoadingSource.google,
             ),
-
-            const SizedBox(width: 20),
 
             // Facebook (Functional)
             _SocialButton(

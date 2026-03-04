@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import 'package:avenue/features/schdules/data/models/default_task_model.dart';
 import 'package:avenue/features/schdules/presentation/views/add_task_view.dart';
 import 'package:avenue/features/schdules/presentation/cubit/default_tasks_cubit.dart';
@@ -27,8 +28,8 @@ class _DefaultTasksViewState extends State<DefaultTasksView> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'Master Routine',
+        title: Text(
+          AppLocalizations.of(context)!.masterRoutine,
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -54,7 +55,7 @@ class _DefaultTasksViewState extends State<DefaultTasksView> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'No recurring tasks yet.',
+                      AppLocalizations.of(context)!.noRecurringTasks,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: Colors.grey,
                       ),
@@ -309,7 +310,16 @@ class _DefaultTaskCard extends StatelessWidget {
   }
 
   Widget _buildWeekdaysRow(BuildContext context) {
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final l10n = AppLocalizations.of(context)!;
+    final days = [
+      l10n.mon,
+      l10n.tue,
+      l10n.wed,
+      l10n.thu,
+      l10n.fri,
+      l10n.sat,
+      l10n.sun,
+    ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -350,23 +360,22 @@ class _DefaultTaskCard extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Routine'),
-        content: Text(
-          'Are you sure you want to delete "${task.name}"? This will stop generating future tasks for this routine.',
-        ),
+        title: Text(l10n.deleteRoutine),
+        content: Text(l10n.deleteRoutineConfirm(task.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.redAccent),
+            child: Text(
+              l10n.delete,
+              style: const TextStyle(color: Colors.redAccent),
             ),
           ),
         ],

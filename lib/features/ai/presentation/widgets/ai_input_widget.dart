@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/logic/app_connectivity_cubit.dart';
 import '../../../../core/logic/app_connectivity_state.dart';
 import '../../../../core/utils/constants.dart';
@@ -65,7 +66,7 @@ class _AiInputWidgetState extends State<AiInputWidget>
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    context.read<ChatCubit>().sendMessage(text);
+    context.read<ChatCubit>().sendMessage(text, AppLocalizations.of(context)!);
     _controller.clear();
     _focusNode.requestFocus();
   }
@@ -95,9 +96,7 @@ class _AiInputWidgetState extends State<AiInputWidget>
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         border: Border(
-          top: BorderSide(
-            color: theme.dividerColor.withValues(alpha: 0.1),
-          ),
+          top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
         ),
       ),
       child: Row(
@@ -117,8 +116,8 @@ class _AiInputWidgetState extends State<AiInputWidget>
                 readOnly: !isOnline,
                 decoration: InputDecoration(
                   hintText: isOnline
-                      ? 'Message Assistant...'
-                      : 'Internet connection required',
+                      ? AppLocalizations.of(context)!.messageAssistant
+                      : AppLocalizations.of(context)!.connectionRequired,
                   border: InputBorder.none,
                   hintStyle: TextStyle(
                     fontSize: 15,
@@ -129,7 +128,9 @@ class _AiInputWidgetState extends State<AiInputWidget>
                 ),
                 style: TextStyle(
                   fontSize: 15,
-                  color: isOnline ? null : theme.disabledColor.withValues(alpha: 0.6),
+                  color: isOnline
+                      ? null
+                      : theme.disabledColor.withValues(alpha: 0.6),
                 ),
                 onSubmitted: (_) => _handleSendTap(isOnline),
               ),
@@ -145,12 +146,10 @@ class _AiInputWidgetState extends State<AiInputWidget>
   /// Build the send button with shake animation and connectivity awareness
   Widget _buildSendButton(bool isOnline) {
     return SlideTransition(
-      position: Tween<Offset>(
-        begin: Offset.zero,
-        end: const Offset(0.1, 0),
-      ).animate(
-        CurvedAnimation(parent: _shakeController, curve: Curves.elasticIn),
-      ),
+      position: Tween<Offset>(begin: Offset.zero, end: const Offset(0.1, 0))
+          .animate(
+            CurvedAnimation(parent: _shakeController, curve: Curves.elasticIn),
+          ),
       child: GestureDetector(
         onTap: () => _handleSendTap(isOnline),
         child: Container(
@@ -160,10 +159,7 @@ class _AiInputWidgetState extends State<AiInputWidget>
             color: isOnline ? AppColors.deepPurple : Colors.grey,
             shape: BoxShape.circle,
           ),
-          child: const Icon(
-            Icons.arrow_upward_rounded,
-            color: Colors.white,
-          ),
+          child: const Icon(Icons.arrow_upward_rounded, color: Colors.white),
         ),
       ),
     );

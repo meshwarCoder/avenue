@@ -14,6 +14,7 @@ import '../../../../core/utils/observability.dart';
 import '../../../../core/services/network_service.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/errors/error_mapper.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class ChatCubit extends Cubit<ChatState> {
   final AiOrchestrator aiOrchestrator;
@@ -46,7 +47,7 @@ class ChatCubit extends Cubit<ChatState> {
     emit(state);
   }
 
-  void sendMessage(String text) async {
+  void sendMessage(String text, AppLocalizations l10n) async {
     final tid = const Uuid().v4().substring(0, 8);
     AvenueLogger.log(
       event: 'UI_SEND_MESSAGE_CLICKED',
@@ -59,7 +60,7 @@ class ChatCubit extends Cubit<ChatState> {
       _messages = List.from(_messages)
         ..add(
           ChatMessage(
-            text: ErrorMapper.mapFailureToMessage(const NetworkFailure()),
+            text: ErrorMapper.mapFailureToMessage(l10n, const NetworkFailure()),
             isUser: false,
           ),
         );
@@ -157,12 +158,9 @@ class ChatCubit extends Cubit<ChatState> {
         payload: e.toString(),
       );
 
-      String errorMsg =
-          "The app is still in beta, and we can't afford the API right now. Please try again later.";
+      String errorMsg = l10n.errAiUnavailableBeta;
       if (e is AiLimitExceededException) {
-        errorMsg = e.isDaily
-            ? "You've reached your daily (5) AI usage limit. Since the app is in beta, these limits help us manage costs. Please try again tomorrow."
-            : "You've reached your monthly (50) AI usage limit. Since the app is in beta, these limits help us manage costs. Please try again next month.";
+        errorMsg = e.isDaily ? l10n.errAiDailyLimit : l10n.errAiMonthlyLimit;
       }
 
       _messages = List.from(_messages)
@@ -175,7 +173,7 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   // Execute actions when user confirms
-  void confirmAllActions(int messageIndex) async {
+  void confirmAllActions(int messageIndex, AppLocalizations l10n) async {
     final tid = const Uuid().v4().substring(0, 8);
     AvenueLogger.log(
       event: 'UI_CONFIRM_CLICKED',
@@ -214,20 +212,26 @@ class ChatCubit extends Cubit<ChatState> {
       await _executeAction(action, traceId: tid);
       if (action is TaskAction) {
         final verb = switch (action.action) {
-          'create' => 'Created',
-          'delete' => 'Deleted',
-          _ => 'Updated',
+          'create' => l10n.actionCreated,
+          'delete' => l10n.actionDeleted,
+          _ => l10n.actionUpdated,
         };
-        actionSummaries.add("$verb task '${action.name ?? 'task'}'");
+        actionSummaries.add(
+          "$verb ${l10n.actionTask} '${action.name ?? l10n.actionTask}'",
+        );
       } else if (action is HabitAction) {
         final verb = switch (action.action) {
-          'create' => 'Created',
-          'delete' => 'Deleted',
-          _ => 'Updated',
+          'create' => l10n.actionCreated,
+          'delete' => l10n.actionDeleted,
+          _ => l10n.actionUpdated,
         };
-        actionSummaries.add("$verb habit '${action.name ?? 'habit'}'");
+        actionSummaries.add(
+          "$verb ${l10n.actionHabit} '${action.name ?? l10n.actionHabit}'",
+        );
       } else if (action is SkipHabitInstanceAction) {
-        actionSummaries.add("Skipped habit instance");
+        actionSummaries.add(
+          "${l10n.actionSkipped} ${l10n.actionHabitInstance}",
+        );
       }
     }
 
@@ -240,7 +244,8 @@ class ChatCubit extends Cubit<ChatState> {
     }
 
     // 4. Record confirmation in history (Supabase + local)
-    final summaryText = "✅ Actions confirmed: ${actionSummaries.join(', ')}";
+    final summaryText =
+        "✅ ${l10n.actionsConfirmed}: ${actionSummaries.join(', ')}";
     if (sessionCubit?.currentChatId != null) {
       await sessionCubit!.saveMessage('ai', summaryText);
 

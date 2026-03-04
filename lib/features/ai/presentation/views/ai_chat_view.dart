@@ -12,6 +12,7 @@ import '../logic/chat_session_state.dart';
 import '../../ai/ai_action_models.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/presentation/cubit/auth_state.dart' as auth_state;
+import '../../../../l10n/app_localizations.dart';
 
 class AiChatView extends StatelessWidget {
   const AiChatView({super.key});
@@ -21,7 +22,11 @@ class AiChatView extends StatelessWidget {
     return BlocBuilder<AuthCubit, auth_state.AuthState>(
       builder: (context, authState) {
         if (authState is! auth_state.Authenticated) {
-          return const Scaffold(body: Center(child: Text('Please log in')));
+          return Scaffold(
+            body: Center(
+              child: Text(AppLocalizations.of(context)!.pleaseLogIn),
+            ),
+          );
         }
 
         return MultiBlocProvider(
@@ -97,14 +102,16 @@ class _ChatScreenState extends State<_ChatScreen> {
                     !_notifiedMessageIndexes.contains(i)) {
                   _notifiedMessageIndexes.add(i);
 
-                  String dateStr = "successfully";
+                  String dateStr = AppLocalizations.of(context)!.successfully;
                   if (m.suggestedActions != null &&
                       m.suggestedActions!.isNotEmpty) {
                     final firstAction = m.suggestedActions!.first;
                     if (firstAction is TaskAction) {
                       final d = firstAction.date;
                       if (d != null) {
-                        dateStr = "for ${d.day}/${d.month}";
+                        dateStr = AppLocalizations.of(
+                          context,
+                        )!.forDate("${d.day}/${d.month}");
                       }
                     }
                   }
@@ -116,7 +123,9 @@ class _ChatScreenState extends State<_ChatScreen> {
                         children: [
                           const Icon(Icons.check_circle, color: Colors.white),
                           const SizedBox(width: 8),
-                          Text('Executed $dateStr!'),
+                          Text(
+                            '${AppLocalizations.of(context)!.executed} $dateStr!',
+                          ),
                         ],
                       ),
                       backgroundColor: Colors.green,
@@ -136,7 +145,7 @@ class _ChatScreenState extends State<_ChatScreen> {
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          title: const Text('AI Assistant'),
+          title: Text(AppLocalizations.of(context)!.aiAssistant),
           backgroundColor: Colors.transparent,
           foregroundColor: theme.colorScheme.onSurface,
           elevation: 0,
@@ -256,17 +265,17 @@ class _ChatScreenState extends State<_ChatScreen> {
 
   Widget _buildTypingIndicator(ThemeData theme, bool isDark) {
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: theme.cardColor,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-            bottomLeft: Radius.circular(4),
-            bottomRight: Radius.circular(20),
+          borderRadius: BorderRadiusDirectional.only(
+            topStart: const Radius.circular(20),
+            topEnd: const Radius.circular(20),
+            bottomStart: const Radius.circular(4),
+            bottomEnd: const Radius.circular(20),
           ),
           boxShadow: [
             BoxShadow(
@@ -280,7 +289,10 @@ class _ChatScreenState extends State<_ChatScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ShimmerText(text: 'Avenue is thinking...', isDark: isDark),
+            _ShimmerText(
+              text: AppLocalizations.of(context)!.aiIsThinking,
+              isDark: isDark,
+            ),
             const SizedBox(height: 8),
             const _AnimatedThreeDots(),
           ],
@@ -312,7 +324,7 @@ class _ChatScreenState extends State<_ChatScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'How can I help you today?',
+              AppLocalizations.of(context)!.howCanIHelp,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white : AppColors.deepPurple,
@@ -322,7 +334,7 @@ class _ChatScreenState extends State<_ChatScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 48),
               child: Text(
-                'Try "Plan my week" or "Add a gym session every Monday at 6pm"',
+                AppLocalizations.of(context)!.aiEmptySubtitle,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: isDark ? Colors.white70 : AppColors.deepPurple,
@@ -343,17 +355,19 @@ class _ChatScreenState extends State<_ChatScreen> {
     bool isDark,
   ) {
     return Align(
-      alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: msg.isUser
+          ? AlignmentDirectional.centerEnd
+          : AlignmentDirectional.centerStart,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: msg.isUser ? AppColors.deepPurple : theme.cardColor,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: Radius.circular(msg.isUser ? 20 : 4),
-            bottomRight: Radius.circular(msg.isUser ? 4 : 20),
+          borderRadius: BorderRadiusDirectional.only(
+            topStart: const Radius.circular(20),
+            topEnd: const Radius.circular(20),
+            bottomStart: Radius.circular(msg.isUser ? 20 : 4),
+            bottomEnd: Radius.circular(msg.isUser ? 4 : 20),
           ),
           boxShadow: [
             if (!msg.isUser)
@@ -396,13 +410,17 @@ class _ChatScreenState extends State<_ChatScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () =>
-                      context.read<ChatCubit>().confirmAllActions(index),
+                  onPressed: () => context.read<ChatCubit>().confirmAllActions(
+                    index,
+                    AppLocalizations.of(context)!,
+                  ),
                   icon: const Icon(Icons.done_all_rounded, size: 18),
                   label: Text(
                     msg.suggestedActions!.length == 1
-                        ? 'Confirm Action'
-                        : 'Confirm All (${msg.suggestedActions!.length})',
+                        ? AppLocalizations.of(context)!.confirmAction
+                        : AppLocalizations.of(
+                            context,
+                          )!.confirmAll(msg.suggestedActions!.length),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.salmonPink,
@@ -431,7 +449,7 @@ class _ChatScreenState extends State<_ChatScreen> {
                         color: Colors.green.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
@@ -441,8 +459,8 @@ class _ChatScreenState extends State<_ChatScreen> {
                         ),
                         SizedBox(width: 6),
                         Text(
-                          'Executed successfully',
-                          style: TextStyle(
+                          AppLocalizations.of(context)!.executedSuccessfully,
+                          style: const TextStyle(
                             color: Colors.green,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -503,8 +521,8 @@ class _ShimmerTextState extends State<_ShimmerText>
         return ShaderMask(
           shaderCallback: (bounds) {
             return LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
               colors: [baseColor, highlightColor, baseColor],
               stops: [
                 (_controller.value * 2.0) - 1.0,
@@ -614,37 +632,41 @@ class _ChatDrawer extends StatelessWidget {
             children: [
               DrawerHeader(
                 decoration: BoxDecoration(color: AppColors.deepPurple),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    const Icon(
-                      Icons.chat_bubble_outline,
-                      color: Colors.white,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'AI Assistant',
-                      style: TextStyle(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.bottomStart,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      const Icon(
+                        Icons.chat_bubble_outline,
                         color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                        size: 48,
                       ),
-                    ),
-                    Text(
-                      'Your personal task manager',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 14,
+                      const SizedBox(height: 8),
+                      Text(
+                        AppLocalizations.of(context)!.aiAssistant,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        AppLocalizations.of(context)!.personalTaskManager,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               ListTile(
                 leading: const Icon(Icons.add),
-                title: const Text('New Chat'),
+                title: Text(AppLocalizations.of(context)!.newChat),
                 onTap: () {
                   onSwitch();
                   context.read<ChatSessionCubit>().createNewChat();
@@ -669,7 +691,7 @@ class _ChatDrawer extends StatelessWidget {
                       color: isActive ? theme.colorScheme.primary : null,
                     ),
                   ),
-                  subtitle: Text(_formatDate(chat.createdAt)),
+                  subtitle: Text(_formatDate(context, chat.createdAt)),
                   trailing: PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
                     onSelected: (value) {
@@ -680,23 +702,30 @@ class _ChatDrawer extends StatelessWidget {
                       }
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'rename',
                         child: Row(
                           children: [
-                            Icon(Icons.edit, size: 20),
-                            SizedBox(width: 8),
-                            Text('Rename'),
+                            const Icon(Icons.edit, size: 20),
+                            const SizedBox(width: 8),
+                            Text(AppLocalizations.of(context)!.rename),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete, size: 20, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Delete', style: TextStyle(color: Colors.red)),
+                            const Icon(
+                              Icons.delete,
+                              size: 20,
+                              color: Colors.red,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              AppLocalizations.of(context)!.delete,
+                              style: const TextStyle(color: Colors.red),
+                            ),
                           ],
                         ),
                       ),
@@ -734,16 +763,18 @@ class _ChatDrawer extends StatelessWidget {
         child: Builder(
           builder: (dialogContext) {
             return AlertDialog(
-              title: const Text('Rename Chat'),
+              title: Text(AppLocalizations.of(context)!.renameChat),
               content: TextField(
                 controller: controller,
-                decoration: const InputDecoration(hintText: 'Enter new title'),
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.enterNewTitle,
+                ),
                 autofocus: true,
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
+                  child: Text(AppLocalizations.of(context)!.cancel),
                 ),
                 TextButton(
                   onPressed: () {
@@ -753,7 +784,7 @@ class _ChatDrawer extends StatelessWidget {
                     }
                     Navigator.pop(dialogContext);
                   },
-                  child: const Text('Save'),
+                  child: Text(AppLocalizations.of(context)!.save),
                 ),
               ],
             );
@@ -773,23 +804,21 @@ class _ChatDrawer extends StatelessWidget {
         child: Builder(
           builder: (dialogContext) {
             return AlertDialog(
-              title: const Text('Delete Chat'),
-              content: const Text(
-                'Are you sure you want to delete this chat? This action cannot be undone.',
-              ),
+              title: Text(AppLocalizations.of(context)!.deleteChat),
+              content: Text(AppLocalizations.of(context)!.deleteChatConfirm),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
+                  child: Text(AppLocalizations.of(context)!.cancel),
                 ),
                 TextButton(
                   onPressed: () {
                     sessionCubit.deleteChat(chatId);
                     Navigator.pop(dialogContext);
                   },
-                  child: const Text(
-                    'Delete',
-                    style: TextStyle(color: Colors.red),
+                  child: Text(
+                    AppLocalizations.of(context)!.delete,
+                    style: const TextStyle(color: Colors.red),
                   ),
                 ),
               ],
@@ -800,16 +829,19 @@ class _ChatDrawer extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(BuildContext context, DateTime date) {
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
-    final diff = now.difference(date);
+    final today = DateTime(now.year, now.month, now.day);
+    final dateAtMidnight = DateTime(date.year, date.month, date.day);
+    final diffDays = today.difference(dateAtMidnight).inDays;
 
-    if (diff.inDays == 0) {
-      return 'Today';
-    } else if (diff.inDays == 1) {
-      return 'Yesterday';
-    } else if (diff.inDays < 7) {
-      return '${diff.inDays} days ago';
+    if (diffDays == 0) {
+      return l10n.today;
+    } else if (diffDays == 1) {
+      return l10n.yesterday;
+    } else if (diffDays < 7) {
+      return l10n.daysAgo(diffDays);
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }

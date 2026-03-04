@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:avenue/features/schdules/presentation/views/add_task_view.dart';
 import 'package:avenue/features/schdules/presentation/widgets/task_card.dart';
@@ -38,9 +39,9 @@ class _TimelineViewState extends State<TimelineView> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          "Timeline",
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context)!.timeline,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -131,8 +132,9 @@ class TimelineLayout extends StatelessWidget {
       height: totalHeight + 100,
       child: Stack(
         children: [
-          Positioned(
-            left: 0,
+          Positioned.directional(
+            textDirection: Directionality.of(context),
+            start: 0,
             top: 0,
             bottom: 0,
             width: timeColumnWidth,
@@ -159,8 +161,9 @@ class TimelineLayout extends StatelessWidget {
 
             return [
               // Start dot
-              Positioned(
-                left: timeColumnWidth - 13,
+              Positioned.directional(
+                textDirection: Directionality.of(context),
+                start: timeColumnWidth - 13,
                 top: startTop - 3,
                 child: Container(
                   width: 8,
@@ -176,8 +179,9 @@ class TimelineLayout extends StatelessWidget {
                 ),
               ),
               // End dot
-              Positioned(
-                left: timeColumnWidth - 13,
+              Positioned.directional(
+                textDirection: Directionality.of(context),
+                start: timeColumnWidth - 13,
                 top: endTop - 3,
                 child: Container(
                   width: 8,
@@ -192,8 +196,9 @@ class TimelineLayout extends StatelessWidget {
                   ),
                 ),
               ),
-              Positioned(
-                left: timeColumnWidth - 5,
+              Positioned.directional(
+                textDirection: Directionality.of(context),
+                start: timeColumnWidth - 5,
                 top: startTop - 10,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -214,8 +219,9 @@ class TimelineLayout extends StatelessWidget {
                   ),
                 ),
               ),
-              Positioned(
-                left: timeColumnWidth - 5,
+              Positioned.directional(
+                textDirection: Directionality.of(context),
+                start: timeColumnWidth - 5,
                 top: endTop - 10,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -252,9 +258,10 @@ class TimelineLayout extends StatelessWidget {
               final height = _calculateHeight(task.durationInMinutes);
               final columnIndex = columns[task]!;
 
-              return Positioned(
+              return Positioned.directional(
+                textDirection: Directionality.of(context),
                 top: topOffset,
-                left:
+                start:
                     timeColumnWidth +
                     40 +
                     (columnIndex *

@@ -2,22 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class TimeUtils {
-  static String formatTime(TimeOfDay time, bool is24HourFormat) {
+  static String formatTime(
+    TimeOfDay time,
+    bool is24HourFormat, {
+    String? locale,
+  }) {
     final now = DateTime.now();
     final dt = DateTime(now.year, now.month, now.day, time.hour, time.minute);
 
     if (is24HourFormat) {
-      return DateFormat('HH:mm').format(dt);
+      return DateFormat('HH:mm', locale).format(dt);
     } else {
-      return DateFormat('h:mm a').format(dt);
+      return DateFormat.jm(locale).format(dt);
     }
   }
 
-  static String formatDateTime(DateTime date, bool is24HourFormat) {
+  static String formatDateTime(
+    DateTime date,
+    bool is24HourFormat, {
+    String? locale,
+  }) {
     if (is24HourFormat) {
-      return DateFormat('HH:mm').format(date);
+      return DateFormat('HH:mm', locale).format(date);
     } else {
-      return DateFormat('h:mm a').format(date);
+      return DateFormat.jm(locale).format(date);
     }
   }
 }

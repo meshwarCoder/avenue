@@ -1,45 +1,55 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:avenue/l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../errors/failures.dart';
 
 class ErrorMapper {
-  static String mapFailureToMessage(Failure failure) {
+  static String mapFailureToMessage(AppLocalizations l10n, Failure failure) {
     if (failure is NetworkFailure) {
-      return 'No internet connection try again';
+      return l10n.errNoInternet;
+    }
+    if (failure is TimeoutFailure) {
+      return l10n.errTimeout;
+    }
+    if (failure.message == 'Unexpected error occurred') {
+      return l10n.errUnexpected;
+    }
+    if (failure.message == 'Task not found') {
+      return l10n.errTaskNotFound;
     }
     return failure.message;
   }
 
-  static String mapExceptionToMessage(dynamic e) {
+  static String mapExceptionToMessage(AppLocalizations l10n, dynamic e) {
     if (e is SocketException || (e.toString().contains('Failed host lookup'))) {
-      return 'No internet connection try again';
+      return l10n.errNoInternet;
     }
     if (e is TimeoutException) {
-      return 'Connection timeout try again';
+      return l10n.errTimeout;
     }
     if (e is AuthException) {
-      return _mapAuthException(e);
+      return _mapAuthException(l10n, e);
     }
 
     // Default fallback - never leak technical details
-    return 'Unexpected error occurred try again';
+    return l10n.errUnexpected;
   }
 
-  static String _mapAuthException(AuthException e) {
+  static String _mapAuthException(AppLocalizations l10n, AuthException e) {
     final message = e.message.toLowerCase();
     if (message.contains('invalid login credentials')) {
-      return 'Invalid email or password.';
+      return l10n.errInvalidCredentials;
     }
     if (message.contains('email not confirmed')) {
-      return 'Please confirm your email first.';
+      return l10n.errEmailNotConfirmed;
     }
     if (message.contains('user already exists')) {
-      return 'This account already exists. Try logging in.';
+      return l10n.errUserAlreadyExists;
     }
     if (message.contains('rate limit')) {
-      return 'Too many attempts. Please try again later.';
+      return l10n.errRateLimit;
     }
-    return 'Authentication failed. Try again.';
+    return l10n.errAuthFailed;
   }
 }

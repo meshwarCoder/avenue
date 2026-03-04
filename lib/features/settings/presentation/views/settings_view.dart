@@ -1,3 +1,4 @@
+import 'package:avenue/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +8,7 @@ import 'package:avenue/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:avenue/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:avenue/features/settings/presentation/cubit/settings_state.dart';
 import 'package:avenue/features/settings/presentation/views/feedback_view.dart';
+import 'package:avenue/core/localization/locale_cubit.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -17,7 +19,7 @@ class SettingsView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(AppLocalizations.of(context)!.settings),
         centerTitle: true,
         elevation: 0,
       ),
@@ -39,12 +41,24 @@ class SettingsView extends StatelessWidget {
           const SizedBox(height: 16),
           _buildFeedbackSection(context),
           const SizedBox(height: 24),
-          _buildSectionHeader(context, "General"),
+          _buildSectionHeader(context, AppLocalizations.of(context)!.general),
+          _buildSettingItem(
+            context,
+            icon: Icons.language_rounded,
+            title: AppLocalizations.of(context)!.language,
+            subtitle: _getLanguageName(
+              context.watch<LocaleCubit>().state.locale.languageCode,
+            ),
+            onTap: () => _showLanguagePicker(context),
+          ),
           _buildSettingItem(
             context,
             icon: Icons.palette_outlined,
-            title: "Theme Mode",
-            subtitle: _getThemeModeName(context.watch<ThemeCubit>().state),
+            title: AppLocalizations.of(context)!.themeMode,
+            subtitle: _getThemeModeName(
+              context,
+              context.watch<ThemeCubit>().state,
+            ),
             onTap: () => _showThemePicker(context),
           ),
           BlocBuilder<SettingsCubit, SettingsState>(
@@ -54,15 +68,17 @@ class SettingsView extends StatelessWidget {
                   _buildSettingItem(
                     context,
                     icon: Icons.calendar_today_rounded,
-                    title: "Start of the Week",
-                    subtitle: _getDayName(state.weekStartDay),
+                    title: AppLocalizations.of(context)!.startOfWeek,
+                    subtitle: _getDayName(context, state.weekStartDay),
                     onTap: () => _showWeekStartPicker(context),
                   ),
                   _buildSettingItem(
                     context,
                     icon: Icons.access_time_rounded,
-                    title: "Time System",
-                    subtitle: state.is24HourFormat ? "24-Hour" : "12-Hour",
+                    title: AppLocalizations.of(context)!.timeSystem,
+                    subtitle: state.is24HourFormat
+                        ? AppLocalizations.of(context)!.hour24
+                        : AppLocalizations.of(context)!.hour12,
                     onTap: () => _showTimeFormatPicker(context),
                   ),
                 ],
@@ -76,8 +92,10 @@ class SettingsView extends StatelessWidget {
                   _buildSettingItem(
                     context,
                     icon: Icons.notifications_none_rounded,
-                    title: "Notifications",
-                    subtitle: state.notificationsEnabled ? "On" : "Off",
+                    title: AppLocalizations.of(context)!.notifications,
+                    subtitle: state.notificationsEnabled
+                        ? AppLocalizations.of(context)!.on
+                        : AppLocalizations.of(context)!.off,
                     trailing: Switch(
                       value: state.notificationsEnabled,
                       onChanged: (val) => context
@@ -95,35 +113,34 @@ class SettingsView extends StatelessWidget {
             },
           ),
           const SizedBox(height: 24),
-          _buildSectionHeader(context, "Account"),
+          _buildSectionHeader(context, AppLocalizations.of(context)!.account),
           _buildSettingItem(
             context,
             icon: Icons.person_outline_rounded,
-            title: "Profile Details",
+            title: AppLocalizations.of(context)!.profileDetails,
             onTap: () {},
           ),
-
           _buildSettingItem(
             context,
             icon: Icons.logout_rounded,
-            title: "Logout",
+            title: AppLocalizations.of(context)!.logout,
             titleColor: Colors.redAccent,
             onTap: () async {
               final shouldLogout = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Logout'),
-                  content: const Text('Are you sure you want to logout?'),
+                  title: Text(AppLocalizations.of(context)!.logout),
+                  content: Text(AppLocalizations.of(context)!.logoutConfirm),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancel'),
+                      child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      child: const Text(
-                        'Logout',
-                        style: TextStyle(color: Colors.redAccent),
+                      child: Text(
+                        AppLocalizations.of(context)!.logout,
+                        style: const TextStyle(color: Colors.redAccent),
                       ),
                     ),
                   ],
@@ -142,19 +159,22 @@ class SettingsView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 24),
-                  _buildSectionHeader(context, "Dev Options"),
+                  _buildSectionHeader(
+                    context,
+                    AppLocalizations.of(context)!.devOptions,
+                  ),
                   _buildSettingItem(
                     context,
                     icon: Icons.smart_toy_outlined,
-                    title: "AI Model",
+                    title: AppLocalizations.of(context)!.aiModel,
                     subtitle: state.aiModel,
                     onTap: () => _showModelEditor(context, state.aiModel),
                   ),
                   _buildSettingItem(
                     context,
                     icon: Icons.key_outlined,
-                    title: "Cloud API Key",
-                    subtitle: "Set or update server key",
+                    title: AppLocalizations.of(context)!.cloudApiKey,
+                    subtitle: AppLocalizations.of(context)!.setUpdateServerKey,
                     onTap: () => _showApiKeyEditor(context),
                   ),
                   const SizedBox(height: 16),
@@ -177,7 +197,7 @@ class SettingsView extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Avenue v0.1.0-beta",
+                  AppLocalizations.of(context)!.versionInfo,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.5),
                   ),
@@ -207,14 +227,14 @@ class SettingsView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Beta Version",
+                  AppLocalizations.of(context)!.betaVersion,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.creamTan,
                   ),
                 ),
                 Text(
-                  "Avenue is currently in beta. Some features are still being polished.",
+                  AppLocalizations.of(context)!.betaNotice,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -267,14 +287,14 @@ class SettingsView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Help us improve Avenue",
+                      AppLocalizations.of(context)!.helpImprove,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : AppColors.deepPurple,
                       ),
                     ),
                     Text(
-                      "Submit a bug report or feature request",
+                      AppLocalizations.of(context)!.feedbackSubtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
@@ -296,7 +316,7 @@ class SettingsView extends StatelessWidget {
   Widget _buildSectionHeader(BuildContext context, String title) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      padding: const EdgeInsetsDirectional.only(start: 4, bottom: 8),
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -347,18 +367,20 @@ class SettingsView extends StatelessWidget {
     );
   }
 
-  String _getThemeModeName(ThemeMode mode) {
+  String _getThemeModeName(BuildContext context, ThemeMode mode) {
+    final l10n = AppLocalizations.of(context)!;
     switch (mode) {
       case ThemeMode.light:
-        return "Light";
+        return l10n.light;
       case ThemeMode.dark:
-        return "Dark";
+        return l10n.dark;
       case ThemeMode.system:
-        return "System Default";
+        return l10n.systemDefault;
     }
   }
 
   void _showThemePicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -372,7 +394,7 @@ class SettingsView extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "Select Theme",
+                l10n.themeMode,
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -380,21 +402,21 @@ class SettingsView extends StatelessWidget {
               const SizedBox(height: 20),
               _buildThemeOption(
                 context,
-                "Light",
+                l10n.light,
                 Icons.light_mode_rounded,
                 ThemeMode.light,
                 themeCubit,
               ),
               _buildThemeOption(
                 context,
-                "Dark",
+                l10n.dark,
                 Icons.dark_mode_rounded,
                 ThemeMode.dark,
                 themeCubit,
               ),
               _buildThemeOption(
                 context,
-                "System Default",
+                l10n.systemDefault,
                 Icons.brightness_auto_rounded,
                 ThemeMode.system,
                 themeCubit,
@@ -405,6 +427,73 @@ class SettingsView extends StatelessWidget {
         );
       },
     );
+  }
+
+  void _showLanguagePicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        final localeCubit = context.read<LocaleCubit>();
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                l10n.selectLanguage,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              _buildLanguageOption(context, l10n.english, 'en', localeCubit),
+              _buildLanguageOption(context, l10n.arabic, 'ar', localeCubit),
+              _buildLanguageOption(context, l10n.spanish, 'es', localeCubit),
+              _buildLanguageOption(context, l10n.french, 'fr', localeCubit),
+              _buildLanguageOption(context, l10n.german, 'de', localeCubit),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageOption(
+    BuildContext context,
+    String title,
+    String code,
+    LocaleCubit cubit,
+  ) {
+    final isSelected = cubit.state.locale.languageCode == code;
+    return ListTile(
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? AppColors.deepPurple : null,
+        ),
+      ),
+      trailing: isSelected
+          ? const Icon(Icons.check_circle_rounded, color: AppColors.deepPurple)
+          : null,
+      onTap: () {
+        cubit.changeLanguage(code);
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  String _getLanguageName(String code) {
+    if (code == 'ar') return "العربية";
+    if (code == 'es') return "Español";
+    if (code == 'fr') return "Français";
+    if (code == 'de') return "Deutsch";
+    return "English";
   }
 
   Widget _buildThemeOption(
@@ -437,25 +526,25 @@ class SettingsView extends StatelessWidget {
     );
   }
 
-  String _getDayName(int day) {
+  String _getDayName(BuildContext context, int day) {
+    final l10n = AppLocalizations.of(context)!;
     switch (day) {
       case DateTime.saturday:
-        return 'Saturday';
+        return l10n.saturday;
       case DateTime.sunday:
-        return 'Sunday';
+        return l10n.sunday;
       case DateTime.monday:
-        return 'Monday';
+        return l10n.monday;
       case DateTime.tuesday:
-        return 'Tuesday';
+        return l10n.tuesday;
       case DateTime.wednesday:
-        return 'Wednesday';
+        return l10n.wednesday;
       case DateTime.thursday:
-        return 'Thursday';
+        return l10n.thursday;
       case DateTime.friday:
-        return 'Friday';
-
+        return l10n.friday;
       default:
-        return 'Saturday';
+        return l10n.saturday;
     }
   }
 
@@ -474,7 +563,7 @@ class SettingsView extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  "Select Start of Week",
+                  AppLocalizations.of(context)!.startOfWeek,
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -483,7 +572,7 @@ class SettingsView extends StatelessWidget {
                 for (int day = 1; day <= 7; day++)
                   ListTile(
                     title: Text(
-                      _getDayName(day),
+                      _getDayName(context, day),
                       style: TextStyle(
                         fontWeight: settingsCubit.state.weekStartDay == day
                             ? FontWeight.bold
@@ -528,7 +617,7 @@ class SettingsView extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  "Select Time Format",
+                  AppLocalizations.of(context)!.timeSystem,
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -536,10 +625,7 @@ class SettingsView extends StatelessWidget {
                 const SizedBox(height: 20),
                 ListTile(
                   leading: const Icon(Icons.access_time_rounded),
-                  title: const Text(
-                    "12-Hour",
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
+                  title: Text(AppLocalizations.of(context)!.hour12),
                   subtitle: const Text("1:00 PM, 12:00 AM"),
                   trailing: !settingsCubit.state.is24HourFormat
                       ? const Icon(
@@ -554,10 +640,7 @@ class SettingsView extends StatelessWidget {
                 ),
                 ListTile(
                   leading: const Icon(Icons.schedule_rounded),
-                  title: const Text(
-                    "24-Hour",
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
+                  title: Text(AppLocalizations.of(context)!.hour24),
                   subtitle: const Text("13:00, 24:00"),
                   trailing: settingsCubit.state.is24HourFormat
                       ? const Icon(
@@ -584,20 +667,20 @@ class SettingsView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Change AI Model'),
+        title: Text(AppLocalizations.of(context)!.changeAiModel),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Model name',
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.modelName,
             hintText: 'e.g. google/gemini-3-pro-preview',
-            border: OutlineInputBorder(),
+            border: const OutlineInputBorder(),
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -607,7 +690,7 @@ class SettingsView extends StatelessWidget {
               }
               Navigator.pop(dialogContext);
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -619,22 +702,22 @@ class SettingsView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Update Cloud API Key'),
+        title: Text(AppLocalizations.of(context)!.updateCloudApiKey),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Enter a new OpenRouter API Key. This will be stored securely in the cloud and used by the server.',
-              style: TextStyle(fontSize: 12),
+            Text(
+              AppLocalizations.of(context)!.apiKeyEditorNotice,
+              style: const TextStyle(fontSize: 12),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'New API Key',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.newApiKey,
                 hintText: 'sk-or-v1-...',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
               obscureText: true,
               autofocus: true,
@@ -644,7 +727,7 @@ class SettingsView extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -654,7 +737,7 @@ class SettingsView extends StatelessWidget {
               }
               Navigator.pop(dialogContext);
             },
-            child: const Text('Save to Cloud'),
+            child: Text(AppLocalizations.of(context)!.saveToCloud),
           ),
         ],
       ),
@@ -667,7 +750,7 @@ class SettingsView extends StatelessWidget {
       children: [
         TextField(
           decoration: InputDecoration(
-            hintText: 'Search tasks (Dev Test)',
+            hintText: AppLocalizations.of(context)!.searchTasksDev,
             prefixIcon: const Icon(Icons.search),
             suffixIcon: state.isSearching
                 ? const Padding(
@@ -706,7 +789,7 @@ class SettingsView extends StatelessWidget {
           ),
         ] else if (state.searchQuery != null && !state.isSearching) ...[
           const SizedBox(height: 8),
-          const Text('No results found for this query.'),
+          Text(AppLocalizations.of(context)!.noResultsFound),
         ],
       ],
     );

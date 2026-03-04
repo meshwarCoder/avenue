@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import '../../data/models/task_model.dart';
 import '../cubit/task_cubit.dart';
 import 'package:avenue/core/utils/constants.dart';
@@ -59,9 +60,17 @@ class TaskDetailSheet extends StatelessWidget {
               ],
               const Spacer(),
               if (task.completed)
-                _buildStatusChip(context, "Completed", Colors.green)
+                _buildStatusChip(
+                  context,
+                  AppLocalizations.of(context)!.done,
+                  Colors.green,
+                )
               else if (isMissed)
-                _buildStatusChip(context, "Missed", Colors.redAccent),
+                _buildStatusChip(
+                  context,
+                  AppLocalizations.of(context)!.missed,
+                  Colors.redAccent,
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -97,8 +106,10 @@ class TaskDetailSheet extends StatelessWidget {
                     task.startTimeOfDay != null && task.endTimeOfDay != null
                         ? "${task.startTimeOfDay!.format(context)} - ${task.endTimeOfDay!.format(context)}"
                         : task.startTimeOfDay != null
-                        ? "From ${task.startTimeOfDay!.format(context)}"
-                        : "All Day",
+                        ? AppLocalizations.of(
+                            context,
+                          )!.fromTime(task.startTimeOfDay!.format(context))
+                        : AppLocalizations.of(context)!.allDay,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -119,7 +130,9 @@ class TaskDetailSheet extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    task.oneTime ? "One-time" : "Recurring",
+                    task.oneTime
+                        ? AppLocalizations.of(context)!.oneTime
+                        : AppLocalizations.of(context)!.recurring,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -138,7 +151,7 @@ class TaskDetailSheet extends StatelessWidget {
           // Description
           if (task.desc != null && task.desc!.isNotEmpty) ...[
             Text(
-              "NOTES",
+              AppLocalizations.of(context)!.notes,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -237,7 +250,9 @@ class TaskDetailSheet extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          task.completed ? "Mark as Pending" : "Mark as Done",
+                          task.completed
+                              ? AppLocalizations.of(context)!.markPending
+                              : AppLocalizations.of(context)!.markDone,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -367,16 +382,20 @@ class TaskDetailSheet extends StatelessWidget {
       // so it's tied to the root navigator, not the bottom sheet.
       context: navigator.context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(isDefaultTask ? 'Delete Recurring Task' : 'Delete Task'),
+        title: Text(
+          isDefaultTask
+              ? AppLocalizations.of(context)!.deleteRecurringTask
+              : AppLocalizations.of(context)!.deleteRoutine,
+        ),
         content: Text(
           isDefaultTask
-              ? 'Would you like to delete this task for today only, or stop it from recurring entirely?'
-              : 'Are you sure you want to delete this task?',
+              ? AppLocalizations.of(context)!.deleteRecurringConfirm
+              : AppLocalizations.of(context)!.deleteRoutineConfirm(task.name),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext), // Close dialog only
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           if (isDefaultTask) ...[
             TextButton(
@@ -389,7 +408,7 @@ class TaskDetailSheet extends StatelessWidget {
                   taskId: task.id,
                 );
               },
-              child: const Text('Only Today'),
+              child: Text(AppLocalizations.of(context)!.onlyToday),
             ),
             TextButton(
               onPressed: () {
@@ -400,9 +419,9 @@ class TaskDetailSheet extends StatelessWidget {
                   taskId: task.id,
                 );
               },
-              child: const Text(
-                'Entirely',
-                style: TextStyle(color: Colors.redAccent),
+              child: Text(
+                AppLocalizations.of(context)!.entirely,
+                style: const TextStyle(color: Colors.redAccent),
               ),
             ),
           ] else
@@ -412,9 +431,9 @@ class TaskDetailSheet extends StatelessWidget {
                 navigator.pop(); // Close the bottom sheet
                 cubit.deleteTask(task.id);
               },
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Colors.redAccent),
+              child: Text(
+                AppLocalizations.of(context)!.delete,
+                style: const TextStyle(color: Colors.redAccent),
               ),
             ),
         ],

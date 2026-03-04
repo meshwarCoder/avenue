@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import 'package:avenue/core/utils/constants.dart';
 import 'package:avenue/features/schdules/presentation/views/timeline_view.dart';
 import '../cubit/task_cubit.dart';
@@ -45,7 +46,7 @@ class _HomeViewState extends State<HomeView> {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          _formatDate(_date),
+          _formatDate(context, _date),
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -91,18 +92,18 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 ),
                 if (tasks.isEmpty)
-                  const SliverFillRemaining(
+                  SliverFillRemaining(
                     child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.task_alt_rounded,
                             size: 64,
                             color: Colors.grey,
                           ),
-                          SizedBox(height: 16),
-                          Text('No tasks for today. Relax!'),
+                          const SizedBox(height: 16),
+                          Text(AppLocalizations.of(context)!.noTasksToday),
                         ],
                       ),
                     ),
@@ -243,7 +244,7 @@ class _HomeViewState extends State<HomeView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _getMotivationalMessage(progress, total, isPast),
+                      _getMotivationalMessage(context, progress, total, isPast),
                       style: TextStyle(
                         fontSize: isSmall ? 15 : 17,
                         fontWeight: FontWeight.bold,
@@ -258,10 +259,20 @@ class _HomeViewState extends State<HomeView> {
                       spacing: isSmall ? 8 : 12,
                       runSpacing: 4,
                       children: [
-                        _buildStatusDot("Total", total, theme.primaryColor),
-                        _buildStatusDot("Done", completed, Colors.green),
                         _buildStatusDot(
-                          isPast ? "Missed" : "Left",
+                          AppLocalizations.of(context)!.total,
+                          total,
+                          theme.primaryColor,
+                        ),
+                        _buildStatusDot(
+                          AppLocalizations.of(context)!.done,
+                          completed,
+                          Colors.green,
+                        ),
+                        _buildStatusDot(
+                          isPast
+                              ? AppLocalizations.of(context)!.missed
+                              : AppLocalizations.of(context)!.left,
                           pending,
                           isPast ? Colors.redAccent : AppColors.salmonPink,
                         ),
@@ -307,24 +318,30 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  String _getMotivationalMessage(double progress, int total, bool isPast) {
+  String _getMotivationalMessage(
+    BuildContext context,
+    double progress,
+    int total,
+    bool isPast,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
     if (total == 0) {
-      return isPast ? "No history here. 🌫️" : "No tasks today! ☕";
+      return isPast ? l10n.noHistory : l10n.noTasksRelax;
     }
 
     if (isPast) {
-      if (progress == 1.0) return "Perfect score! You nailed it! 🏆";
-      if (progress >= 0.7) return "Excellent performance! 🌟";
-      if (progress >= 0.4) return "Good effort on this day! 👍";
-      if (progress > 0) return "Managed to get some done. 📈";
-      return "This day passed by. ⌛";
+      if (progress == 1.0) return l10n.motivationalPerfect;
+      if (progress >= 0.7) return l10n.motivationalExcellent;
+      if (progress >= 0.4) return l10n.motivationalGood;
+      if (progress > 0) return l10n.motivationalSome;
+      return l10n.motivationalPassed;
     }
 
-    if (progress == 0) return "Let's get started! 💪";
-    if (progress < 0.4) return "Great start, keep it up! ✨";
-    if (progress < 0.7) return "You're doing great! 🌟";
-    if (progress < 1.0) return "Almost there! 🎯";
-    return "All done! Enjoy your day 🎉";
+    if (progress == 0) return l10n.motivationalStart;
+    if (progress < 0.4) return l10n.motivationalGreatStart;
+    if (progress < 0.7) return l10n.motivationalDoingGreat;
+    if (progress < 1.0) return l10n.motivationalAlmostThere;
+    return l10n.motivationalAllDone;
   }
 
   Widget _buildTimelineButton() {
@@ -365,7 +382,7 @@ class _HomeViewState extends State<HomeView> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  "View Timeline",
+                  AppLocalizations.of(context)!.viewTimeline,
                   style: TextStyle(
                     color: isDark ? Colors.white : color,
                     fontWeight: FontWeight.bold,
@@ -395,28 +412,37 @@ class _HomeViewState extends State<HomeView> {
     return date.isBefore(today);
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(BuildContext context, DateTime date) {
+    final l10n = AppLocalizations.of(context)!;
     final today = DateTime.now();
     if (date.year == today.year &&
         date.month == today.month &&
         date.day == today.day) {
-      return "Today";
+      return l10n.today;
     }
 
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final days = [
+      l10n.mon,
+      l10n.tue,
+      l10n.wed,
+      l10n.thu,
+      l10n.fri,
+      l10n.sat,
+      l10n.sun,
+    ];
     final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      l10n.jan,
+      l10n.feb,
+      l10n.mar,
+      l10n.apr,
+      l10n.may,
+      l10n.jun,
+      l10n.jul,
+      l10n.aug,
+      l10n.sep,
+      l10n.oct,
+      l10n.nov,
+      l10n.dec,
     ];
     return "${days[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}";
   }

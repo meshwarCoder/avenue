@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 
 import 'zoom_knob.dart';
 
@@ -39,7 +40,7 @@ class WeeklyDaysRow extends StatelessWidget {
           Expanded(
             flex: 1,
             child: Padding(
-              padding: const EdgeInsets.only(left: 5),
+              padding: const EdgeInsetsDirectional.only(start: 5),
               child: Center(
                 child: DragZoomRing(
                   value: currentZoom,
@@ -63,7 +64,7 @@ class WeeklyDaysRow extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _getDayName(date.weekday),
+                          _getDayName(context, date.weekday),
                           style: TextStyle(
                             color: isToday
                                 ? theme.colorScheme.primary
@@ -106,8 +107,17 @@ class WeeklyDaysRow extends StatelessWidget {
     return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
   }
 
-  String _getDayName(int weekday) {
-    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  String _getDayName(BuildContext context, int weekday) {
+    final l10n = AppLocalizations.of(context)!;
+    final dayNames = [
+      l10n.mon,
+      l10n.tue,
+      l10n.wed,
+      l10n.thu,
+      l10n.fri,
+      l10n.sat,
+      l10n.sun,
+    ];
     return dayNames[weekday - 1];
   }
 }

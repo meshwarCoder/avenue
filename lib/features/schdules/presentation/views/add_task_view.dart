@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:avenue/core/utils/constants.dart';
 import 'package:avenue/core/utils/validation.dart';
+import 'package:avenue/l10n/app_localizations.dart';
 import '../../data/models/task_model.dart';
 import '../../data/models/default_task_model.dart';
 import '../cubit/task_cubit.dart';
@@ -176,8 +177,8 @@ class _AddTaskViewState extends State<AddTaskView> {
                 children: [
                   Text(
                     widget.task == null && widget.defaultTask == null
-                        ? 'New Task'
-                        : 'Edit Task',
+                        ? AppLocalizations.of(context)!.newTask
+                        : AppLocalizations.of(context)!.editTask,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.white : AppColors.deepPurple,
@@ -197,20 +198,23 @@ class _AddTaskViewState extends State<AddTaskView> {
               ),
               const SizedBox(height: 32),
 
-              _buildFieldLabel("What's on your mind?", theme),
+              _buildFieldLabel(
+                AppLocalizations.of(context)!.whatOnYourMind,
+                theme,
+              ),
               _buildTextField(
                 controller: _titleController,
-                hint: 'Task Title',
+                hint: AppLocalizations.of(context)!.taskTitle,
                 icon: Icons.edit_note_rounded,
-                validator: Validation.validateTitle,
+                validator: (v) => Validation.validateTitle(context, v),
                 theme: theme,
               ),
               const SizedBox(height: 24),
 
-              _buildFieldLabel("Any details?", theme),
+              _buildFieldLabel(AppLocalizations.of(context)!.anyDetails, theme),
               _buildTextField(
                 controller: _descController,
-                hint: 'Description (Optional)',
+                hint: AppLocalizations.of(context)!.descOptional,
                 icon: Icons.description_outlined,
                 maxLines: 2,
                 theme: theme,
@@ -220,12 +224,15 @@ class _AddTaskViewState extends State<AddTaskView> {
               if (widget.task == null &&
                   widget.defaultTask == null &&
                   !widget.disableRecurring) ...[
-                _buildFieldLabel("Occurrence", theme),
+                _buildFieldLabel(
+                  AppLocalizations.of(context)!.occurrence,
+                  theme,
+                ),
                 Row(
                   children: [
                     Expanded(
                       child: _buildTypeToggle(
-                        'One-time',
+                        AppLocalizations.of(context)!.oneTime,
                         !_isRecurring,
                         () => setState(() => _isRecurring = false),
                       ),
@@ -233,7 +240,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildTypeToggle(
-                        'Recurring',
+                        AppLocalizations.of(context)!.recurring,
                         _isRecurring,
                         () => setState(() => _isRecurring = true),
                       ),
@@ -244,37 +251,47 @@ class _AddTaskViewState extends State<AddTaskView> {
               ],
 
               if (!_isRecurring) ...[
-                _buildFieldLabel('Scheduling', theme),
+                _buildFieldLabel(
+                  AppLocalizations.of(context)!.scheduling,
+                  theme,
+                ),
                 _buildDateSelector(),
                 const SizedBox(height: 24),
               ] else ...[
-                _buildFieldLabel('Repeat on', theme),
+                _buildFieldLabel(AppLocalizations.of(context)!.repeatOn, theme),
                 _buildWeekdaySelector(),
                 const SizedBox(height: 24),
               ],
 
-              _buildFieldLabel('Time Frame', theme),
+              _buildFieldLabel(AppLocalizations.of(context)!.timeFrame, theme),
               Row(
                 children: [
                   Expanded(
                     child: _buildTimePicker(
                       controller: _startTimeController,
-                      label: 'Start',
+                      label: AppLocalizations.of(context)!.start,
                       onTap: () => _selectTime(true),
                       validator: (v) =>
-                          Validation.validateStartTime(_startTime),
+                          Validation.validateStartTime(context, _startTime),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildTimePicker(
                       controller: _endTimeController,
-                      label: 'End',
+                      label: AppLocalizations.of(context)!.end,
                       onTap: () => _selectTime(false),
                       validator: (v) {
-                        final err = Validation.validateEndTime(_endTime);
+                        final err = Validation.validateEndTime(
+                          context,
+                          _endTime,
+                        );
                         return err ??
-                            Validation.validateTimeRange(_startTime, _endTime);
+                            Validation.validateTimeRange(
+                              context,
+                              _startTime,
+                              _endTime,
+                            );
                       },
                     ),
                   ),
@@ -285,11 +302,11 @@ class _AddTaskViewState extends State<AddTaskView> {
               _buildNotificationSection(theme),
               const SizedBox(height: 32),
 
-              _buildFieldLabel('Category', theme),
+              _buildFieldLabel(AppLocalizations.of(context)!.category, theme),
               _buildCategorySelector(),
               const SizedBox(height: 32),
 
-              _buildFieldLabel('Importance', theme),
+              _buildFieldLabel(AppLocalizations.of(context)!.importance, theme),
               _buildImportanceRow(),
               const SizedBox(height: 32),
 
@@ -328,8 +345,8 @@ class _AddTaskViewState extends State<AddTaskView> {
                     ),
                     child: Text(
                       widget.task == null && widget.defaultTask == null
-                          ? 'Create Task'
-                          : 'Update Changes',
+                          ? AppLocalizations.of(context)!.createTask
+                          : AppLocalizations.of(context)!.updateChanges,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -349,7 +366,7 @@ class _AddTaskViewState extends State<AddTaskView> {
   Widget _buildFieldLabel(String text, ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      padding: const EdgeInsetsDirectional.only(bottom: 12, start: 4),
       child: Text(
         text,
         style: TextStyle(
@@ -474,8 +491,8 @@ class _AddTaskViewState extends State<AddTaskView> {
             Expanded(
               child: Text(
                 _selectedDate != null
-                    ? "${_selectedDate!.day} ${_getMonthName(_selectedDate!.month)} ${_selectedDate!.year}"
-                    : "Select Date",
+                    ? "${_selectedDate!.day} ${_getMonthName(context, _selectedDate!.month)} ${_selectedDate!.year}"
+                    : AppLocalizations.of(context)!.selectDate,
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
@@ -492,23 +509,35 @@ class _AddTaskViewState extends State<AddTaskView> {
     );
   }
 
-  String _getMonthName(int month) => [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ][month - 1];
+  String _getMonthName(BuildContext context, int month) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      l10n.jan,
+      l10n.feb,
+      l10n.mar,
+      l10n.apr,
+      l10n.may,
+      l10n.jun,
+      l10n.jul,
+      l10n.aug,
+      l10n.sep,
+      l10n.oct,
+      l10n.nov,
+      l10n.dec,
+    ][month - 1];
+  }
 
   Widget _buildWeekdaySelector() {
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final l10n = AppLocalizations.of(context)!;
+    final days = [
+      l10n.mon,
+      l10n.tue,
+      l10n.wed,
+      l10n.thu,
+      l10n.fri,
+      l10n.sat,
+      l10n.sun,
+    ];
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Row(
@@ -751,8 +780,9 @@ class _AddTaskViewState extends State<AddTaskView> {
               ),
             ),
             if (_showLeftIndicator)
-              Positioned(
-                left: 0,
+              Positioned.directional(
+                textDirection: Directionality.of(context),
+                start: 0,
                 top: 0,
                 bottom: 0,
                 width: 60,
@@ -760,8 +790,8 @@ class _AddTaskViewState extends State<AddTaskView> {
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
+                        begin: AlignmentDirectional.centerStart,
+                        end: AlignmentDirectional.centerEnd,
                         colors: [
                           bgColor,
                           bgColor.withValues(alpha: 0.9),
@@ -774,8 +804,9 @@ class _AddTaskViewState extends State<AddTaskView> {
                 ),
               ),
             if (_showRightIndicator)
-              Positioned(
-                right: 0,
+              Positioned.directional(
+                textDirection: Directionality.of(context),
+                end: 0,
                 top: 0,
                 bottom: 0,
                 width: 60,
@@ -783,8 +814,8 @@ class _AddTaskViewState extends State<AddTaskView> {
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        begin: Alignment.centerRight,
-                        end: Alignment.centerLeft,
+                        begin: AlignmentDirectional.centerEnd,
+                        end: AlignmentDirectional.centerStart,
                         colors: [
                           bgColor,
                           bgColor.withValues(alpha: 0.9),
@@ -803,6 +834,7 @@ class _AddTaskViewState extends State<AddTaskView> {
   }
 
   Widget _buildImportanceRow() {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: _importanceLevels.map((level) {
         final isSelected = _selectedImportance == level;
@@ -830,7 +862,9 @@ class _AddTaskViewState extends State<AddTaskView> {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  level,
+                  level == 'High'
+                      ? l10n.high
+                      : (level == 'Medium' ? l10n.medium : l10n.low),
                   style: TextStyle(
                     color: isSelected ? color : Colors.grey,
                     fontWeight: FontWeight.bold,
@@ -845,14 +879,15 @@ class _AddTaskViewState extends State<AddTaskView> {
   }
 
   Future<void> _handleSave() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _autovalidateMode = AutovalidateMode.onUserInteraction);
 
     if (_formKey.currentState!.validate()) {
       if (_isRecurring) {
         if (_selectedWeekdays.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select at least one day')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.errSelectDay)));
           return;
         }
 
@@ -874,10 +909,7 @@ class _AddTaskViewState extends State<AddTaskView> {
             .read<TaskCubit>()
             .validateTaskConcurrency(sampleTask);
         if (validation == ConcurrencyValidationResult.limitExceeded) {
-          TaskUtils.showBlockedActionMessage(
-            context,
-            "Cannot have 3 tasks at the same time!",
-          );
+          TaskUtils.showBlockedActionMessage(context, l10n.errLimitExceeded);
           return;
         }
 
@@ -890,10 +922,7 @@ class _AddTaskViewState extends State<AddTaskView> {
       } else {
         // One-time task: Check if it's in the past
         if (TaskUtils.isPast(_selectedDate ?? DateTime.now(), _startTime)) {
-          TaskUtils.showBlockedActionMessage(
-            context,
-            "Cannot schedule tasks in the past!",
-          );
+          TaskUtils.showBlockedActionMessage(context, l10n.errPastTask);
           return;
         }
 
@@ -920,10 +949,7 @@ class _AddTaskViewState extends State<AddTaskView> {
             .read<TaskCubit>()
             .validateTaskConcurrency(task);
         if (validation == ConcurrencyValidationResult.limitExceeded) {
-          TaskUtils.showBlockedActionMessage(
-            context,
-            "Cannot have 3 tasks at the same time!",
-          );
+          TaskUtils.showBlockedActionMessage(context, l10n.errLimitExceeded);
           return;
         }
 
@@ -946,26 +972,25 @@ class _AddTaskViewState extends State<AddTaskView> {
   }
 
   Future<bool> _showOverlapWarning() async {
+    final l10n = AppLocalizations.of(context)!;
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                SizedBox(width: 8),
-                Text('Task Overlap'),
+                const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                const SizedBox(width: 8),
+                Text(l10n.taskOverlap),
               ],
             ),
-            content: const Text(
-              'This task overlaps with another one in your schedule. Do you want to proceed?',
-            ),
+            content: Text(l10n.overlapMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancel),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
@@ -976,7 +1001,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('Proceed Anyway'),
+                child: Text(l10n.proceedAnyway),
               ),
             ],
           ),
@@ -1018,6 +1043,7 @@ class _AddTaskViewState extends State<AddTaskView> {
   }
 
   Widget _buildNotificationSection(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1042,7 +1068,7 @@ class _AddTaskViewState extends State<AddTaskView> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  "Task Notifications",
+                  AppLocalizations.of(context)!.taskNotifications,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -1071,8 +1097,8 @@ class _AddTaskViewState extends State<AddTaskView> {
                       ),
                       // Main At Time notification (Fixed)
                       _buildNotificationOption(
-                        title: "At start time",
-                        subtitle: "Notification at ${_formatTime(_startTime)}",
+                        title: l10n.atStartTime,
+                        subtitle: l10n.notificationAt(_formatTime(_startTime)),
                         icon: Icons.alarm_on_rounded,
                         value: true,
                         onChanged: (_) {},
@@ -1081,10 +1107,10 @@ class _AddTaskViewState extends State<AddTaskView> {
                       ),
                       // Reminder Option
                       _buildNotificationOption(
-                        title: "Reminder before start",
+                        title: l10n.reminderBeforeStart,
                         subtitle: _reminderEnabled
-                            ? "${_reminderMinutes ?? 10} minutes before"
-                            : "No early reminder",
+                            ? l10n.minutesBefore(_reminderMinutes ?? 10)
+                            : l10n.noEarlyReminder,
                         icon: Icons.timer_outlined,
                         value: _reminderEnabled,
                         onChanged: (val) => setState(() {
@@ -1111,7 +1137,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                                     (m) => DropdownMenuItem(
                                       value: m,
                                       child: Text(
-                                        "$m Minutes before",
+                                        l10n.minutesBefore(m),
                                         style: TextStyle(
                                           fontSize: 14,
                                           color: theme.colorScheme.onSurface,
@@ -1127,8 +1153,8 @@ class _AddTaskViewState extends State<AddTaskView> {
                         ),
                       // Completion Option
                       _buildNotificationOption(
-                        title: "Completion Alert",
-                        subtitle: "Encouraging notification on Done",
+                        title: l10n.completionAlert,
+                        subtitle: l10n.completionAlertSubtitle,
                         icon: Icons.celebration_outlined,
                         value: _completionNotificationEnabled,
                         onChanged: (val) => setState(

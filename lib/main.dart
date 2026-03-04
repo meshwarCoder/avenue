@@ -1,5 +1,6 @@
 import 'dart:ffi';
 import 'dart:io';
+import 'package:avenue/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,6 +17,9 @@ import 'package:avenue/core/logic/app_connectivity_cubit.dart';
 import 'package:avenue/core/logic/app_banner_cubit.dart';
 import 'package:avenue/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:avenue/core/services/local_notification_service.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:avenue/core/localization/locale_cubit.dart';
+import 'package:avenue/core/localization/locale_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,53 +63,68 @@ class Avenue extends StatelessWidget {
         BlocProvider(create: (context) => sl<SettingsCubit>()),
         BlocProvider(create: (context) => sl<AppConnectivityCubit>()),
         BlocProvider(create: (context) => sl<AppBannerCubit>()),
+        BlocProvider(create: (context) => sl<LocaleCubit>()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         builder: (context, themeMode) {
-          return MaterialApp.router(
-            title: 'Avenue',
-            debugShowCheckedModeBanner: false,
-            themeMode: themeMode,
-            theme: ThemeData(
-              useMaterial3: true,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: AppColors.deepPurple,
-                primary: AppColors.deepPurple,
-                secondary: AppColors.slatePurple,
-                tertiary: AppColors.creamTan,
-                surface: AppColors.lightBg,
-                background: AppColors.lightBg,
-              ),
-              scaffoldBackgroundColor: AppColors.lightBg,
-              cardColor: Colors.white,
-              appBarTheme: const AppBarTheme(
-                backgroundColor: AppColors.lightBg,
-                foregroundColor: AppColors.deepPurple,
-                elevation: 0,
-              ),
-            ),
-            darkTheme: ThemeData(
-              useMaterial3: true,
-              colorScheme: ColorScheme.fromSeed(
-                brightness: Brightness.dark,
-                seedColor: AppColors.deepPurple,
-                primary: AppColors.slatePurple,
-                secondary: AppColors.deepPurple,
-                tertiary: AppColors.salmonPink,
-                surface: AppColors.darkBg,
-                background: AppColors.darkBg,
-              ),
-              scaffoldBackgroundColor: AppColors.darkBg,
-              cardColor: const Color(
-                0xFF1E1E1E,
-              ), // Slightly lighter than background for depth
-              appBarTheme: const AppBarTheme(
-                backgroundColor: AppColors.darkBg,
-                foregroundColor: Colors.white,
-                elevation: 0,
-              ),
-            ),
-            routerConfig: AppRoutes.router,
+          return BlocBuilder<LocaleCubit, LocaleState>(
+            builder: (context, state) {
+              final locale = state.locale;
+              return MaterialApp.router(
+                onGenerateTitle: (context) =>
+                    AppLocalizations.of(context)!.appName,
+                debugShowCheckedModeBanner: false,
+                themeMode: themeMode,
+                locale: locale,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: ThemeData(
+                  useMaterial3: true,
+                  colorScheme: ColorScheme.fromSeed(
+                    seedColor: AppColors.deepPurple,
+                    primary: AppColors.deepPurple,
+                    secondary: AppColors.slatePurple,
+                    tertiary: AppColors.creamTan,
+                    surface: AppColors.lightBg,
+                    background: AppColors.lightBg,
+                  ),
+                  scaffoldBackgroundColor: AppColors.lightBg,
+                  cardColor: Colors.white,
+                  appBarTheme: const AppBarTheme(
+                    backgroundColor: AppColors.lightBg,
+                    foregroundColor: AppColors.deepPurple,
+                    elevation: 0,
+                  ),
+                ),
+                darkTheme: ThemeData(
+                  useMaterial3: true,
+                  colorScheme: ColorScheme.fromSeed(
+                    brightness: Brightness.dark,
+                    seedColor: AppColors.deepPurple,
+                    primary: AppColors.slatePurple,
+                    secondary: AppColors.deepPurple,
+                    tertiary: AppColors.salmonPink,
+                    surface: AppColors.darkBg,
+                    background: AppColors.darkBg,
+                  ),
+                  scaffoldBackgroundColor: AppColors.darkBg,
+                  cardColor: const Color(
+                    0xFF1E1E1E,
+                  ), // Slightly lighter than background for depth
+                  appBarTheme: const AppBarTheme(
+                    backgroundColor: AppColors.darkBg,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                  ),
+                ),
+                routerConfig: AppRoutes.router,
+              );
+            },
           );
         },
       ),
