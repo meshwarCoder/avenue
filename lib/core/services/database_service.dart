@@ -17,7 +17,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 10, // Increment version
+      version: 11, // Increment version
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -117,6 +117,22 @@ class DatabaseService {
         'ALTER TABLE tasks ADD COLUMN completion_notification_enabled INTEGER NOT NULL DEFAULT 1',
       );
     }
+    if (oldVersion < 11) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS inbox_items (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          content TEXT,
+          type TEXT NOT NULL,
+          deadline TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          is_deleted INTEGER NOT NULL DEFAULT 0,
+          is_dirty INTEGER NOT NULL DEFAULT 0,
+          server_updated_at TEXT
+        )
+      ''');
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -176,6 +192,21 @@ class DatabaseService {
         message_text TEXT NOT NULL,
         actions_json TEXT NOT NULL,
         created_at TEXT NOT NULL
+      )
+    ''');
+    // Inbox Items Table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS inbox_items (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT,
+        type TEXT NOT NULL,
+        deadline TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        is_dirty INTEGER NOT NULL DEFAULT 0,
+        server_updated_at TEXT
       )
     ''');
   }

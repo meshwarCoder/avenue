@@ -14,6 +14,11 @@ import '../../features/weeks/data/repo/weekly_repo_impl.dart';
 import '../services/device_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/task_notification_manager.dart';
+import '../../features/inbox/data/datasources/inbox_local_data_source.dart';
+import '../../features/inbox/data/datasources/inbox_local_data_source_impl.dart';
+import '../../features/inbox/data/repositories/inbox_repository_impl.dart';
+import '../../features/inbox/domain/repo/inbox_repository.dart';
+import '../../features/inbox/presentation/cubit/inbox_cubit.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -91,6 +96,9 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<TaskLocalDataSource>(
     () => TaskLocalDataSourceImpl(databaseService: sl()),
   );
+  sl.registerLazySingleton<InboxLocalDataSource>(
+    () => InboxLocalDataSourceImpl(databaseService: sl()),
+  );
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
@@ -104,6 +112,9 @@ Future<void> initializeDependencies() async {
   );
   sl.registerLazySingleton<SettingsRepository>(
     () => SettingsRepository(sl(), sl()),
+  );
+  sl.registerLazySingleton<InboxRepository>(
+    () => InboxRepositoryImpl(localDataSource: sl()),
   );
   sl.registerLazySingleton<LocaleRepository>(() => LocaleRepositoryImpl(sl()));
 
@@ -122,7 +133,8 @@ Future<void> initializeDependencies() async {
   sl.registerFactory(() => WeeklyCubit(repository: sl()));
   sl.registerLazySingleton(() => ThemeCubit(sl()));
   sl.registerLazySingleton(() => SettingsCubit(sl(), sl(), sl()));
-  sl.registerFactory(() => DefaultTasksCubit(sl()));
+  sl.registerLazySingleton(() => DefaultTasksCubit(sl()));
+  sl.registerLazySingleton(() => InboxCubit(repository: sl()));
   sl.registerLazySingleton(() => LocaleCubit(sl()));
 
   // AI Chat (Now using Supabase Edge Function)

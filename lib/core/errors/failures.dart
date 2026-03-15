@@ -30,3 +30,7 @@ class TimeoutFailure extends Failure {
     super.message = 'Connection timeout. Please try again.',
   ]);
 }
+
+class DatabaseFailure extends Failure {
+  const DatabaseFailure(super.message);
+}

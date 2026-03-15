@@ -11,6 +11,7 @@ import '../core/di/injection_container.dart';
 import 'package:avenue/features/schdules/presentation/views/add_task_view.dart';
 import '../core/widgets/animated_task_button.dart';
 import '../core/widgets/avenue_nav_bar.dart';
+import 'inbox/presentation/views/inbox_view.dart';
 
 import 'package:avenue/core/services/local_notification_service.dart';
 
@@ -44,12 +45,14 @@ class _RootState extends State<Root> with SingleTickerProviderStateMixin {
 
   final items = [
     AvenueNavBarItem(icon: Icons.calendar_today_rounded, label: "Today"),
+    AvenueNavBarItem(icon: Icons.inbox_outlined, label: "Inbox"),
     AvenueNavBarItem(icon: Icons.calendar_view_week_rounded, label: "Week"),
     AvenueNavBarItem(icon: Icons.settings_rounded, label: "Settings"),
   ];
 
   late final List<Widget> pages = [
     const HomeView(),
+    const InboxView(),
     BlocProvider(
       create: (context) => sl<WeeklyCubit>(),
       child: const WeeklyCalendarPage(),

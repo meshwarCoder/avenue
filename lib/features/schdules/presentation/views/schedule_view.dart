@@ -11,6 +11,7 @@ import '../../../../core/widgets/avenue_loading.dart';
 import '../../../../core/utils/calendar_utils.dart';
 import '../../../../core/utils/observability.dart';
 import '../widgets/task_detail_sheet.dart';
+import '../../../../core/widgets/empty_state_widget.dart';
 
 class HomeView extends StatefulWidget {
   final DateTime? selectedDate;
@@ -93,19 +94,10 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 if (tasks.isEmpty)
                   SliverFillRemaining(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.task_alt_rounded,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(AppLocalizations.of(context)!.noTasksToday),
-                        ],
-                      ),
+                    hasScrollBody: false,
+                    child: EmptyStateWidget(
+                      icon: Icons.task_alt_rounded,
+                      title: AppLocalizations.of(context)!.noTasksToday,
                     ),
                   )
                 else
@@ -183,8 +175,8 @@ class _HomeViewState extends State<HomeView> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: isDark
-                  ? [theme.cardColor, theme.cardColor.withOpacity(0.8)]
-                  : [Colors.white, Colors.white.withOpacity(0.9)],
+                  ? [theme.cardColor, theme.cardColor.withValues(alpha: 0.8)]
+                  : [Colors.white, Colors.white.withValues(alpha: 0.9)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -297,7 +289,7 @@ class _HomeViewState extends State<HomeView> {
           width: 7,
           height: 7,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.8),
+            color: color.withValues(alpha: 0.8),
             shape: BoxShape.circle,
           ),
         ),
@@ -308,7 +300,7 @@ class _HomeViewState extends State<HomeView> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -364,10 +356,10 @@ class _HomeViewState extends State<HomeView> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           decoration: BoxDecoration(
-            color: color.withOpacity(isDark ? 0.15 : 0.05),
+            color: color.withValues(alpha: isDark ? 0.15 : 0.05),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: color.withOpacity(isDark ? 0.3 : 0.1),
+              color: color.withValues(alpha: isDark ? 0.3 : 0.1),
               width: 1.5,
             ),
           ),
@@ -396,7 +388,7 @@ class _HomeViewState extends State<HomeView> {
               const SizedBox(width: 8),
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: (isDark ? Colors.white : color).withOpacity(0.5),
+                color: (isDark ? Colors.white : color).withValues(alpha: 0.5),
                 size: 14,
               ),
             ],

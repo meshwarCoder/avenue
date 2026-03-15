@@ -8,6 +8,7 @@ import 'package:avenue/core/di/injection_container.dart';
 import 'package:avenue/core/utils/routes.dart';
 import 'package:avenue/features/schdules/presentation/cubit/task_cubit.dart';
 import 'package:avenue/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:avenue/features/inbox/presentation/cubit/inbox_cubit.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqlite3/open.dart';
@@ -63,6 +64,7 @@ class Avenue extends StatelessWidget {
         BlocProvider(create: (context) => sl<SettingsCubit>()),
         BlocProvider(create: (context) => sl<AppConnectivityCubit>()),
         BlocProvider(create: (context) => sl<AppBannerCubit>()),
+        BlocProvider(create: (context) => sl<InboxCubit>()..loadInboxItems()),
         BlocProvider(create: (context) => sl<LocaleCubit>()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
@@ -91,7 +93,6 @@ class Avenue extends StatelessWidget {
                     secondary: AppColors.slatePurple,
                     tertiary: AppColors.creamTan,
                     surface: AppColors.lightBg,
-                    background: AppColors.lightBg,
                   ),
                   scaffoldBackgroundColor: AppColors.lightBg,
                   cardColor: Colors.white,
@@ -110,7 +111,6 @@ class Avenue extends StatelessWidget {
                     secondary: AppColors.deepPurple,
                     tertiary: AppColors.salmonPink,
                     surface: AppColors.darkBg,
-                    background: AppColors.darkBg,
                   ),
                   scaffoldBackgroundColor: AppColors.darkBg,
                   cardColor: const Color(

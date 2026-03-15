@@ -9,6 +9,8 @@ import '../../data/models/default_task_model.dart';
 import '../cubit/task_cubit.dart';
 import '../../../../core/utils/task_utils.dart';
 import '../../../../core/utils/calendar_utils.dart';
+import '../../../inbox/data/models/inbox_item_model.dart';
+import '../../../inbox/presentation/cubit/inbox_cubit.dart';
 
 class AddTaskView extends StatefulWidget {
   final TaskModel? task;
@@ -56,6 +58,11 @@ class _AddTaskViewState extends State<AddTaskView> {
   late int? _reminderMinutes;
   late bool _completionNotificationEnabled;
   bool _reminderEnabled = false;
+
+  // Inbox mode logic
+  bool _isInboxMode = false;
+  InboxItemType _selectedInboxType = InboxItemType.note;
+  DateTime? _inboxDeadline;
 
   @override
   void initState() {
@@ -233,16 +240,33 @@ class _AddTaskViewState extends State<AddTaskView> {
                     Expanded(
                       child: _buildTypeToggle(
                         AppLocalizations.of(context)!.oneTime,
-                        !_isRecurring,
-                        () => setState(() => _isRecurring = false),
+                        !_isRecurring && !_isInboxMode,
+                        () => setState(() {
+                          _isRecurring = false;
+                          _isInboxMode = false;
+                        }),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: _buildTypeToggle(
                         AppLocalizations.of(context)!.recurring,
-                        _isRecurring,
-                        () => setState(() => _isRecurring = true),
+                        _isRecurring && !_isInboxMode,
+                        () => setState(() {
+                          _isRecurring = true;
+                          _isInboxMode = false;
+                        }),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildTypeToggle(
+                        "Inbox",
+                        _isInboxMode,
+                        () => setState(() {
+                          _isInboxMode = true;
+                          _isRecurring = false;
+                        }),
                       ),
                     ),
                   ],
@@ -250,57 +274,67 @@ class _AddTaskViewState extends State<AddTaskView> {
                 const SizedBox(height: 24),
               ],
 
-              if (!_isRecurring) ...[
-                _buildFieldLabel(
-                  AppLocalizations.of(context)!.scheduling,
-                  theme,
-                ),
-                _buildDateSelector(),
+              if (_isInboxMode) ...[
+                _buildFieldLabel("Inbox Type", theme),
+                _buildInboxTypeSelector(),
                 const SizedBox(height: 24),
-              ] else ...[
-                _buildFieldLabel(AppLocalizations.of(context)!.repeatOn, theme),
-                _buildWeekdaySelector(),
+                _buildFieldLabel("Deadline (Optional)", theme),
+                _buildInboxDeadlineSelector(),
                 const SizedBox(height: 24),
               ],
 
-              _buildFieldLabel(AppLocalizations.of(context)!.timeFrame, theme),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTimePicker(
-                      controller: _startTimeController,
-                      label: AppLocalizations.of(context)!.start,
-                      onTap: () => _selectTime(true),
-                      validator: (v) =>
-                          Validation.validateStartTime(context, _startTime),
-                    ),
+              if (!_isInboxMode) ...[
+                if (!_isRecurring) ...[
+                  _buildFieldLabel(
+                    AppLocalizations.of(context)!.scheduling,
+                    theme,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTimePicker(
-                      controller: _endTimeController,
-                      label: AppLocalizations.of(context)!.end,
-                      onTap: () => _selectTime(false),
-                      validator: (v) {
-                        final err = Validation.validateEndTime(
-                          context,
-                          _endTime,
-                        );
-                        return err ??
-                            Validation.validateTimeRange(
-                              context,
-                              _startTime,
-                              _endTime,
-                            );
-                      },
-                    ),
-                  ),
+                  _buildDateSelector(),
+                  const SizedBox(height: 24),
+                ] else ...[
+                  _buildFieldLabel(AppLocalizations.of(context)!.repeatOn, theme),
+                  _buildWeekdaySelector(),
+                  const SizedBox(height: 24),
                 ],
-              ),
-              const SizedBox(height: 32),
 
-              _buildNotificationSection(theme),
-              const SizedBox(height: 32),
+                _buildFieldLabel(AppLocalizations.of(context)!.timeFrame, theme),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildTimePicker(
+                        controller: _startTimeController,
+                        label: AppLocalizations.of(context)!.start,
+                        onTap: () => _selectTime(true),
+                        validator: (v) =>
+                            Validation.validateStartTime(context, _startTime),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildTimePicker(
+                        controller: _endTimeController,
+                        label: AppLocalizations.of(context)!.end,
+                        onTap: () => _selectTime(false),
+                        validator: (v) {
+                          final err = Validation.validateEndTime(
+                            context,
+                            _endTime,
+                          );
+                          return err ??
+                              Validation.validateTimeRange(
+                                context,
+                                _startTime,
+                                _endTime,
+                              );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                _buildNotificationSection(theme),
+                const SizedBox(height: 32),
+              ],
 
               _buildFieldLabel(AppLocalizations.of(context)!.category, theme),
               _buildCategorySelector(),
@@ -404,7 +438,7 @@ class _AddTaskViewState extends State<AddTaskView> {
           size: 22,
         ),
         filled: true,
-        fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -425,7 +459,7 @@ class _AddTaskViewState extends State<AddTaskView> {
         decoration: BoxDecoration(
           color: isSelected
               ? (isDark ? theme.colorScheme.primary : AppColors.deepPurple)
-              : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.center,
@@ -566,7 +600,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                     ? Theme.of(context).colorScheme.primary
                     : Theme.of(
                         context,
-                      ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 border: isSelected
                     ? Border.all(
                         color: Theme.of(context).colorScheme.primary,
@@ -617,7 +651,7 @@ class _AddTaskViewState extends State<AddTaskView> {
         filled: true,
         fillColor: Theme.of(
           context,
-        ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -691,6 +725,7 @@ class _AddTaskViewState extends State<AddTaskView> {
       },
     );
     if (time != null) {
+      if (!mounted) return;
       setState(() {
         if (isStart) {
           _startTime = time;
@@ -883,6 +918,10 @@ class _AddTaskViewState extends State<AddTaskView> {
     setState(() => _autovalidateMode = AutovalidateMode.onUserInteraction);
 
     if (_formKey.currentState!.validate()) {
+      if (_isInboxMode) {
+        _saveInboxItem();
+        return;
+      }
       if (_isRecurring) {
         if (_selectedWeekdays.isEmpty) {
           ScaffoldMessenger.of(
@@ -905,15 +944,18 @@ class _AddTaskViewState extends State<AddTaskView> {
           oneTime: false,
         );
 
+        if (!mounted) return;
         final validation = await context
             .read<TaskCubit>()
             .validateTaskConcurrency(sampleTask);
         if (validation == ConcurrencyValidationResult.limitExceeded) {
+          if (!mounted) return;
           TaskUtils.showBlockedActionMessage(context, l10n.errLimitExceeded);
           return;
         }
 
         if (validation == ConcurrencyValidationResult.overlapWarning) {
+          if (!mounted) return;
           final confirmed = await _showOverlapWarning();
           if (!confirmed) return;
         }
@@ -922,6 +964,7 @@ class _AddTaskViewState extends State<AddTaskView> {
       } else {
         // One-time task: Check if it's in the past
         if (TaskUtils.isPast(_selectedDate ?? DateTime.now(), _startTime)) {
+          if (!mounted) return;
           TaskUtils.showBlockedActionMessage(context, l10n.errPastTask);
           return;
         }
@@ -945,15 +988,18 @@ class _AddTaskViewState extends State<AddTaskView> {
           completionNotificationEnabled: _completionNotificationEnabled,
         );
 
+        if (!mounted) return;
         final validation = await context
             .read<TaskCubit>()
             .validateTaskConcurrency(task);
         if (validation == ConcurrencyValidationResult.limitExceeded) {
+          if (!mounted) return;
           TaskUtils.showBlockedActionMessage(context, l10n.errLimitExceeded);
           return;
         }
 
         if (validation == ConcurrencyValidationResult.overlapWarning) {
+          if (!mounted) return;
           final confirmed = await _showOverlapWarning();
           if (!confirmed) return;
         }
@@ -961,6 +1007,17 @@ class _AddTaskViewState extends State<AddTaskView> {
         _saveSpecificTask(task);
       }
     }
+  }
+
+  void _saveInboxItem() {
+    final item = InboxItemModel(
+      title: _titleController.text,
+      content: _descController.text,
+      type: _selectedInboxType,
+      deadline: _inboxDeadline,
+    );
+    context.read<InboxCubit>().addInboxItem(item);
+    Navigator.pop(context);
   }
 
   DateTime _getFirstDateForWeekdays(List<int> weekdays) {
@@ -1047,9 +1104,9 @@ class _AddTaskViewState extends State<AddTaskView> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1080,7 +1137,7 @@ class _AddTaskViewState extends State<AddTaskView> {
               ),
               Switch.adaptive(
                 value: _notificationsEnabled,
-                activeColor: theme.colorScheme.primary,
+                activeTrackColor: theme.colorScheme.primary,
                 onChanged: (val) => setState(() => _notificationsEnabled = val),
               ),
             ],
@@ -1189,7 +1246,7 @@ class _AddTaskViewState extends State<AddTaskView> {
             size: 20,
             color: isFixed
                 ? theme.colorScheme.primary
-                : theme.colorScheme.primary.withOpacity(0.7),
+                : theme.colorScheme.primary.withValues(alpha: 0.7),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1207,7 +1264,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -1225,6 +1282,66 @@ class _AddTaskViewState extends State<AddTaskView> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInboxTypeSelector() {
+    final theme = Theme.of(context);
+    return Wrap(
+      spacing: 8,
+      children: InboxItemType.values.map((type) {
+        final isSelected = _selectedInboxType == type;
+        return ChoiceChip(
+          label: Text(type.name),
+          selected: isSelected,
+          onSelected: (val) {
+            if (val) setState(() => _selectedInboxType = type);
+          },
+          selectedColor: theme.colorScheme.primary,
+          labelStyle: TextStyle(
+            color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildInboxDeadlineSelector() {
+    return InkWell(
+      onTap: () async {
+        final date = await showDatePicker(
+          context: context,
+          initialDate: _inboxDeadline ?? DateTime.now(),
+          firstDate: DateTime.now(),
+          lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+        );
+        if (date != null && mounted) setState(() => _inboxDeadline = date);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today_rounded, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              _inboxDeadline != null
+                  ? _inboxDeadline!.toString().split(' ')[0]
+                  : "Select Deadline",
+            ),
+            if (_inboxDeadline != null) ...[
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () => setState(() => _inboxDeadline = null),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
