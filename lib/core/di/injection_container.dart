@@ -133,7 +133,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => ThemeCubit(sl()));
   sl.registerLazySingleton(() => SettingsCubit(sl(), sl(), sl()));
   sl.registerLazySingleton(() => DefaultTasksCubit(sl()));
-  sl.registerLazySingleton(() => InboxCubit(repository: sl()));
+  sl.registerLazySingleton(() => InboxCubit(repository: sl(), syncService: sl()));
   sl.registerLazySingleton(() => LocaleCubit(sl()));
 
   // AI Chat (Now using Supabase Edge Function)

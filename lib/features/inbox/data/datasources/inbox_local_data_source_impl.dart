@@ -72,6 +72,7 @@ class InboxLocalDataSourceImpl implements InboxLocalDataSource {
         'inbox_items',
         {
           'is_deleted': 1,
+          'is_dirty': 1,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         },
         where: 'id = ?',

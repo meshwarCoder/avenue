@@ -65,7 +65,12 @@ class RequestExecutor {
     return const ServerFailure('Something went wrong. Please try again');
   }
 
-  Failure _mapExceptionToFailure(Exception e) {
+  Failure _mapExceptionToFailure(Object e) {
+    if (e is PostgrestException) {
+      return ServerFailure(
+        'Database error: ${e.message}${e.hint != null ? ' (Hint: ${e.hint})' : ''}',
+      );
+    }
     final errorString = e.toString().toLowerCase();
 
     if (errorString.contains('socket') ||

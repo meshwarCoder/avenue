@@ -195,7 +195,7 @@ class TaskCubit extends Cubit<TaskState> {
 
   Future<void> syncTasks() async {
     try {
-      await syncService.sync();
+      await syncService.syncAll();
       // Only reload if we are not in a loading state to avoid flicker
       // And only if we are viewing a specific date (not Future Tasks)
       if (state is! TaskLoading && state is! FutureTasksLoaded) {
