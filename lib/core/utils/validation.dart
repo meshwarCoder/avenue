@@ -50,6 +50,23 @@ class Validation {
     return null;
   }
 
+  static String? validateUsername(BuildContext context, String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return AppLocalizations.of(context)!.errUsernameRequired;
+    }
+    if (value.length < 3) {
+      return AppLocalizations.of(context)!.errUsernameShort;
+    }
+    if (value.length > 20) {
+      return AppLocalizations.of(context)!.errUsernameLong;
+    }
+    final usernameRegex = RegExp(r'^[a-zA-Z0-9_]+$');
+    if (!usernameRegex.hasMatch(value)) {
+      return AppLocalizations.of(context)!.errUsernameInvalid;
+    }
+    return null;
+  }
+
   static String? validatePassword(BuildContext context, String? value) {
     if (value == null || value.isEmpty) {
       return AppLocalizations.of(context)!.errPasswordRequired;
@@ -73,4 +90,18 @@ class Validation {
     }
     return null;
   }
+
+  static String? validateFirstName(BuildContext context, String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return AppLocalizations.of(context)!.errFirstNameRequired;
+    }
+    return null;
+  }
+
+
+  static String? validateLastName(BuildContext context, String? value) {
+    // Optional
+    return null;
+  }
 }
+

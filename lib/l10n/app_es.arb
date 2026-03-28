@@ -265,5 +265,46 @@
   "newPassword": "Nueva contraseña",
   "newPasswordHint": "Introduce tu nueva contraseña y confírmala.",
   "confirmPassword": "Confirmar contraseña",
-  "passwordResetSuccess": "¡Contraseña restablecida correctamente! Ahora puedes iniciar sesión."
+  "passwordResetSuccess": "¡Contraseña restablecida correctamente! Ahora puedes iniciar sesión.",
+  "friends": "Amigos",
+  "searchSocial": "Buscar",
+  "chat": "Chat",
+  "searchByUsername": "Buscar por nombre de usuario...",
+  "noUsersFound": "No se encontraron usuarios.",
+  "pending": "Pendiente",
+  "requestedYou": "Te envió una solicitud",
+  "upcomingRequests": "Solicitudes recibidas",
+  "ongoingRequests": "Solicitudes enviadas",
+  "friendRequestSent": "¡Solicitud de amistad enviada!",
+  "friendRequestAccepted": "¡Solicitud de amistad aceptada!",
+  "friendRequestCancelled": "Solicitud de amistad cancelada.",
+  "failedToSendRequest": "Error al enviar la solicitud: {error}",
+  "@failedToSendRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToAcceptRequest": "Error al aceptar la solicitud: {error}",
+  "@failedToAcceptRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToCancelRequest": "Error al cancelar la solicitud: {error}",
+  "@failedToCancelRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "firstName": "Nombre",
+  "lastName": "Apellido",
+  "errFirstNameRequired": "El nombre es obligatorio",
+  "errLastNameInvalid": "Apellido no válido"
 }
+

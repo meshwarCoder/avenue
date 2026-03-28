@@ -1681,6 +1681,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Password reset successfully! You can now sign in.'**
   String get passwordResetSuccess;
+
+  /// No description provided for @username.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get username;
+
+  /// No description provided for @emailOrUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or Username'**
+  String get emailOrUsername;
+
+  /// No description provided for @errUsernameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Username is required'**
+  String get errUsernameRequired;
+
+  /// No description provided for @errUsernameShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be at least 3 characters'**
+  String get errUsernameShort;
+
+  /// No description provided for @errUsernameLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be at most 20 characters'**
+  String get errUsernameLong;
+
+  /// No description provided for @errUsernameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Username can only contain letters, numbers, and underscores'**
+  String get errUsernameInvalid;
+
+  /// No description provided for @errUsernameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Username is already taken'**
+  String get errUsernameTaken;
+
+  /// No description provided for @friends.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get friends;
+
+  /// No description provided for @searchSocial.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchSocial;
+
+  /// No description provided for @chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get chat;
+
+  /// No description provided for @searchByUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by username...'**
+  String get searchByUsername;
+
+  /// No description provided for @noUsersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No users found.'**
+  String get noUsersFound;
+
+  /// No description provided for @pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pending;
+
+  /// No description provided for @requestedYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested You'**
+  String get requestedYou;
+
+  /// No description provided for @upcomingRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming Requests'**
+  String get upcomingRequests;
+
+  /// No description provided for @ongoingRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing Requests'**
+  String get ongoingRequests;
+
+  /// No description provided for @friendRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend request sent!'**
+  String get friendRequestSent;
+
+  /// No description provided for @friendRequestAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend request accepted!'**
+  String get friendRequestAccepted;
+
+  /// No description provided for @friendRequestCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend request cancelled.'**
+  String get friendRequestCancelled;
+
+  /// No description provided for @failedToSendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send request: {error}'**
+  String failedToSendRequest(String error);
+
+  /// No description provided for @failedToAcceptRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to accept request: {error}'**
+  String failedToAcceptRequest(String error);
+
+  /// No description provided for @failedToCancelRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel request: {error}'**
+  String failedToCancelRequest(String error);
+
+  /// No description provided for @firstName.
+  ///
+  /// In en, this message translates to:
+  /// **'First Name'**
+  String get firstName;
+
+  /// No description provided for @lastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Name'**
+  String get lastName;
+
+  /// No description provided for @errFirstNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'First name is required'**
+  String get errFirstNameRequired;
+
+  /// No description provided for @errLastNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid last name'**
+  String get errLastNameInvalid;
 }
 
 class _AppLocalizationsDelegate

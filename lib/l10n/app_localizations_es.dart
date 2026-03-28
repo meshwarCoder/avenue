@@ -837,4 +837,89 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get passwordResetSuccess =>
       '¡Contraseña restablecida correctamente! Ahora puedes iniciar sesión.';
+
+  @override
+  String get username => 'Username';
+
+  @override
+  String get emailOrUsername => 'Email or Username';
+
+  @override
+  String get errUsernameRequired => 'Username is required';
+
+  @override
+  String get errUsernameShort => 'Username must be at least 3 characters';
+
+  @override
+  String get errUsernameLong => 'Username must be at most 20 characters';
+
+  @override
+  String get errUsernameInvalid =>
+      'Username can only contain letters, numbers, and underscores';
+
+  @override
+  String get errUsernameTaken => 'Username is already taken';
+
+  @override
+  String get friends => 'Amigos';
+
+  @override
+  String get searchSocial => 'Buscar';
+
+  @override
+  String get chat => 'Chat';
+
+  @override
+  String get searchByUsername => 'Buscar por nombre de usuario...';
+
+  @override
+  String get noUsersFound => 'No se encontraron usuarios.';
+
+  @override
+  String get pending => 'Pendiente';
+
+  @override
+  String get requestedYou => 'Te envió una solicitud';
+
+  @override
+  String get upcomingRequests => 'Solicitudes recibidas';
+
+  @override
+  String get ongoingRequests => 'Solicitudes enviadas';
+
+  @override
+  String get friendRequestSent => '¡Solicitud de amistad enviada!';
+
+  @override
+  String get friendRequestAccepted => '¡Solicitud de amistad aceptada!';
+
+  @override
+  String get friendRequestCancelled => 'Solicitud de amistad cancelada.';
+
+  @override
+  String failedToSendRequest(String error) {
+    return 'Error al enviar la solicitud: $error';
+  }
+
+  @override
+  String failedToAcceptRequest(String error) {
+    return 'Error al aceptar la solicitud: $error';
+  }
+
+  @override
+  String failedToCancelRequest(String error) {
+    return 'Error al cancelar la solicitud: $error';
+  }
+
+  @override
+  String get firstName => 'Nombre';
+
+  @override
+  String get lastName => 'Apellido';
+
+  @override
+  String get errFirstNameRequired => 'El nombre es obligatorio';
+
+  @override
+  String get errLastNameInvalid => 'Apellido no válido';
 }

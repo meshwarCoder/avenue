@@ -12,6 +12,10 @@ import 'package:avenue/features/schdules/presentation/views/add_task_view.dart';
 import '../core/widgets/animated_task_button.dart';
 import '../core/widgets/avenue_nav_bar.dart';
 import 'inbox/presentation/views/inbox_view.dart';
+import 'social/presentation/widgets/social_drawer.dart';
+import '../core/utils/constants.dart';
+
+
 
 import 'package:avenue/core/services/local_notification_service.dart';
 
@@ -23,7 +27,9 @@ class Root extends StatefulWidget {
 }
 
 class _RootState extends State<Root> with SingleTickerProviderStateMixin {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _index = 0; // Default to Today (HomeView)
+
   bool _isNavVisible = true;
 
   @override
@@ -65,8 +71,11 @@ class _RootState extends State<Root> with SingleTickerProviderStateMixin {
     return SafeArea(
       top: false,
       child: Scaffold(
+        key: _scaffoldKey, // Add a GlobalKey to open the drawer programmatically
         extendBody: true,
+        endDrawer: const SocialDrawer(),
         body: NotificationListener<UserScrollNotification>(
+
           onNotification: (notification) {
             if (notification.direction == ScrollDirection.reverse) {
               if (_isNavVisible) setState(() => _isNavVisible = false);
@@ -110,6 +119,38 @@ class _RootState extends State<Root> with SingleTickerProviderStateMixin {
                   onTap: () => _showAddTask(context),
                 ),
               ),
+
+              // Social Drawer Button (Top Right)
+              Positioned(
+                top: 48,
+                right: 16,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  opacity: _isNavVisible ? 1.0 : 0.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor.withOpacity(0.8),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                      icon: const Icon(
+                        Icons.people_alt_rounded,
+                        color: AppColors.deepPurple,
+                      ),
+                      tooltip: 'Social Hub',
+                    ),
+                  ),
+                ),
+              ),
+
 
               // Navigation Bar with Slide Down Animation
               AnimatedPositioned(

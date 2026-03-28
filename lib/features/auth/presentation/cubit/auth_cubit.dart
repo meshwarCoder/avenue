@@ -186,9 +186,42 @@ class AuthCubit extends Cubit<AuthState> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> signUp({required String email, required String password}) async {
-    emit(AuthLoading());
-    final result = await repository.signUp(email: email, password: password);
+  Future<void> signUp({
+    required String email,
+    required String username,
+    required String password,
+    required String firstName,
+    String? lastName,
+  }) async {
+    emit(AuthLoading(source: AuthLoadingSource.email));
+
+
+    final usernameResult = await repository.isUsernameAvailable(username);
+    if (isClosed) return;
+
+    bool isAvailable = false;
+    usernameResult.fold(
+      (failure) {
+        emit(AuthError(failure.message));
+      },
+      (available) => isAvailable = available,
+    );
+
+    if (state is AuthError) return;
+
+    if (!isAvailable) {
+      emit(const AuthError('Username is already taken.'));
+      return;
+    }
+
+    final result = await repository.signUp(
+      email: email,
+      username: username,
+      password: password,
+      firstName: firstName,
+      lastName: lastName,
+    );
+
     if (isClosed) return;
     result.fold((failure) => emit(AuthError(failure.message)), (_) {
       if (!repository.isAuthenticated) {
@@ -201,9 +234,33 @@ class AuthCubit extends Cubit<AuthState> with WidgetsBindingObserver {
     });
   }
 
-  Future<void> signIn({required String email, required String password}) async {
+  Future<void> signIn({
+    required String identifier,
+    required String password,
+  }) async {
     emit(AuthLoading());
-    final result = await repository.signIn(email: email, password: password);
+
+    String emailToUse = identifier;
+
+    if (!identifier.contains('@')) {
+      final emailResult = await repository.getEmailByUsername(identifier);
+      if (isClosed) return;
+
+      bool foundEmail = false;
+      emailResult.fold(
+        (failure) {
+          emit(const AuthError('Invalid username or password.'));
+        },
+        (email) {
+          emailToUse = email;
+          foundEmail = true;
+        },
+      );
+
+      if (!foundEmail) return;
+    }
+
+    final result = await repository.signIn(email: emailToUse, password: password);
     if (isClosed) return;
     result.fold((failure) => emit(AuthError(failure.message)), (_) {
       if (!repository.isAuthenticated) {

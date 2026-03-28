@@ -831,4 +831,89 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get passwordResetSuccess =>
       'تم إعادة تعيين كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول.';
+
+  @override
+  String get username => 'Username';
+
+  @override
+  String get emailOrUsername => 'Email or Username';
+
+  @override
+  String get errUsernameRequired => 'Username is required';
+
+  @override
+  String get errUsernameShort => 'Username must be at least 3 characters';
+
+  @override
+  String get errUsernameLong => 'Username must be at most 20 characters';
+
+  @override
+  String get errUsernameInvalid =>
+      'Username can only contain letters, numbers, and underscores';
+
+  @override
+  String get errUsernameTaken => 'Username is already taken';
+
+  @override
+  String get friends => 'الأصدقاء';
+
+  @override
+  String get searchSocial => 'البحث';
+
+  @override
+  String get chat => 'الدردشة';
+
+  @override
+  String get searchByUsername => 'بحث باسم المستخدم...';
+
+  @override
+  String get noUsersFound => 'لم يتم العثور على مستخدمين.';
+
+  @override
+  String get pending => 'قيد الانتظار';
+
+  @override
+  String get requestedYou => 'أرسل لك طلباً';
+
+  @override
+  String get upcomingRequests => 'طلبات واردة';
+
+  @override
+  String get ongoingRequests => 'طلبات صادرة';
+
+  @override
+  String get friendRequestSent => 'تم إرسال طلب الصداقة!';
+
+  @override
+  String get friendRequestAccepted => 'تم قبول طلب الصداقة!';
+
+  @override
+  String get friendRequestCancelled => 'تم إلغاء طلب الصداقة.';
+
+  @override
+  String failedToSendRequest(String error) {
+    return 'فشل إرسال الطلب: $error';
+  }
+
+  @override
+  String failedToAcceptRequest(String error) {
+    return 'فشل قبول الطلب: $error';
+  }
+
+  @override
+  String failedToCancelRequest(String error) {
+    return 'فشل إلغاء الطلب: $error';
+  }
+
+  @override
+  String get firstName => 'الاسم الأول';
+
+  @override
+  String get lastName => 'اسم العائلة';
+
+  @override
+  String get errFirstNameRequired => 'الاسم الأول مطلوب';
+
+  @override
+  String get errLastNameInvalid => 'اسم العائلة غير صحيح';
 }
