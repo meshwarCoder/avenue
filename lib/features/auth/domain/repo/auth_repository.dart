@@ -4,8 +4,12 @@ import '../../../../core/errors/failures.dart';
 abstract class AuthRepository {
   Future<Either<Failure, void>> signUp({
     required String email,
+    required String username,
     required String password,
+    required String firstName,
+    String? lastName,
   });
+
 
   Future<Either<Failure, void>> signIn({
     required String email,
@@ -18,8 +22,11 @@ abstract class AuthRepository {
   String? get currentUserId;
   String? get currentUserEmail;
 
+  Future<Either<Failure, bool>> isUsernameAvailable(String username);
+  Future<Either<Failure, String>> getEmailByUsername(String username);
+
   Future<Either<Failure, void>> createDeviceRecord(String deviceId);
-  Future<Either<Failure, void>> createOrUpdateProfile(int timezoneOffset);
+  Future<Either<Failure, void>> createOrUpdateProfile(int timezoneOffset, {String? username});
   Future<Either<Failure, bool>> deviceExists(String deviceId);
   Future<Either<Failure, void>> updateDeviceSyncTimestamp(String deviceId);
   Future<Either<Failure, String>> fetchUserRole();

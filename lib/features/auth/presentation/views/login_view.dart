@@ -164,15 +164,19 @@ class _LoginViewState extends State<LoginView> {
                             ),
                             const SizedBox(height: 48),
 
-                            // Email Field
+                            // Email or Username Field
                             AuthTextField(
                               key: _emailFieldKey,
                               controller: _emailController,
-                              label: AppLocalizations.of(context)!.email,
-                              icon: Icons.alternate_email_rounded,
+                              label: AppLocalizations.of(context)!.emailOrUsername,
+                              icon: Icons.person_outline_rounded,
                               keyboardType: TextInputType.emailAddress,
-                              validator: (v) =>
-                                  Validation.validateEmail(context, v),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return AppLocalizations.of(context)!.errEmailRequired;
+                                }
+                                return null;
+                              },
                             ),
                             const SizedBox(height: 20),
 
@@ -233,7 +237,7 @@ class _LoginViewState extends State<LoginView> {
                                     if (state is AuthLoading) return;
                                     if (_formKey.currentState!.validate()) {
                                       context.read<AuthCubit>().signIn(
-                                        email: _emailController.text.trim(),
+                                        identifier: _emailController.text.trim(),
                                         password: _passwordController.text
                                             .trim(),
                                       );

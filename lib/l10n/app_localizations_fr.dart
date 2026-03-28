@@ -838,4 +838,89 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get passwordResetSuccess =>
       'Mot de passe réinitialisé avec succès ! Vous pouvez maintenant vous connecter.';
+
+  @override
+  String get username => 'Username';
+
+  @override
+  String get emailOrUsername => 'Email or Username';
+
+  @override
+  String get errUsernameRequired => 'Username is required';
+
+  @override
+  String get errUsernameShort => 'Username must be at least 3 characters';
+
+  @override
+  String get errUsernameLong => 'Username must be at most 20 characters';
+
+  @override
+  String get errUsernameInvalid =>
+      'Username can only contain letters, numbers, and underscores';
+
+  @override
+  String get errUsernameTaken => 'Username is already taken';
+
+  @override
+  String get friends => 'Amis';
+
+  @override
+  String get searchSocial => 'Rechercher';
+
+  @override
+  String get chat => 'Chat';
+
+  @override
+  String get searchByUsername => 'Rechercher par nom d\'utilisateur...';
+
+  @override
+  String get noUsersFound => 'Aucun utilisateur trouvé.';
+
+  @override
+  String get pending => 'En attente';
+
+  @override
+  String get requestedYou => 'Vous a envoyé une demande';
+
+  @override
+  String get upcomingRequests => 'Demandes reçues';
+
+  @override
+  String get ongoingRequests => 'Demandes envoyées';
+
+  @override
+  String get friendRequestSent => 'Demande d\'ami envoyée !';
+
+  @override
+  String get friendRequestAccepted => 'Demande d\'ami acceptée !';
+
+  @override
+  String get friendRequestCancelled => 'Demande d\'ami annulée.';
+
+  @override
+  String failedToSendRequest(String error) {
+    return 'Échec de l\'envoi : $error';
+  }
+
+  @override
+  String failedToAcceptRequest(String error) {
+    return 'Échec de l\'acceptation : $error';
+  }
+
+  @override
+  String failedToCancelRequest(String error) {
+    return 'Échec de l\'annulation : $error';
+  }
+
+  @override
+  String get firstName => 'Prénom';
+
+  @override
+  String get lastName => 'Nom';
+
+  @override
+  String get errFirstNameRequired => 'Le prénom est requis';
+
+  @override
+  String get errLastNameInvalid => 'Nom invalide';
 }

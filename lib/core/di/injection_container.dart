@@ -18,6 +18,10 @@ import '../../features/inbox/data/datasources/inbox_local_data_source_impl.dart'
 import '../../features/inbox/data/repositories/inbox_repository_impl.dart';
 import '../../features/inbox/domain/repo/inbox_repository.dart';
 import '../../features/inbox/presentation/cubit/inbox_cubit.dart';
+import '../../features/social/data/repo/social_repository_impl.dart';
+import '../../features/social/domain/repo/social_repository.dart';
+import '../../features/social/presentation/cubit/social_cubit.dart';
+
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -116,6 +120,10 @@ Future<void> initializeDependencies() async {
     () => InboxRepositoryImpl(localDataSource: sl()),
   );
   sl.registerLazySingleton<LocaleRepository>(() => LocaleRepositoryImpl(sl()));
+  sl.registerLazySingleton<SocialRepository>(
+    () => SocialRepositoryImpl(supabase: sl(), requestExecutor: sl()),
+  );
+
 
   // Cubits (Factory - new instance each time)
   sl.registerLazySingleton(
@@ -135,6 +143,8 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => DefaultTasksCubit(sl()));
   sl.registerLazySingleton(() => InboxCubit(repository: sl(), syncService: sl()));
   sl.registerLazySingleton(() => LocaleCubit(sl()));
+  sl.registerLazySingleton(() => SocialCubit(repository: sl()));
+
 
   // AI Chat (Now using Supabase Edge Function)
   sl.registerLazySingleton<AiServerClient>(

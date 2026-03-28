@@ -829,4 +829,89 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get passwordResetSuccess =>
       'Password reset successfully! You can now sign in.';
+
+  @override
+  String get username => 'Username';
+
+  @override
+  String get emailOrUsername => 'Email or Username';
+
+  @override
+  String get errUsernameRequired => 'Username is required';
+
+  @override
+  String get errUsernameShort => 'Username must be at least 3 characters';
+
+  @override
+  String get errUsernameLong => 'Username must be at most 20 characters';
+
+  @override
+  String get errUsernameInvalid =>
+      'Username can only contain letters, numbers, and underscores';
+
+  @override
+  String get errUsernameTaken => 'Username is already taken';
+
+  @override
+  String get friends => 'Friends';
+
+  @override
+  String get searchSocial => 'Search';
+
+  @override
+  String get chat => 'Chat';
+
+  @override
+  String get searchByUsername => 'Search by username...';
+
+  @override
+  String get noUsersFound => 'No users found.';
+
+  @override
+  String get pending => 'Pending';
+
+  @override
+  String get requestedYou => 'Requested You';
+
+  @override
+  String get upcomingRequests => 'Upcoming Requests';
+
+  @override
+  String get ongoingRequests => 'Ongoing Requests';
+
+  @override
+  String get friendRequestSent => 'Friend request sent!';
+
+  @override
+  String get friendRequestAccepted => 'Friend request accepted!';
+
+  @override
+  String get friendRequestCancelled => 'Friend request cancelled.';
+
+  @override
+  String failedToSendRequest(String error) {
+    return 'Failed to send request: $error';
+  }
+
+  @override
+  String failedToAcceptRequest(String error) {
+    return 'Failed to accept request: $error';
+  }
+
+  @override
+  String failedToCancelRequest(String error) {
+    return 'Failed to cancel request: $error';
+  }
+
+  @override
+  String get firstName => 'First Name';
+
+  @override
+  String get lastName => 'Last Name';
+
+  @override
+  String get errFirstNameRequired => 'First name is required';
+
+  @override
+  String get errLastNameInvalid => 'Invalid last name';
 }

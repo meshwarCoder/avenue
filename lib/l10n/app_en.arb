@@ -272,5 +272,53 @@
   "newPassword": "New Password",
   "newPasswordHint": "Enter your new password and confirm it.",
   "confirmPassword": "Confirm Password",
-  "passwordResetSuccess": "Password reset successfully! You can now sign in."
+  "passwordResetSuccess": "Password reset successfully! You can now sign in.",
+  "username": "Username",
+  "emailOrUsername": "Email or Username",
+  "errUsernameRequired": "Username is required",
+  "errUsernameShort": "Username must be at least 3 characters",
+  "errUsernameLong": "Username must be at most 20 characters",
+  "errUsernameInvalid": "Username can only contain letters, numbers, and underscores",
+  "errUsernameTaken": "Username is already taken",
+  "friends": "Friends",
+  "searchSocial": "Search",
+  "chat": "Chat",
+  "searchByUsername": "Search by username...",
+  "noUsersFound": "No users found.",
+  "pending": "Pending",
+  "requestedYou": "Requested You",
+  "upcomingRequests": "Upcoming Requests",
+  "ongoingRequests": "Ongoing Requests",
+  "friendRequestSent": "Friend request sent!",
+  "friendRequestAccepted": "Friend request accepted!",
+  "friendRequestCancelled": "Friend request cancelled.",
+  "failedToSendRequest": "Failed to send request: {error}",
+  "@failedToSendRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToAcceptRequest": "Failed to accept request: {error}",
+  "@failedToAcceptRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToCancelRequest": "Failed to cancel request: {error}",
+  "@failedToCancelRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "firstName": "First Name",
+  "lastName": "Last Name",
+  "errFirstNameRequired": "First name is required",
+  "errLastNameInvalid": "Invalid last name"
 }
+

@@ -265,5 +265,46 @@
   "newPassword": "Nouveau mot de passe",
   "newPasswordHint": "Entrez votre nouveau mot de passe et confirmez-le.",
   "confirmPassword": "Confirmer le mot de passe",
-  "passwordResetSuccess": "Mot de passe réinitialisé avec succès ! Vous pouvez maintenant vous connecter."
+  "passwordResetSuccess": "Mot de passe réinitialisé avec succès ! Vous pouvez maintenant vous connecter.",
+  "friends": "Amis",
+  "searchSocial": "Rechercher",
+  "chat": "Chat",
+  "searchByUsername": "Rechercher par nom d'utilisateur...",
+  "noUsersFound": "Aucun utilisateur trouvé.",
+  "pending": "En attente",
+  "requestedYou": "Vous a envoyé une demande",
+  "upcomingRequests": "Demandes reçues",
+  "ongoingRequests": "Demandes envoyées",
+  "friendRequestSent": "Demande d'ami envoyée !",
+  "friendRequestAccepted": "Demande d'ami acceptée !",
+  "friendRequestCancelled": "Demande d'ami annulée.",
+  "failedToSendRequest": "Échec de l'envoi : {error}",
+  "@failedToSendRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToAcceptRequest": "Échec de l'acceptation : {error}",
+  "@failedToAcceptRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToCancelRequest": "Échec de l'annulation : {error}",
+  "@failedToCancelRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "firstName": "Prénom",
+  "lastName": "Nom",
+  "errFirstNameRequired": "Le prénom est requis",
+  "errLastNameInvalid": "Nom invalide"
 }
+

@@ -20,12 +20,19 @@ class RegisterView extends StatefulWidget {
 
 class _RegisterViewState extends State<RegisterView> {
   final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final _emailFieldKey = GlobalKey<AuthTextFieldState>();
+  final _usernameFieldKey = GlobalKey<AuthTextFieldState>();
+  final _firstNameFieldKey = GlobalKey<AuthTextFieldState>();
+  final _lastNameFieldKey = GlobalKey<AuthTextFieldState>();
   final _passwordFieldKey = GlobalKey<AuthTextFieldState>();
   final _confirmPasswordFieldKey = GlobalKey<AuthTextFieldState>();
+
   AutovalidateMode _autoValidateMode = AutovalidateMode.disabled;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -33,8 +40,12 @@ class _RegisterViewState extends State<RegisterView> {
   @override
   void dispose() {
     _emailController.dispose();
+    _usernameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+
     super.dispose();
   }
 
@@ -139,6 +150,44 @@ class _RegisterViewState extends State<RegisterView> {
                             ),
                             const SizedBox(height: 48),
 
+                            // First Name Field
+                            AuthTextField(
+                              key: _firstNameFieldKey,
+                              controller: _firstNameController,
+                              label: AppLocalizations.of(context)!.firstName,
+                              icon: Icons.badge_outlined,
+                              keyboardType: TextInputType.name,
+                              validator: (v) =>
+                                  Validation.validateFirstName(context, v),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Last Name Field
+                            AuthTextField(
+                              key: _lastNameFieldKey,
+                              controller: _lastNameController,
+                              label: '${AppLocalizations.of(context)!.lastName} (${AppLocalizations.of(context)!.descOptional})',
+                              icon: Icons.badge_outlined,
+                              keyboardType: TextInputType.name,
+                              validator: (v) =>
+                                  Validation.validateLastName(context, v),
+                            ),
+                            const SizedBox(height: 20),
+
+
+                            // Username Field
+
+                            AuthTextField(
+                              key: _usernameFieldKey,
+                              controller: _usernameController,
+                              label: AppLocalizations.of(context)!.username,
+                              icon: Icons.person_outline_rounded,
+                              keyboardType: TextInputType.name,
+                              validator: (v) =>
+                                  Validation.validateUsername(context, v),
+                            ),
+                            const SizedBox(height: 20),
+
                             // Email Field
                             AuthTextField(
                               key: _emailFieldKey,
@@ -223,16 +272,27 @@ class _RegisterViewState extends State<RegisterView> {
                                     if (_formKey.currentState!.validate()) {
                                       context.read<AuthCubit>().signUp(
                                         email: _emailController.text.trim(),
+                                        username: _usernameController.text.trim(),
+                                        firstName: _firstNameController.text.trim(),
+                                        lastName: _lastNameController.text.trim().isEmpty ? null : _lastNameController.text.trim(),
                                         password: _passwordController.text
                                             .trim(),
                                       );
+
                                     } else {
                                       _emailFieldKey.currentState
+                                          ?.shakeIfInvalid();
+                                      _usernameFieldKey.currentState
+                                          ?.shakeIfInvalid();
+                                      _firstNameFieldKey.currentState
+                                          ?.shakeIfInvalid();
+                                      _lastNameFieldKey.currentState
                                           ?.shakeIfInvalid();
                                       _passwordFieldKey.currentState
                                           ?.shakeIfInvalid();
                                       _confirmPasswordFieldKey.currentState
                                           ?.shakeIfInvalid();
+
                                       setState(() {
                                         _autoValidateMode =
                                             AutovalidateMode.onUserInteraction;

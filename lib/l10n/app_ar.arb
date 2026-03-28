@@ -272,5 +272,46 @@
   "newPassword": "كلمة مرور جديدة",
   "newPasswordHint": "أدخل كلمة مرورك الجديدة وأكدها.",
   "confirmPassword": "تأكيد كلمة المرور",
-  "passwordResetSuccess": "تم إعادة تعيين كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول."
+  "passwordResetSuccess": "تم إعادة تعيين كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول.",
+  "friends": "الأصدقاء",
+  "searchSocial": "البحث",
+  "chat": "الدردشة",
+  "searchByUsername": "بحث باسم المستخدم...",
+  "noUsersFound": "لم يتم العثور على مستخدمين.",
+  "pending": "قيد الانتظار",
+  "requestedYou": "أرسل لك طلباً",
+  "upcomingRequests": "طلبات واردة",
+  "ongoingRequests": "طلبات صادرة",
+  "friendRequestSent": "تم إرسال طلب الصداقة!",
+  "friendRequestAccepted": "تم قبول طلب الصداقة!",
+  "friendRequestCancelled": "تم إلغاء طلب الصداقة.",
+  "failedToSendRequest": "فشل إرسال الطلب: {error}",
+  "@failedToSendRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToAcceptRequest": "فشل قبول الطلب: {error}",
+  "@failedToAcceptRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToCancelRequest": "فشل إلغاء الطلب: {error}",
+  "@failedToCancelRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "firstName": "الاسم الأول",
+  "lastName": "اسم العائلة",
+  "errFirstNameRequired": "الاسم الأول مطلوب",
+  "errLastNameInvalid": "اسم العائلة غير صحيح"
 }
+

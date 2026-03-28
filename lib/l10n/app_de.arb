@@ -265,5 +265,46 @@
   "newPassword": "Neues Passwort",
   "newPasswordHint": "Gib dein neues Passwort ein und bestätige es.",
   "confirmPassword": "Passwort bestätigen",
-  "passwordResetSuccess": "Passwort erfolgreich zurückgesetzt! Du kannst dich jetzt anmelden."
+  "passwordResetSuccess": "Passwort erfolgreich zurückgesetzt! Du kannst dich jetzt anmelden.",
+  "friends": "Freunde",
+  "searchSocial": "Suche",
+  "chat": "Chat",
+  "searchByUsername": "Nach Benutzernamen suchen...",
+  "noUsersFound": "Keine Benutzer gefunden.",
+  "pending": "Ausstehend",
+  "requestedYou": "Anfrage gesendet",
+  "upcomingRequests": "Eingehende Anfragen",
+  "ongoingRequests": "Ausgehende Anfragen",
+  "friendRequestSent": "Freundschaftsanfrage gesendet!",
+  "friendRequestAccepted": "Freundschaftsanfrage angenommen!",
+  "friendRequestCancelled": "Freundschaftsanfrage abgebrochen.",
+  "failedToSendRequest": "Fehler beim Senden: {error}",
+  "@failedToSendRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToAcceptRequest": "Fehler beim Annehmen: {error}",
+  "@failedToAcceptRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToCancelRequest": "Fehler beim Abbrechen: {error}",
+  "@failedToCancelRequest": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "firstName": "Vorname",
+  "lastName": "Nachname",
+  "errFirstNameRequired": "Vorname ist erforderlich",
+  "errLastNameInvalid": "Ungültiger Nachname"
 }
+

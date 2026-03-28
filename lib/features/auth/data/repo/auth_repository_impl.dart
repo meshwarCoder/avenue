@@ -17,14 +17,26 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> signUp({
     required String email,
+    required String username,
     required String password,
+    required String firstName,
+    String? lastName,
   }) async {
     return _requestExecutor.execute(
       operation: () async {
-        await supabase.auth.signUp(email: email, password: password);
+        await supabase.auth.signUp(
+          email: email,
+          password: password,
+          data: {
+            'username': username,
+            'first_name': firstName,
+            'last_name': lastName,
+          },
+        );
       },
     );
   }
+
 
   @override
   Future<Either<Failure, void>> signIn({
@@ -76,16 +88,48 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, void>> createOrUpdateProfile(
-    int timezoneOffset,
-  ) async {
+  Future<Either<Failure, bool>> isUsernameAvailable(String username) async {
     return _requestExecutor.execute(
       operation: () async {
-        await supabase.from('profiles').upsert({
-          'id': currentUserId,
+        final res = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('username', username)
+            .maybeSingle();
+        return res == null;
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, String>> getEmailByUsername(String username) async {
+    return _requestExecutor.execute(
+      operation: () async {
+        final response = await supabase.rpc('get_email_by_username', params: {'p_username': username});
+        if (response != null && response is String && response.isNotEmpty) {
+          return response;
+        }
+        throw Exception('User not found');
+      },
+    );
+  }
+
+  @override
+  Future<Either<Failure, void>> createOrUpdateProfile(
+    int timezoneOffset, {
+    String? username,
+  }) async {
+    return _requestExecutor.execute(
+      operation: () async {
+        final data = {
+          'user_id': currentUserId,
           'timezone_offset': timezoneOffset,
           'updated_at': DateTime.now().toIso8601String(),
-        });
+        };
+        if (username != null) {
+          data['username'] = username;
+        }
+        await supabase.from('profiles').upsert(data);
       },
     );
   }
