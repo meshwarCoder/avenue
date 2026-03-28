@@ -2,7 +2,13 @@ import 'package:sqflite/sqflite.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/services/database_service.dart';
 import '../models/inbox_item_model.dart';
-import 'inbox_local_data_source.dart';
+
+abstract class InboxLocalDataSource {
+  Future<void> insertInboxItem(InboxItemModel item);
+  Future<List<InboxItemModel>> getInboxItems();
+  Future<void> updateInboxItem(InboxItemModel item);
+  Future<void> deleteInboxItem(String id);
+}
 
 class InboxLocalDataSourceImpl implements InboxLocalDataSource {
   final DatabaseService databaseService;

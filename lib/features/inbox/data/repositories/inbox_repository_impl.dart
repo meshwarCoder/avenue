@@ -1,6 +1,6 @@
+import 'package:avenue/features/inbox/data/datasources/inbox_local_data_source_impl.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
-import '../datasources/inbox_local_data_source.dart';
 import '../models/inbox_item_model.dart';
 import '../../domain/repo/inbox_repository.dart';
 

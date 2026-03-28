@@ -12,6 +12,8 @@ import '../../../../core/utils/calendar_utils.dart';
 import '../../../inbox/data/models/inbox_item_model.dart';
 import '../../../inbox/presentation/cubit/inbox_cubit.dart';
 
+enum TaskMode { oneTime, recurring }
+
 class AddTaskView extends StatefulWidget {
   final TaskModel? task;
   final DefaultTaskModel? defaultTask;
@@ -19,6 +21,13 @@ class AddTaskView extends StatefulWidget {
   final TimeOfDay? initialStartTime;
   final TimeOfDay? initialEndTime;
   final bool disableRecurring;
+  final InboxItemModel? inboxItem;
+  final bool isEditing;
+  final bool isInboxMode;
+  final InboxItemModel? initialInboxItem;
+  final bool? initialIsRecurring;
+  final TaskMode? forcedMode;
+  final bool isFromInbox;
   const AddTaskView({
     super.key,
     this.task,
@@ -27,6 +36,13 @@ class AddTaskView extends StatefulWidget {
     this.initialStartTime,
     this.initialEndTime,
     this.disableRecurring = false,
+    this.inboxItem,
+    this.isEditing = false,
+    this.isInboxMode = false,
+    this.initialInboxItem,
+    this.initialIsRecurring,
+    this.forcedMode,
+    this.isFromInbox = false,
   });
 
   @override
@@ -66,6 +82,7 @@ class _AddTaskViewState extends State<AddTaskView> {
 
   @override
   void initState() {
+    _isInboxMode = widget.isInboxMode || widget.inboxItem != null;
     super.initState();
     final task = widget.task;
     final defaultTask = widget.defaultTask;
@@ -80,6 +97,43 @@ class _AddTaskViewState extends State<AddTaskView> {
       _isRecurring = true;
       _selectedWeekdays.addAll(defaultTask.weekdays);
       _selectedDate = DateTime.now();
+    } else if (widget.inboxItem != null) {
+      _selectedImportance = 'Medium';
+      _selectedCategory = 'Work';
+      _titleController = TextEditingController(text: widget.inboxItem!.title);
+      _descController = TextEditingController(text: widget.inboxItem!.content);
+      _startTime = widget.initialStartTime;
+      _endTime = widget.initialEndTime;
+      _selectedDate = widget.initialDate ?? DateTime.now();
+      _isInboxMode = true;
+      _selectedInboxType = widget.inboxItem!.type;
+      _inboxDeadline = widget.inboxItem!.deadline;
+    } else if (widget.initialInboxItem != null) {
+      _selectedImportance = 'Medium';
+      _selectedCategory = 'Work';
+      _titleController =
+          TextEditingController(text: widget.initialInboxItem!.title);
+      _descController =
+          TextEditingController(text: widget.initialInboxItem!.content);
+      _startTime = widget.initialStartTime;
+      _endTime = widget.initialEndTime;
+      _selectedDate = widget.initialInboxItem!.deadline ??
+          widget.initialDate ??
+          DateTime.now();
+      _isRecurring = widget.initialIsRecurring ?? false;
+    } else if (widget.isFromInbox && widget.forcedMode != null) {
+      _selectedImportance = 'Medium';
+      _selectedCategory = 'Work';
+      _titleController =
+          TextEditingController(text: widget.initialInboxItem?.title);
+      _descController =
+          TextEditingController(text: widget.initialInboxItem?.content);
+      _startTime = widget.initialStartTime;
+      _endTime = widget.initialEndTime;
+      _selectedDate = widget.initialInboxItem?.deadline ??
+          widget.initialDate ??
+          DateTime.now();
+      _isRecurring = widget.forcedMode == TaskMode.recurring;
     } else {
       _selectedImportance = task?.importanceType ?? 'Medium';
       _selectedCategory = task?.category ?? 'Work';
@@ -141,6 +195,8 @@ class _AddTaskViewState extends State<AddTaskView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final mode = widget.forcedMode ??
+        (_isRecurring ? TaskMode.recurring : TaskMode.oneTime);
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -183,9 +239,15 @@ class _AddTaskViewState extends State<AddTaskView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    widget.task == null && widget.defaultTask == null
-                        ? AppLocalizations.of(context)!.newTask
-                        : AppLocalizations.of(context)!.editTask,
+                    widget.task == null &&
+                            widget.defaultTask == null &&
+                            widget.inboxItem == null
+                        ? (mode == TaskMode.oneTime
+                            ? AppLocalizations.of(context)!.newTask
+                            : "New Recurring Task")
+                        : (widget.inboxItem != null
+                            ? "Edit Inbox Item"
+                            : AppLocalizations.of(context)!.editTask),
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.white : AppColors.deepPurple,
@@ -230,7 +292,10 @@ class _AddTaskViewState extends State<AddTaskView> {
 
               if (widget.task == null &&
                   widget.defaultTask == null &&
-                  !widget.disableRecurring) ...[
+                  !widget.disableRecurring &&
+                  !widget.isInboxMode &&
+                  !widget.isFromInbox &&
+                  widget.forcedMode == null) ...[
                 _buildFieldLabel(
                   AppLocalizations.of(context)!.occurrence,
                   theme,
@@ -240,7 +305,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                     Expanded(
                       child: _buildTypeToggle(
                         AppLocalizations.of(context)!.oneTime,
-                        !_isRecurring && !_isInboxMode,
+                        mode == TaskMode.oneTime && !_isInboxMode,
                         () => setState(() {
                           _isRecurring = false;
                           _isInboxMode = false;
@@ -251,7 +316,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                     Expanded(
                       child: _buildTypeToggle(
                         AppLocalizations.of(context)!.recurring,
-                        _isRecurring && !_isInboxMode,
+                        mode == TaskMode.recurring && !_isInboxMode,
                         () => setState(() {
                           _isRecurring = true;
                           _isInboxMode = false;
@@ -284,7 +349,7 @@ class _AddTaskViewState extends State<AddTaskView> {
               ],
 
               if (!_isInboxMode) ...[
-                if (!_isRecurring) ...[
+                if (mode == TaskMode.oneTime) ...[
                   _buildFieldLabel(
                     AppLocalizations.of(context)!.scheduling,
                     theme,
@@ -292,12 +357,18 @@ class _AddTaskViewState extends State<AddTaskView> {
                   _buildDateSelector(),
                   const SizedBox(height: 24),
                 ] else ...[
-                  _buildFieldLabel(AppLocalizations.of(context)!.repeatOn, theme),
+                  _buildFieldLabel(
+                    AppLocalizations.of(context)!.repeatOn,
+                    theme,
+                  ),
                   _buildWeekdaySelector(),
                   const SizedBox(height: 24),
                 ],
 
-                _buildFieldLabel(AppLocalizations.of(context)!.timeFrame, theme),
+                _buildFieldLabel(
+                  AppLocalizations.of(context)!.timeFrame,
+                  theme,
+                ),
                 Row(
                   children: [
                     Expanded(
@@ -332,17 +403,17 @@ class _AddTaskViewState extends State<AddTaskView> {
                   ],
                 ),
                 const SizedBox(height: 32),
-                _buildNotificationSection(theme),
+                if (mode == TaskMode.oneTime) ...[
+                  _buildNotificationSection(theme),
+                  const SizedBox(height: 32),
+                ],
+                _buildFieldLabel(AppLocalizations.of(context)!.category, theme),
+                _buildCategorySelector(),
+                const SizedBox(height: 32),
+                _buildFieldLabel(AppLocalizations.of(context)!.importance, theme),
+                _buildImportanceRow(),
                 const SizedBox(height: 32),
               ],
-
-              _buildFieldLabel(AppLocalizations.of(context)!.category, theme),
-              _buildCategorySelector(),
-              const SizedBox(height: 32),
-
-              _buildFieldLabel(AppLocalizations.of(context)!.importance, theme),
-              _buildImportanceRow(),
-              const SizedBox(height: 32),
 
               SizedBox(
                 width: double.infinity,
@@ -378,7 +449,9 @@ class _AddTaskViewState extends State<AddTaskView> {
                       elevation: 0,
                     ),
                     child: Text(
-                      widget.task == null && widget.defaultTask == null
+                      widget.task == null &&
+                              widget.defaultTask == null &&
+                              widget.inboxItem == null
                           ? AppLocalizations.of(context)!.createTask
                           : AppLocalizations.of(context)!.updateChanges,
                       style: const TextStyle(
@@ -1010,13 +1083,25 @@ class _AddTaskViewState extends State<AddTaskView> {
   }
 
   void _saveInboxItem() {
-    final item = InboxItemModel(
-      title: _titleController.text,
-      content: _descController.text,
-      type: _selectedInboxType,
-      deadline: _inboxDeadline,
-    );
-    context.read<InboxCubit>().addInboxItem(item);
+    if (widget.isEditing && widget.inboxItem != null) {
+      final updatedItem = widget.inboxItem!.copyWith(
+        title: _titleController.text,
+        content: _descController.text,
+        type: _selectedInboxType,
+        deadline: _inboxDeadline,
+        updatedAt: DateTime.now().toUtc(),
+        isDirty: true,
+      );
+      context.read<InboxCubit>().updateInboxItem(updatedItem);
+    } else {
+      final item = InboxItemModel(
+        title: _titleController.text,
+        content: _descController.text,
+        type: _selectedInboxType,
+        deadline: _inboxDeadline,
+      );
+      context.read<InboxCubit>().addInboxItem(item);
+    }
     Navigator.pop(context);
   }
 
@@ -1069,6 +1154,9 @@ class _AddTaskViewState extends State<AddTaskView> {
   void _saveSpecificTask(TaskModel task) {
     if (widget.task == null) {
       context.read<TaskCubit>().addTask(task);
+      if (widget.initialInboxItem != null) {
+        context.read<InboxCubit>().deleteInboxItem(widget.initialInboxItem!.id);
+      }
     } else {
       context.read<TaskCubit>().updateTask(task);
     }
@@ -1089,6 +1177,9 @@ class _AddTaskViewState extends State<AddTaskView> {
     );
     if (widget.defaultTask == null) {
       context.read<TaskCubit>().addDefaultTask(defaultTask);
+      if (widget.initialInboxItem != null) {
+        context.read<InboxCubit>().deleteInboxItem(widget.initialInboxItem!.id);
+      }
     } else {
       context.read<TaskCubit>().updateDefaultTask(defaultTask);
     }

@@ -5,6 +5,7 @@ import '../cubit/inbox_state.dart';
 import '../widgets/inbox_item_card.dart';
 import '../../../../core/widgets/empty_state_widget.dart';
 import '../../../../core/widgets/avenue_action_sheet.dart';
+import '../../../schdules/presentation/views/add_task_view.dart';
 
 class InboxView extends StatelessWidget {
   const InboxView({super.key});
@@ -102,14 +103,64 @@ class InboxViewBody extends StatelessWidget {
               icon: Icons.edit_outlined,
               title: "Edit",
               onTap: () {
-                // TODO: Implement edit
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => AddTaskView(
+                    inboxItem: item,
+                    isEditing: true,
+                    isInboxMode: true,
+                  ),
+                );
               },
             ),
             AvenueAction(
               icon: Icons.task_alt_outlined,
               title: "Convert to Task",
               onTap: () {
-                // TODO: Implement convert
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => AvenueActionSheet(
+                    title: "Convert to Task",
+                    subtitle: "Choose how you want to schedule this",
+                    actions: [
+                      AvenueAction(
+                        icon: Icons.calendar_today_rounded,
+                        title: "One-time Task",
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => AddTaskView(
+                              initialInboxItem: item,
+                              forcedMode: TaskMode.oneTime,
+                              isFromInbox: true,
+                            ),
+                          );
+                        },
+                      ),
+                      AvenueAction(
+                        icon: Icons.repeat_rounded,
+                        title: "Recurring Task",
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => AddTaskView(
+                              initialInboxItem: item,
+                              forcedMode: TaskMode.recurring,
+                              isFromInbox: true,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
               },
             ),
             AvenueAction(

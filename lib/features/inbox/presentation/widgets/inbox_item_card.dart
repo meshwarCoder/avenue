@@ -7,11 +7,7 @@ class InboxItemCard extends StatelessWidget {
   final InboxItemModel item;
   final VoidCallback? onTap;
 
-  const InboxItemCard({
-    super.key,
-    required this.item,
-    this.onTap,
-  });
+  const InboxItemCard({super.key, required this.item, this.onTap});
 
   @override
   Widget build(BuildContext context) {
